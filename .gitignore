@@ -1,0 +1,12 @@
+# Node / web
+node_modules
+.next
+dist
+.env
+# Python / worker
+__pycache__/
+*.pyc
+# Misc
+.DS_Store
+uploads/*
+!uploads/.gitkeep
