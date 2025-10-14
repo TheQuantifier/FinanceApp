@@ -25,9 +25,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // TEMP: 50 MB to rule out size issues
   fileFilter: (_req, file, cb) => {
-    const okTypes = ["application/pdf", "image/png", "image/jpeg"];
+    // Accept common types and octet-stream (curl/OS sometimes uses this)
+    const okTypes = [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "application/octet-stream"
+    ];
+    console.log(">> multer fileFilter saw:", file?.originalname, file?.mimetype);
     cb(okTypes.includes(file.mimetype) ? null : new Error("Only PDF/PNG/JPG allowed"));
   }
 });
@@ -51,18 +58,31 @@ function runOCR(absPath) {
 app.get("/", (_req, res) => res.send("Finance App API is running 🚀"));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
+// Simple browser form to test uploads (no curl needed)
+app.get("/test", (_req, res) => res.send(`
+  <form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="receipt" />
+    <button>Upload</button>
+  </form>
+`));
+
 app.get("/receipts", async (_req, res, next) => {
   try {
     const names = await fsp.readdir(uploadDir);
-    res.json({ files: names
-      .filter(n => !n.endsWith(".json"))
-      .map(name => ({ name })) });
+    res.json({
+      files: names
+        .filter(n => !n.endsWith(".json"))
+        .map(name => ({ name }))
+    });
   } catch (err) { next(err); }
 });
 
 // Upload -> auto OCR -> save sidecar JSON
 app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   try {
+    console.log(">> /upload content-type:", req.headers["content-type"]);
+    console.log(">> /upload req.file present?", !!req.file, req.file?.mimetype, req.file?.size);
+
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const absPath = path.resolve(req.file.path);
@@ -82,6 +102,14 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
       ocr_saved_as: path.basename(sidecar)
     });
   } catch (e) { next(e); }
+});
+
+// Diagnostic: accept ANY file field name to debug client/form issues
+app.post("/upload-any", multer({ storage }).any(), (req, res) => {
+  console.log(">> /upload-any files:", req.files?.map(f => ({
+    fieldname: f.fieldname, name: f.originalname, type: f.mimetype, size: f.size
+  })));
+  res.json({ files: req.files?.map(f => f.originalname) || [] });
 });
 
 // Manual OCR trigger (kept for convenience)
@@ -128,6 +156,7 @@ app.delete("/receipts/:storedName", (req, res, next) => {
 app.use((err, _req, res, _next) => {
   const msg = err?.message || "Server error";
   const status = msg.includes("allowed") ? 400 : 500;
+  console.error("!! error:", msg);
   res.status(status).json({ error: msg });
 });
 
