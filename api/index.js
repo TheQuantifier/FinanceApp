@@ -15,41 +15,55 @@ app.use(express.json());
 const uploadDir = path.resolve(__dirname, process.env.UPLOAD_DIR || "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// --- Multer config: limits + type filter ---
+// --- Multer storage (no fileFilter here) ---
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
-    const safeName = file.originalname.replace(/[^\w.\-]/g, "_"); // rudimentary sanitize
+    const safeName = file.originalname.replace(/[^\w.\-]/g, "_");
     cb(null, `${Date.now()}-${safeName}`);
   }
 });
+
+// Main uploader: allow upload, validate later
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // TEMP: 50 MB to rule out size issues
-  fileFilter: (_req, file, cb) => {
-    // Accept common types and octet-stream (curl/OS sometimes uses this)
-    const okTypes = [
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "application/octet-stream"
-    ];
-    console.log(">> multer fileFilter saw:", file?.originalname, file?.mimetype);
-    cb(okTypes.includes(file.mimetype) ? null : new Error("Only PDF/PNG/JPG allowed"));
-  }
+  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB while testing
 });
 
-// --- helpers ---
+// Utility: post-save validation (MIME or extension)
+function isAllowedFile(file) {
+  const allowedMimes = new Set([
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "application/octet-stream" // some tools send this
+  ]);
+  if (allowedMimes.has(file.mimetype)) return true;
+  const ext = path.extname(file.originalname).toLowerCase();
+  return [".pdf", ".png", ".jpg", ".jpeg"].includes(ext);
+}
+
+// --- Choose Python interpreter (prefer worker venv) ---
+const workerDir = path.resolve(__dirname, "../worker");
+const macVenvPy = path.join(workerDir, ".venv", "bin", "python");
+const winVenvPy = path.join(workerDir, ".venv", "Scripts", "python.exe");
+const PYTHON = fs.existsSync(macVenvPy)
+  ? macVenvPy
+  : fs.existsSync(winVenvPy)
+  ? winVenvPy
+  : "python3";
+
+// --- OCR helper ---
 function runOCR(absPath) {
   return new Promise((resolve, reject) => {
-    const py = spawn("python3", ["../worker/ocr_demo.py", absPath]);
+    const py = spawn(PYTHON, ["ocr_demo.py", absPath], { cwd: workerDir });
     let out = "", err = "";
     py.stdout.on("data", c => (out += c));
     py.stderr.on("data", c => (err += c));
     py.on("close", code => {
       if (code !== 0) return reject(new Error(err || "OCR failed"));
       try { resolve(JSON.parse(out)); }
-      catch { resolve({ source: absPath, ocr_text: out }); } // raw fallback
+      catch { resolve({ source: absPath, ocr_text: out }); }
     });
   });
 }
@@ -58,7 +72,7 @@ function runOCR(absPath) {
 app.get("/", (_req, res) => res.send("Finance App API is running 🚀"));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// Simple browser form to test uploads (no curl needed)
+// Simple browser form to test uploads
 app.get("/test", (_req, res) => res.send(`
   <form action="/upload" method="post" enctype="multipart/form-data">
     <input type="file" name="receipt" />
@@ -70,20 +84,20 @@ app.get("/receipts", async (_req, res, next) => {
   try {
     const names = await fsp.readdir(uploadDir);
     res.json({
-      files: names
-        .filter(n => !n.endsWith(".json"))
-        .map(name => ({ name }))
+      files: names.filter(n => !n.endsWith(".json")).map(name => ({ name }))
     });
   } catch (err) { next(err); }
 });
 
-// Upload -> auto OCR -> save sidecar JSON
+// Upload -> validate -> auto OCR -> save sidecar JSON
 app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   try {
-    console.log(">> /upload content-type:", req.headers["content-type"]);
-    console.log(">> /upload req.file present?", !!req.file, req.file?.mimetype, req.file?.size);
-
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    if (!isAllowedFile(req.file)) {
+      try { fs.unlinkSync(req.file.path); } catch {}
+      return res.status(400).json({ error: "Only PDF/PNG/JPG allowed" });
+    }
 
     const absPath = path.resolve(req.file.path);
     const ocr = await runOCR(absPath);
@@ -104,25 +118,18 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Diagnostic: accept ANY file field name to debug client/form issues
+// Diagnostic: accept ANY file field name (kept for troubleshooting)
 app.post("/upload-any", multer({ storage }).any(), (req, res) => {
-  console.log(">> /upload-any files:", req.files?.map(f => ({
-    fieldname: f.fieldname, name: f.originalname, type: f.mimetype, size: f.size
-  })));
   res.json({ files: req.files?.map(f => f.originalname) || [] });
 });
 
-// Manual OCR trigger (kept for convenience)
+// Manual OCR trigger (uses the venv Python + worker cwd)
 app.post("/ocr/:filename", (req, res) => {
   const filePath = path.join(uploadDir, req.params.filename);
-  const py = spawn("python3", ["../worker/ocr_demo.py", filePath]);
-
-  let data = "";
-  let error = "";
-
+  const py = spawn(PYTHON, ["ocr_demo.py", filePath], { cwd: workerDir });
+  let data = "", error = "";
   py.stdout.on("data", (chunk) => (data += chunk));
   py.stderr.on("data", (chunk) => (error += chunk));
-
   py.on("close", (code) => {
     if (code !== 0) return res.status(500).json({ error: error || "OCR failed" });
     try { res.json(JSON.parse(data)); }
@@ -152,7 +159,7 @@ app.delete("/receipts/:storedName", (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// --- Error handler (including Multer errors) ---
+// --- Error handler ---
 app.use((err, _req, res, _next) => {
   const msg = err?.message || "Server error";
   const status = msg.includes("allowed") ? 400 : 500;
@@ -162,4 +169,7 @@ app.use((err, _req, res, _next) => {
 
 // --- Start server ---
 const port = Number(process.env.PORT || 4000);
-app.listen(port, () => console.log(`✅ Server running on http://localhost:${port}`));
+app.listen(port, () => {
+  console.log(`✅ Server running on http://localhost:${port}`);
+  console.log(`🧪 Using Python: ${PYTHON}`);
+});
