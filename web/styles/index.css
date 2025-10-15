@@ -58,7 +58,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 6rem 1rem 4rem; /* account for fixed header + footer */
+  padding: 6rem 1rem 6rem; /* account for fixed header + footer */
   background: #fff;
 }
 
@@ -204,5 +204,74 @@
 
   .nf-hero {
     padding: 5rem 1rem 3rem; /* adjusted for small screens */
+  }
+}
+/* ===== ABOUT SECTION ===== */
+.nf-about {
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  padding: 3rem 1rem 4rem;
+  text-align: center;
+}
+
+.nf-about-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.nf-about h2 {
+  color: var(--primary);
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.nf-about p {
+  color: #444;
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* Feature Cards */
+.nf-about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.nf-about-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nf-about-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.nf-about-card h3 {
+  color: var(--primary);
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.nf-about-card p {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .nf-about {
+    padding: 2rem 1rem 3rem;
+  }
+  .nf-about h2 {
+    font-size: 1.7rem;
   }
 }
