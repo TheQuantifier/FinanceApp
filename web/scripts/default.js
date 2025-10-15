@@ -1,7 +1,8 @@
 /* ===============================================
    Finance App – default.js
    Shared script for all pages.
-   Loads header/footer and sets active nav link.
+   Loads header/footer, sets active nav link,
+   and manages account dropdown interactions.
    =============================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -21,6 +22,7 @@ function loadHeaderAndFooter() {
     .then((html) => {
       document.getElementById("header").innerHTML = html;
       setActiveNavLink();
+      initAccountMenu(); // initialize dropdown behavior after header loads
     })
     .catch((err) => console.error("Header load failed:", err));
 
@@ -49,6 +51,39 @@ function setActiveNavLink() {
       link.classList.add("active");
     } else {
       link.classList.remove("active");
+    }
+  });
+}
+
+/**
+ * Initializes account menu dropdown toggle behavior
+ */
+function initAccountMenu() {
+  const icon = document.getElementById("account-icon");
+  const menu = document.getElementById("account-menu");
+
+  if (!icon || !menu) return;
+
+  // Toggle dropdown visibility on icon click
+  icon.addEventListener("click", () => {
+    const isOpen = menu.classList.toggle("show");
+    icon.setAttribute("aria-expanded", isOpen);
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!icon.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.remove("show");
+      icon.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  // Allow ESC key to close
+  icon.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      menu.classList.remove("show");
+      icon.setAttribute("aria-expanded", "false");
+      icon.blur();
     }
   });
 }

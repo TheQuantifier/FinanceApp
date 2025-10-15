@@ -48,8 +48,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap; /* wraps on small screens */
+  gap: 0;                     /* <-- remove global gap so links sit right next to icon */
+  flex-wrap: wrap;            /* wraps on small screens */
 }
 
 /* Group: App Name + Tagline */
@@ -58,6 +58,7 @@ body {
   align-items: baseline;
   gap: 0.75rem;
   flex-wrap: wrap;
+  margin-right: 1rem;         /* small gap between logo group and nav links */
 }
 
 .logo {
@@ -74,35 +75,36 @@ body {
   white-space: nowrap;
 }
 
-/* ===== NAVIGATION LINKS ===== */
-nav {
+/* ===== NAVIGATION LINKS (scoped to header) ===== */
+header .nav-links {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 1rem;                  /* space between individual links */
+  margin-right: 0;            /* no gap before account controls */
 }
 
-nav a {
-  margin: 0 0.75rem;
+header .nav-links a {
   text-decoration: none;
   color: var(--text);
   font-weight: 500;
   position: relative;
+  padding: 0.35rem 0.25rem;
   transition: color 0.2s ease;
 }
 
 /* Hover and Active Effects */
-nav a:hover {
+header .nav-links a:hover {
   color: var(--primary);
 }
 
 /* Active page indicator */
-nav a.active {
+header .nav-links a.active {
   color: var(--primary);
   font-weight: 600;
 }
 
-nav a.active::after {
+header .nav-links a.active::after {
   content: "";
   position: absolute;
   bottom: -6px;
@@ -112,6 +114,86 @@ nav a.active::after {
   background: var(--primary);
   border-radius: 2px;
   transition: width 0.3s ease;
+}
+
+/* ===== ACCOUNT CONTROLS (icon + dropdown) ===== */
+.account-controls {
+  position: relative;
+  margin-left: 0;             /* ensure icon hugs the nav links */
+}
+
+.account-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.account-icon:hover {
+  border-color: var(--primary);
+}
+
+.account-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Dropdown menu */
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  padding: 0.5rem 0;
+  width: 190px;
+  list-style: none;
+  display: none;
+  z-index: 10;
+}
+
+.account-menu.show {
+  display: block;
+  animation: fadeIn 0.15s ease;
+}
+
+.account-menu li { padding: 0; }
+
+.account-menu a {
+  display: block;
+  padding: 0.6rem 1rem;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.account-menu a:hover {
+  background: #f5f5f5;
+}
+
+.account-menu .logout a {
+  color: #d93025;           /* red for emphasis */
+  font-weight: 600;
+}
+
+.account-menu .logout a:hover {
+  background: #ffeaea;
+}
+
+/* Fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== MAIN CONTENT ===== */
@@ -180,5 +262,10 @@ footer {
 /* ===== Small-screen niceties ===== */
 @media (max-width: 640px) {
   .tagline { white-space: normal; }
-  nav a { margin: 0 0.5rem; }
+
+  /* tighter link spacing on small screens */
+  header .nav-links { gap: 0.6rem; }
+
+  /* optionally stack logo/tagline on small screens */
+  .logo-group { flex-direction: column; align-items: flex-start; }
 }
