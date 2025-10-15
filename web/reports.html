@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports | Finance App</title>
+  <link rel="stylesheet" href="styles/default.css" />
+  <link rel="stylesheet" href="styles/reports.css" />
+</head>
+<body>
+  <header></header>
+
+  <main>
+    <section class="summary">
+      <h2>Spending Overview</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>Total Expenses</h3>
+          <p id="total-expenses">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Monthly Average</h3>
+          <p id="monthly-average">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Top Category</h3>
+          <p id="top-category">Loading...</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chart-section">
+      <h2>Expenses by Category</h2>
+      <canvas id="categoryChart" width="400" height="200"></canvas>
+    </section>
+
+    <section class="chart-section">
+      <h2>Expenses Over Time</h2>
+      <canvas id="monthlyChart" width="400" height="200"></canvas>
+    </section>
+  </main>
+
+  <footer></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="scripts/reports.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Load header
+      fetch("./components/header.html")
+        .then(response => {
+          if (!response.ok) throw new Error("Header not found");
+          return response.text();
+        })
+        .then(data => {
+          document.querySelector("header").innerHTML = data;
+        })
+        .catch(error => console.error("Error loading header:", error));
+
+      // Load footer
+      fetch("./components/footer.html")
+        .then(response => {
+          if (!response.ok) throw new Error("Footer not found");
+          return response.text();
+        })
+        .then(data => {
+          document.querySelector("footer").innerHTML = data;
+        })
+        .catch(error => console.error("Error loading footer:", error));
+    });
+  </script>
+</body>
+</html>
