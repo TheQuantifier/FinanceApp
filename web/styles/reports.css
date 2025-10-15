@@ -1,46 +1,91 @@
 /* ========== REPORTS PAGE STYLES ========== */
 
 .summary {
-    text-align: center;
-    margin-bottom: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  width: 220px;
+  text-align: center;
+}
+
+.card h3 {
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--text);
+}
+
+.chart-section {
+  background: white;
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin: 2rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.chart-section h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  font-size: 1.3rem;
+}
+
+/* Canvas styling: square charts for doughnut/pie, responsive */
+canvas {
+  display: block;
+  margin: 0 auto;
+  width: 400px;    /* fixed width */
+  height: 400px;   /* same as width to keep circular shape */
+  max-width: 90%;  /* responsive on smaller screens */
+}
+
+/* Datalabels plugin styling for pie/doughnut percentages */
+.chartjs-datalabels {
+  font-family: system-ui, sans-serif;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Medium screens */
+@media (max-width: 1024px) {
+  canvas {
+    width: 350px;
+    height: 350px;
   }
-  
+}
+
+/* Small screens */
+@media (max-width: 640px) {
   .cards {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: center;
   }
-  
-  .card {
-    background: #ffffff;
-    border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    width: 220px;
-  }
-  
-  .card h3 {
-    color: var(--primary);
-    margin-bottom: 0.5rem;
-  }
-  
-  .card p {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: var(--text);
-  }
-  
-  .chart-section {
-    background: white;
-    border-radius: var(--radius);
-    padding: 2rem;
-    margin: 2rem 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  
+
   .chart-section h2 {
-    text-align: center;
-    margin-bottom: 1rem;
+    font-size: 1.15rem;
   }
-  
+
+  canvas {
+    width: 300px;
+    height: 300px;
+  }
+}

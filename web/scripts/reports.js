@@ -47,27 +47,40 @@ async function loadReports() {
   // ========== Charts ==========
   
   // Chart 1: Spending by Category
-  function renderCategoryChart(categories) {
-    const ctx = document.getElementById("categoryChart");
-    if (!ctx) return;
-  
-    new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels: Object.keys(categories),
-        datasets: [{
-          label: "Spending by Category",
-          data: Object.values(categories),
-          backgroundColor: ["#007BFF", "#28A745", "#FFC107", "#DC3545", "#6F42C1"],
-        }],
-      },
-      options: {
-        plugins: {
-          legend: { position: "bottom" },
+  // Chart 1: Spending by Category (with percentage labels)
+function renderCategoryChart(categories) {
+  const ctx = document.getElementById("categoryChart");
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(categories),
+      datasets: [{
+        label: "Spending by Category",
+        data: Object.values(categories),
+        backgroundColor: ["#007BFF", "#28A745", "#FFC107", "#DC3545", "#6F42C1"],
+      }],
+    },
+    options: {
+      plugins: {
+        legend: { position: "bottom" },
+        datalabels: {
+          color: "#fff",
+          font: { weight: "bold", size: 13 },
+          formatter: (value, context) => {
+            const dataArr = context.chart.data.datasets[0].data;
+            const total = dataArr.reduce((sum, val) => sum + val, 0);
+            const pct = ((value / total) * 100).toFixed(1);
+            return pct + "%";
+          },
         },
       },
-    });
-  }
+    },
+    plugins: [ChartDataLabels], // this enables the plugin for this chart
+  });
+}
+
   
   // Chart 2: Spending Over Time (by Date)
   function renderSpendingOverTime(transactions) {
