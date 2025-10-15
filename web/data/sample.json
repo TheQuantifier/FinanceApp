@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "total_spending": 348.30,
+    "currency": "USD",
+    "categories": {
+      "Food": 124.50,
+      "Travel": 58.90,
+      "Office": 89.20,
+      "Utilities": 42.30,
+      "Other": 33.40
+    },
+    "last_updated": "2025-10-14T20:45:00Z"
+  },
+
+  "transactions": [
+    {
+      "id": "TXN-001",
+      "merchant": "Starbucks Coffee",
+      "category": "Food",
+      "amount": 8.75,
+      "date": "2025-10-03",
+      "payment_method": "Visa",
+      "notes": "Morning latte and croissant"
+    },
+    {
+      "id": "TXN-002",
+      "merchant": "Office Depot",
+      "category": "Office",
+      "amount": 54.90,
+      "date": "2025-10-05",
+      "payment_method": "MasterCard",
+      "notes": "Printer ink and notepads"
+    },
+    {
+      "id": "TXN-003",
+      "merchant": "Uber",
+      "category": "Travel",
+      "amount": 22.50,
+      "date": "2025-10-06",
+      "payment_method": "PayPal",
+      "notes": "Ride to client meeting"
+    },
+    {
+      "id": "TXN-004",
+      "merchant": "Duke Energy",
+      "category": "Utilities",
+      "amount": 42.30,
+      "date": "2025-10-07",
+      "payment_method": "Bank Transfer",
+      "notes": "Monthly electricity bill"
+    },
+    {
+      "id": "TXN-005",
+      "merchant": "Chipotle",
+      "category": "Food",
+      "amount": 15.80,
+      "date": "2025-10-09",
+      "payment_method": "Credit Card",
+      "notes": "Lunch burrito"
+    },
+    {
+      "id": "TXN-006",
+      "merchant": "Amazon",
+      "category": "Office",
+      "amount": 34.30,
+      "date": "2025-10-10",
+      "payment_method": "Credit Card",
+      "notes": "External hard drive case"
+    },
+    {
+      "id": "TXN-007",
+      "merchant": "Shell Gas Station",
+      "category": "Travel",
+      "amount": 36.40,
+      "date": "2025-10-12",
+      "payment_method": "Visa",
+      "notes": "Fuel refill"
+    },
+    {
+      "id": "TXN-008",
+      "merchant": "Target",
+      "category": "Other",
+      "amount": 33.40,
+      "date": "2025-10-13",
+      "payment_method": "Credit Card",
+      "notes": "Miscellaneous items"
+    }
+  ]
+}
