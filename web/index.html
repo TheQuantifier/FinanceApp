@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Welcome | Finance App</title>
 
-  <!-- Meta -->
   <meta name="description" content="Finance App helps you effortlessly scan receipts, organize expenses, and stay tax-ready year-round." />
   <meta name="author" content="Finance App" />
   <link rel="icon" type="image/png" href="images/favicon.png" />
@@ -14,84 +13,61 @@
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/index.css" />
 </head>
-<body>
-  <!-- Standalone Landing Header (not the shared components) -->
-  <div class="landing-header" role="banner">
-    <div class="landing-header-inner">
-      <nav class="auth-nav" aria-label="Authentication">
-        <a href="login.html">Login</a>
-        <span class="sep">•</span>
-        <a class="signup" href="register.html">Sign Up</a>
-      </nav>
-
-      <div class="brand">
-        <span class="logo-mark" aria-hidden="true">𝔉</span>
-        <span class="brand-name">Finance App</span>
+<body class="landing-dark">
+  <!-- Header -->
+  <header class="nf-header" role="banner">
+    <div class="nf-header-inner">
+      <div class="nf-brand-center">
+        <span class="nf-logo">Finance App</span>
       </div>
-
-      <div class="spacer" aria-hidden="true"></div>
+      <nav class="nf-auth-right" aria-label="Authentication">
+        <a href="login.html" class="nf-login">Login</a>
+      </nav>
     </div>
-  </div>
+  </header>
 
+  <!-- Hero -->
   <main>
-    <!-- Hero / Intro Section -->
-    <section class="intro">
-      <h1>Welcome to <span class="highlight">Finance App</span></h1>
-      <p class="tagline-text">
-        The easiest way to keep your finances organized — from receipts to reports.
-      </p>
-    </section>
+    <section class="nf-hero">
+      <div class="nf-hero-content">
+        <h1 class="nf-title">Take control of your finances.</h1>
+        <p class="nf-subtitle">
+          Scan receipts in seconds. Categorize automatically. Be tax-ready all year.
+        </p>
 
-    <!-- Purpose / Mission Section -->
-    <section class="purpose">
-      <h2>Why Finance App?</h2>
-      <p>
-        Finance App was built to make personal and business finance management effortless. 
-        No more piles of paper receipts or confusing spreadsheets — just a clean, automated system that helps you stay 
-        organized, informed, and ready for tax season.
-      </p>
-      <p>
-        With our simple tools for scanning, categorizing, and visualizing your spending, 
-        you can focus on what really matters — making smarter financial decisions with confidence.
-      </p>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features">
-      <h2>What You Can Do</h2>
-      <ul>
-        <li>📸 <strong>Scan Receipts Instantly</strong> — Snap a picture or upload PDFs, and our system automatically extracts the data.</li>
-        <li>📊 <strong>Track Spending Effortlessly</strong> — See exactly where your money goes with smart visual summaries.</li>
-        <li>💾 <strong>Export When You Need</strong> — Download clean, ready-to-use reports for Excel, QuickBooks, or your accountant.</li>
-        <li>💡 <strong>Stay Organized All Year</strong> — Simplify budgeting, deductions, and taxes with everything in one place.</li>
-      </ul>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta">
-      <h2>Ready to Simplify Your Finances?</h2>
-      <p>Create your account and start scanning your first receipts today.</p>
-      <button>Get Started</button>
+        <!-- Create account box -->
+        <form class="nf-signup" action="register.html" method="get">
+          <input
+            type="email"
+            name="email"
+            class="nf-input"
+            placeholder="Email address"
+            aria-label="Email address"
+            required
+          />
+          <button type="submit" class="nf-btn">Get Started</button>
+        </form>
+        <small class="nf-hint">
+          Enter your email to create your account or restart your membership.
+        </small>
+      </div>
     </section>
   </main>
 
-  <!-- Standalone Landing Footer -->
-  <div class="landing-footer" role="contentinfo">
-    <div class="landing-footer-inner">
+  <!-- Footer -->
+  <footer class="nf-footer" role="contentinfo">
+    <div class="nf-footer-inner">
       <p>&copy; <span id="year"></span> Finance App. All rights reserved.</p>
-      <nav class="legal-nav" aria-label="Footer">
+      <nav class="nf-legal" aria-label="Footer">
         <a href="about.html">About</a><span class="sep">•</span>
         <a href="privacy.html">Privacy</a><span class="sep">•</span>
         <a href="terms.html">Terms</a><span class="sep">•</span>
         <a href="contact.html">Contact</a>
       </nav>
     </div>
-  </div>
+  </footer>
 
-  <!-- Page script only (no shared default.js on this page) -->
-  <script src="scripts/index.js" defer></script>
   <script>
-    // simple current year for footer
     document.addEventListener('DOMContentLoaded', () => {
       const y = document.getElementById('year');
       if (y) y.textContent = new Date().getFullYear();

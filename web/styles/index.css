@@ -1,239 +1,208 @@
-/* ========== INDEX PAGE STYLES (Landing) ========== */
+/* ========== FINANCE APP LANDING (Light Theme, Fixed Header/Footer) ========== */
 
-/* ===== LANDING HEADER (standalone for visitor page) ===== */
-.landing-header {
-  width: 100%;
-  background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,.08);
-  position: sticky;
+.landing-light {
+  background: #fff;
+  color: #111;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-x: hidden;
+}
+
+/* ===== HEADER (Locked to Top) ===== */
+.nf-header {
+  position: fixed; /* lock to top */
   top: 0;
-  z-index: 20;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-.landing-header-inner {
-  max-width: var(--max-width);
+.nf-header-inner {
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0.75rem 1rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto; /* auth | brand | spacer */
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
 }
 
-.auth-nav a {
+.nf-logo {
+  font-weight: 900;
+  font-size: 1.8rem;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+
+.nf-login {
+  color: #000;
   text-decoration: none;
-  color: var(--text);
-  font-weight: 500;
-}
-
-.auth-nav .signup {
-  color: white;
-  background: var(--primary);
-  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
   border-radius: 999px;
-  margin-left: 0.5rem;
+  border: 1px solid #ccc;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.nf-login:hover {
+  background: var(--primary);
+  color: #fff;
 }
 
-.auth-nav a:hover { color: var(--primary); }
-
-.brand {
-  justify-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logo-mark {
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: white;
+/* ===== HERO (Main Center Content) ===== */
+.nf-hero {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
-  font-weight: 700;
+  text-align: center;
+  padding: 6rem 1rem 4rem; /* account for fixed header + footer */
+  background: #fff;
 }
 
-.brand-name {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.spacer { /* keeps grid aligned; intentionally empty */ }
-
-/* ===== LANDING FOOTER ===== */
-.landing-footer {
-  background: #f6f7f8;
-  border-top: 1px solid #e5e7eb;
-  margin-top: 3rem;
-}
-
-.landing-footer-inner {
-  max-width: var(--max-width);
+.nf-hero-content {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
-  text-align: center;
-  color: #555;
 }
 
-.legal-nav a {
-  text-decoration: none;
-  color: var(--text);
-}
-
-.legal-nav a:hover { color: var(--accent); }
-
-.legal-nav .sep { margin: 0 0.5rem; color: #bbb; }
-
-/* ===== HERO / INTRO SECTION ===== */
-.intro {
-  text-align: center;
-  margin: 2rem 0 1.5rem;
-}
-
-.intro h1 {
-  font-size: 2.5rem;
-  color: var(--primary);
+.nf-title {
+  font-size: clamp(2.4rem, 6vw, 3.2rem);
+  font-weight: 900;
+  color: #000;
   margin-bottom: 0.5rem;
 }
 
-.intro .highlight {
+.nf-subtitle {
+  font-size: 1.15rem;
+  color: #444;
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+}
+
+/* ===== SIGNUP FORM ===== */
+.nf-signup {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.nf-input {
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f7f7f7;
+  color: #000;
+  outline: none;
+  font-size: 1rem;
+}
+.nf-input::placeholder {
+  color: #888;
+}
+.nf-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.nf-btn {
+  padding: 0.85rem 1.3rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.nf-btn:hover {
+  background: var(--accent);
+}
+
+.nf-hint {
+  display: block;
+  margin-top: 0.6rem;
+  color: #666;
+  font-size: 0.88rem;
+}
+
+/* ===== FOOTER (Locked to Bottom) ===== */
+.nf-footer {
+  position: fixed; /* lock to bottom */
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  color: #555;
+  text-align: center;
+  border-top: 1px solid #ddd;
+  padding: 0.8rem 1rem;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.05);
+  z-index: 999;
+}
+
+.nf-footer-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.nf-footer-inner p {
+  margin: 0;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.nf-legal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.nf-legal a {
+  color: #555;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nf-legal a:hover {
   color: var(--accent);
 }
 
-.intro .tagline-text {
-  font-size: 1.2rem;
-  color: #444;
+.nf-legal .sep {
+  color: #aaa;
+  margin: 0 0.3rem;
 }
 
-/* ===== PURPOSE / MISSION ===== */
-.purpose {
-  margin: 2rem 0;
-  line-height: 1.7;
-}
-
-.purpose h2 {
-  margin-bottom: 0.5rem;
-}
-
-.purpose p {
-  margin-bottom: 1rem;
-}
-
-/* ===== FEATURES ===== */
-.features h2 {
-  margin-bottom: 0.75rem;
-}
-
-.features ul {
-  list-style: none;
-  padding: 0;
-}
-
-.features li {
-  background: #e9f4ff;
-  border-left: 4px solid var(--primary);
-  margin: 0.75rem 0;
-  padding: 1rem;
-  border-radius: var(--radius);
-  font-size: 1.05rem;
-}
-
-/* ===== CTA (CALL TO ACTION) ===== */
-.cta {
-  text-align: center;
-  margin-top: 3rem;
-}
-
-.cta h2 {
-  color: var(--primary);
-  margin-bottom: 0.5rem;
-}
-
-.cta button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 0.9rem 2rem;
-  border-radius: var(--radius);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.cta button:hover {
-  background: var(--accent);
-}
-
-/* ===== DASHBOARD TOTALS & CHART (optional / future) ===== */
-.total-box {
-  text-align: center;
-  background: #e9f4ff;
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  border-left: 4px solid var(--primary);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.total-box h3 {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.total-box .amount {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--primary);
-  margin-top: 0.25rem;
-}
-
-/* ===== CHART CONTAINER ===== */
-.chart-container {
-  margin-top: 1rem;
-}
-
-.chart-container h3 {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.chart-row {
-  display: flex;
-  align-items: center;
-  margin: 0.5rem 0;
-}
-
-.chart-row .label {
-  width: 90px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.chart-row .bar {
-  flex-grow: 1;
-  height: 10px;
-  margin: 0 0.5rem;
-  background: var(--accent);
-  border-radius: 5px;
-  transition: width 0.4s ease;
-}
-
-.chart-row .value {
-  width: 70px;
-  text-align: right;
-  font-size: 0.9rem;
-  color: #333;
-}
-
-/* ===== Responsive tweaks ===== */
+/* ===== Responsive ===== */
 @media (max-width: 640px) {
-  .landing-header-inner {
-    grid-template-columns: 1fr auto 1fr; /* center brand; auth left, spacer right */
+  .nf-header-inner {
+    flex-direction: row;
+    padding: 0.75rem 1rem;
   }
-  .auth-nav { justify-self: start; }
-  .brand { justify-self: center; }
+
+  .nf-logo {
+    font-size: 1.5rem;
+  }
+
+  .nf-signup {
+    grid-template-columns: 1fr;
+  }
+
+  .nf-btn {
+    width: 100%;
+  }
+
+  .nf-hero {
+    padding: 5rem 1rem 3rem; /* adjusted for small screens */
+  }
 }
