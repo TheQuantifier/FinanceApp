@@ -47,7 +47,7 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Load header
+      // Load header and mark the active link
       fetch("./components/header.html")
         .then(response => {
           if (!response.ok) throw new Error("Header not found");
@@ -55,6 +55,18 @@
         })
         .then(data => {
           document.querySelector("header").innerHTML = data;
+
+          // Wait until header is added to DOM, then highlight active link
+          const currentPage = window.location.pathname.split("/").pop(); // e.g., 'reports.html'
+          const navLinks = document.querySelectorAll("header nav a");
+
+          navLinks.forEach(link => {
+            if (link.getAttribute("href") === currentPage) {
+              link.classList.add("active");
+            } else {
+              link.classList.remove("active");
+            }
+          });
         })
         .catch(error => console.error("Error loading header:", error));
 
