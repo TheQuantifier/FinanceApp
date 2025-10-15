@@ -1,9 +1,131 @@
-/* ========== INDEX PAGE STYLES ========== */
+/* ========== INDEX PAGE STYLES (Landing) ========== */
 
-/* ===== INTRO SECTION ===== */
+/* ===== LANDING HEADER (standalone for visitor page) ===== */
+.landing-header {
+  width: 100%;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.landing-header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* auth | brand | spacer */
+  align-items: center;
+  gap: 1rem;
+}
+
+.auth-nav a {
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.auth-nav .signup {
+  color: white;
+  background: var(--primary);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  margin-left: 0.5rem;
+}
+
+.auth-nav a:hover { color: var(--primary); }
+
+.brand {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-mark {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.brand-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.spacer { /* keeps grid aligned; intentionally empty */ }
+
+/* ===== LANDING FOOTER ===== */
+.landing-footer {
+  background: #f6f7f8;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 3rem;
+}
+
+.landing-footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+  color: #555;
+}
+
+.legal-nav a {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.legal-nav a:hover { color: var(--accent); }
+
+.legal-nav .sep { margin: 0 0.5rem; color: #bbb; }
+
+/* ===== HERO / INTRO SECTION ===== */
 .intro {
   text-align: center;
-  margin-bottom: 2rem;
+  margin: 2rem 0 1.5rem;
+}
+
+.intro h1 {
+  font-size: 2.5rem;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.intro .highlight {
+  color: var(--accent);
+}
+
+.intro .tagline-text {
+  font-size: 1.2rem;
+  color: #444;
+}
+
+/* ===== PURPOSE / MISSION ===== */
+.purpose {
+  margin: 2rem 0;
+  line-height: 1.7;
+}
+
+.purpose h2 {
+  margin-bottom: 0.5rem;
+}
+
+.purpose p {
+  margin-bottom: 1rem;
+}
+
+/* ===== FEATURES ===== */
+.features h2 {
+  margin-bottom: 0.75rem;
 }
 
 .features ul {
@@ -14,22 +136,28 @@
 .features li {
   background: #e9f4ff;
   border-left: 4px solid var(--primary);
-  margin: 0.5rem 0;
-  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  padding: 1rem;
   border-radius: var(--radius);
+  font-size: 1.05rem;
 }
 
 /* ===== CTA (CALL TO ACTION) ===== */
 .cta {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: 3rem;
+}
+
+.cta h2 {
+  color: var(--primary);
+  margin-bottom: 0.5rem;
 }
 
 .cta button {
   background: var(--primary);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.9rem 2rem;
   border-radius: var(--radius);
   font-size: 1rem;
   cursor: pointer;
@@ -40,7 +168,7 @@
   background: var(--accent);
 }
 
-/* ===== DASHBOARD TOTALS & CHART ===== */
+/* ===== DASHBOARD TOTALS & CHART (optional / future) ===== */
 .total-box {
   text-align: center;
   background: #e9f4ff;
@@ -99,4 +227,13 @@
   text-align: right;
   font-size: 0.9rem;
   color: #333;
+}
+
+/* ===== Responsive tweaks ===== */
+@media (max-width: 640px) {
+  .landing-header-inner {
+    grid-template-columns: 1fr auto 1fr; /* center brand; auth left, spacer right */
+  }
+  .auth-nav { justify-self: start; }
+  .brand { justify-self: center; }
 }

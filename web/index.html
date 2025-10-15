@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Finance App</title>
+  <title>Welcome | Finance App</title>
 
-  <meta name="description" content="Scan receipts, track spending, and manage taxes effortlessly with Finance App." />
+  <!-- Meta -->
+  <meta name="description" content="Finance App helps you effortlessly scan receipts, organize expenses, and stay tax-ready year-round." />
   <meta name="author" content="Finance App" />
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
@@ -14,37 +15,87 @@
   <link rel="stylesheet" href="styles/index.css" />
 </head>
 <body>
-  <!-- Header gets injected by default.js -->
-  <div id="header"></div>
+  <!-- Standalone Landing Header (not the shared components) -->
+  <div class="landing-header" role="banner">
+    <div class="landing-header-inner">
+      <nav class="auth-nav" aria-label="Authentication">
+        <a href="login.html">Login</a>
+        <span class="sep">•</span>
+        <a class="signup" href="register.html">Sign Up</a>
+      </nav>
+
+      <div class="brand">
+        <span class="logo-mark" aria-hidden="true">𝔉</span>
+        <span class="brand-name">Finance App</span>
+      </div>
+
+      <div class="spacer" aria-hidden="true"></div>
+    </div>
+  </div>
 
   <main>
+    <!-- Hero / Intro Section -->
     <section class="intro">
-      <h2>Welcome</h2>
-      <p>Finance App helps you turn receipts into organized, tax-ready records with fast OCR and smart categorization.</p>
+      <h1>Welcome to <span class="highlight">Finance App</span></h1>
+      <p class="tagline-text">
+        The easiest way to keep your finances organized — from receipts to reports.
+      </p>
     </section>
 
+    <!-- Purpose / Mission Section -->
+    <section class="purpose">
+      <h2>Why Finance App?</h2>
+      <p>
+        Finance App was built to make personal and business finance management effortless. 
+        No more piles of paper receipts or confusing spreadsheets — just a clean, automated system that helps you stay 
+        organized, informed, and ready for tax season.
+      </p>
+      <p>
+        With our simple tools for scanning, categorizing, and visualizing your spending, 
+        you can focus on what really matters — making smarter financial decisions with confidence.
+      </p>
+    </section>
+
+    <!-- Features Section -->
     <section class="features">
-      <h2>Key Features</h2>
+      <h2>What You Can Do</h2>
       <ul>
-        <li>📸 Upload or scan receipts instantly</li>
-        <li>📊 View categorized expense summaries</li>
-        <li>💾 Export to CSV, Excel, or QuickBooks</li>
+        <li>📸 <strong>Scan Receipts Instantly</strong> — Snap a picture or upload PDFs, and our system automatically extracts the data.</li>
+        <li>📊 <strong>Track Spending Effortlessly</strong> — See exactly where your money goes with smart visual summaries.</li>
+        <li>💾 <strong>Export When You Need</strong> — Download clean, ready-to-use reports for Excel, QuickBooks, or your accountant.</li>
+        <li>💡 <strong>Stay Organized All Year</strong> — Simplify budgeting, deductions, and taxes with everything in one place.</li>
       </ul>
     </section>
 
-    <section class="dashboard"></section>
-
+    <!-- CTA Section -->
     <section class="cta">
+      <h2>Ready to Simplify Your Finances?</h2>
+      <p>Create your account and start scanning your first receipts today.</p>
       <button>Get Started</button>
     </section>
   </main>
 
-  <!-- Footer gets injected by default.js -->
-  <div id="footer"></div>
+  <!-- Standalone Landing Footer -->
+  <div class="landing-footer" role="contentinfo">
+    <div class="landing-footer-inner">
+      <p>&copy; <span id="year"></span> Finance App. All rights reserved.</p>
+      <nav class="legal-nav" aria-label="Footer">
+        <a href="about.html">About</a><span class="sep">•</span>
+        <a href="privacy.html">Privacy</a><span class="sep">•</span>
+        <a href="terms.html">Terms</a><span class="sep">•</span>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </div>
 
-  <!-- Shared loader (injects header/footer and sets active nav) -->
-  <script src="scripts/default.js" defer></script>
-  <!-- Page-specific logic -->
+  <!-- Page script only (no shared default.js on this page) -->
   <script src="scripts/index.js" defer></script>
+  <script>
+    // simple current year for footer
+    document.addEventListener('DOMContentLoaded', () => {
+      const y = document.getElementById('year');
+      if (y) y.textContent = new Date().getFullYear();
+    });
+  </script>
 </body>
 </html>
