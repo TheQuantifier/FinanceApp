@@ -1,0 +1,39 @@
+/* ========== INDEX PAGE STYLES ========== */
+
+.intro {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.features ul {
+  list-style: none;
+  padding: 0;
+}
+
+.features li {
+  background: #e9f4ff;
+  border-left: 4px solid var(--primary);
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+}
+
+.cta {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.cta button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.cta button:hover {
+  background: var(--accent);
+}
