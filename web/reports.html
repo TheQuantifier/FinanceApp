@@ -4,11 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reports | Finance App</title>
+
+  <!-- Meta -->
+  <meta name="description" content="View spending reports, category breakdowns, and monthly trends." />
+  <meta name="author" content="Finance App" />
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+
+  <!-- Styles -->
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/reports.css" />
 </head>
 <body>
-  <header></header>
+  <!-- Header injected by default.js -->
+  <div id="header"></div>
 
   <main>
     <section class="summary">
@@ -40,47 +48,12 @@
     </section>
   </main>
 
-  <footer></footer>
+  <!-- Footer injected by default.js -->
+  <div id="footer"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="scripts/reports.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // Load header and mark the active link
-      fetch("./components/header.html")
-        .then(response => {
-          if (!response.ok) throw new Error("Header not found");
-          return response.text();
-        })
-        .then(data => {
-          document.querySelector("header").innerHTML = data;
-
-          // Wait until header is added to DOM, then highlight active link
-          const currentPage = window.location.pathname.split("/").pop(); // e.g., 'reports.html'
-          const navLinks = document.querySelectorAll("header nav a");
-
-          navLinks.forEach(link => {
-            if (link.getAttribute("href") === currentPage) {
-              link.classList.add("active");
-            } else {
-              link.classList.remove("active");
-            }
-          });
-        })
-        .catch(error => console.error("Error loading header:", error));
-
-      // Load footer
-      fetch("./components/footer.html")
-        .then(response => {
-          if (!response.ok) throw new Error("Footer not found");
-          return response.text();
-        })
-        .then(data => {
-          document.querySelector("footer").innerHTML = data;
-        })
-        .catch(error => console.error("Error loading footer:", error));
-    });
-  </script>
+  <!-- Scripts: shared loader first, then Chart.js, then page logic -->
+  <script src="scripts/default.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="scripts/reports.js" defer></script>
 </body>
 </html>

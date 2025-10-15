@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="styles/index.css" />
 </head>
 <body>
+  <!-- Header gets injected by default.js -->
   <div id="header"></div>
 
   <main>
@@ -38,21 +39,12 @@
     </section>
   </main>
 
+  <!-- Footer gets injected by default.js -->
   <div id="footer"></div>
 
-  <script>
-    // Load header and footer dynamically
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("components/header.html")
-        .then(res => res.text())
-        .then(html => document.getElementById("header").innerHTML = html);
-
-      fetch("components/footer.html")
-        .then(res => res.text())
-        .then(html => document.getElementById("footer").innerHTML = html);
-    });
-  </script>
-
+  <!-- Shared loader (injects header/footer and sets active nav) -->
+  <script src="scripts/default.js" defer></script>
+  <!-- Page-specific logic -->
   <script src="scripts/index.js" defer></script>
 </body>
 </html>
