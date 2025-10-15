@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Finance App</title>
 
-  <!-- Meta -->
   <meta name="description" content="Scan receipts, track spending, and manage taxes effortlessly with Finance App." />
   <meta name="author" content="Finance App" />
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
   <!-- Styles -->
@@ -17,21 +14,14 @@
   <link rel="stylesheet" href="styles/index.css" />
 </head>
 <body>
-  <!-- ==================== HEADER ==================== -->
-  <header>
-    <h1>Finance App</h1>
-    <p class="tagline">Scan Receipts. Track Taxes.</p>
-  </header>
+  <div id="header"></div>
 
-  <!-- ==================== MAIN CONTENT ==================== -->
   <main>
-    <!-- Intro -->
     <section class="intro">
       <h2>Welcome</h2>
       <p>Finance App helps you turn receipts into organized, tax-ready records with fast OCR and smart categorization.</p>
     </section>
 
-    <!-- Key Features -->
     <section class="features">
       <h2>Key Features</h2>
       <ul>
@@ -41,23 +31,28 @@
       </ul>
     </section>
 
-    <!-- Dashboard Placeholder -->
-    <section class="dashboard">
-      <!-- The total-box and chart-container will be inserted here by index.js -->
-    </section>
+    <section class="dashboard"></section>
 
-    <!-- CTA -->
     <section class="cta">
       <button>Get Started</button>
     </section>
   </main>
 
-  <!-- ==================== FOOTER ==================== -->
-  <footer>
-    <p>&copy; 2025 Finance App. All rights reserved.</p>
-  </footer>
+  <div id="footer"></div>
 
-  <!-- ==================== SCRIPTS ==================== -->
+  <script>
+    // Load header and footer dynamically
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("header.html")
+        .then(res => res.text())
+        .then(html => document.getElementById("header").innerHTML = html);
+
+      fetch("footer.html")
+        .then(res => res.text())
+        .then(html => document.getElementById("footer").innerHTML = html);
+    });
+  </script>
+
   <script src="scripts/index.js" defer></script>
 </body>
 </html>
