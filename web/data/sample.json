@@ -1,6 +1,8 @@
 {
   "summary": {
     "total_spending": 348.30,
+    "total_income": 2150.00,
+    "net_balance": 1801.70,
     "currency": "USD",
     "categories": {
       "Food": 124.50,
@@ -8,6 +10,11 @@
       "Office": 89.20,
       "Utilities": 42.30,
       "Other": 33.40
+    },
+    "income_sources": {
+      "Salary": 2000.00,
+      "Interest": 50.00,
+      "Freelance": 100.00
     },
     "last_updated": "2025-10-14T20:45:00Z"
   },
@@ -84,6 +91,36 @@
       "date": "2025-10-13",
       "payment_method": "Credit Card",
       "notes": "Miscellaneous items"
+    }
+  ],
+
+  "income": [
+    {
+      "id": "INC-001",
+      "source": "Full-Time Job",
+      "category": "Salary",
+      "amount": 2000.00,
+      "date": "2025-10-01",
+      "payment_method": "Direct Deposit",
+      "notes": "Monthly paycheck"
+    },
+    {
+      "id": "INC-002",
+      "source": "Savings Account",
+      "category": "Interest",
+      "amount": 50.00,
+      "date": "2025-10-10",
+      "payment_method": "Bank Transfer",
+      "notes": "Interest from savings"
+    },
+    {
+      "id": "INC-003",
+      "source": "Freelance Project",
+      "category": "Freelance",
+      "amount": 100.00,
+      "date": "2025-10-13",
+      "payment_method": "PayPal",
+      "notes": "Web design project"
     }
   ]
 }

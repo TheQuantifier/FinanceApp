@@ -47,13 +47,57 @@
   font-size: 1.3rem;
 }
 
-/* Canvas styling: square charts for doughnut/pie, responsive */
-canvas {
+/* ===== Toggle header for line chart ===== */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: .5rem;
+}
+
+.section-head h2 {
+  margin: 0;
+}
+
+.toggles {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  font-size: .95rem;
+}
+
+.toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  cursor: pointer;
+}
+
+.toggles input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+/* ===== Canvas sizing ===== */
+/* Keep doughnut/pie nicely circular */
+#categoryChart {
   display: block;
   margin: 0 auto;
-  width: 400px;    /* fixed width */
-  height: 400px;   /* same as width to keep circular shape */
-  max-width: 90%;  /* responsive on smaller screens */
+  width: 420px;
+  height: 420px;
+  max-width: 95%;
+}
+
+/* Make time-series wide and a bit shorter */
+#monthlyChart {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 900px;
+  height: 320px;
 }
 
 /* Datalabels plugin styling for pie/doughnut percentages */
@@ -65,15 +109,19 @@ canvas {
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Medium screens */
+/* ===== Medium screens ===== */
 @media (max-width: 1024px) {
-  canvas {
-    width: 350px;
-    height: 350px;
+  #categoryChart {
+    width: 360px;
+    height: 360px;
+  }
+  #monthlyChart {
+    height: 300px;
+    max-width: 95%;
   }
 }
 
-/* Small screens */
+/* ===== Small screens ===== */
 @media (max-width: 640px) {
   .cards {
     flex-direction: column;
@@ -84,8 +132,17 @@ canvas {
     font-size: 1.15rem;
   }
 
-  canvas {
+  #categoryChart {
     width: 300px;
     height: 300px;
+  }
+
+  #monthlyChart {
+    height: 260px;
+  }
+
+  .section-head {
+    justify-content: center;
+    text-align: center;
   }
 }

@@ -43,8 +43,14 @@
     </section>
 
     <section class="chart-section">
-      <h2>Expenses Over Time</h2>
-      <canvas id="monthlyChart" width="400" height="200"></canvas>
+      <div class="section-head">
+        <h2>Income & Expenses Over Time</h2>
+        <div class="toggles" aria-label="Toggle series">
+          <label><input type="checkbox" id="toggle-expenses" checked /> Expenses</label>
+          <label><input type="checkbox" id="toggle-income" checked /> Income</label>
+        </div>
+      </div>
+      <canvas id="monthlyChart" width="400" height="220"></canvas>
     </section>
   </main>
 
