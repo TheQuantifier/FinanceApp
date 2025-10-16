@@ -19,25 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # --- If your site is plain HTML/CSS/JS (no build), uncomment next 3 lines and delete Node steps below ---
-      # - name: Prepare static site folder
-      #   run: |
-      #     mkdir -p dist && cp -R * dist || true
-
-      # --- Node build (Vite/React/CRA). Remove if you used the static copy above. ---
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build               # ensure output goes to ./dist
-
-      # SPA fallback (prevents 404 on deep links)
-      - name: Add SPA 404 fallback
+      # Copy everything into ./dist for publishing
+      - name: Prepare static site folder
         run: |
-          if [ -f dist/index.html ]; then cp dist/index.html dist/404.html; fi
+          mkdir -p dist
+          shopt -s extglob dotglob
+          cp -R !(dist|.git|.github) dist || true
 
-      # Avoid Jekyll processing if you have underscored files/folders
+      # Avoid Jekyll processing (important if you ever have _folders)
       - name: Add .nojekyll
         run: |
           touch dist/.nojekyll
