@@ -1,4 +1,4 @@
-// ========== HOME DASHBOARD LOGIC WITH COMPONENT LOADING ==========
+// ========== HOME DASHBOARD LOGIC (no header/footer loading here) ==========
 (() => {
   const DATA_URL = "data/sample.json"; // adjust if your path differs
   const CURRENCY_FALLBACK = "USD";
@@ -6,64 +6,12 @@
   const $ = (sel, root = document) => root.querySelector(sel);
 
   const fmtMoney = (value, currency) =>
-    new Intl.NumberFormat(undefined, { style: "currency", currency: currency || CURRENCY_FALLBACK }).format(value);
+    new Intl.NumberFormat(undefined, { style: "currency", currency: currency || CURRENCY_FALLBACK })
+      .format(value ?? 0);
 
   const fmtDate = (iso) =>
-    new Date(iso + (iso.length === 10 ? "T00:00:00" : "")).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit"
-    });
-
-  // ---- Load header/footer components before wiring the page
-  async function loadComponent(mountSel, url) {
-    const mount = $(mountSel);
-    if (!mount) return;
-    const resp = await fetch(url, { cache: "no-store" });
-    if (!resp.ok) throw new Error(`Failed to load ${url} (${resp.status})`);
-    mount.innerHTML = await resp.text();
-  }
-
-  async function loadSharedChrome() {
-    const headerURL = $("#headerMount")?.dataset.include || "components/header.html";
-    const footerURL = $("#footerMount")?.dataset.include || "components/footer.html";
-    await Promise.all([
-      loadComponent("#headerMount", headerURL),
-      loadComponent("#footerMount", footerURL),
-    ]);
-  }
-
-  function initAccountMenuFromHeader() {
-    // IDs provided by your header component: #account-icon toggles #account-menu
-    const btn = document.getElementById("account-icon");   // has aria-expanded attr
-    const menu = document.getElementById("account-menu");  // role="menu"
-
-    if (!btn || !menu) return; // header may be absent on some pages
-
-    function close() {
-      menu.classList.remove("show");
-      btn.setAttribute("aria-expanded", "false");
-      document.removeEventListener("click", onDocClick, true);
-      document.removeEventListener("keydown", onEsc, true);
-    }
-    function onDocClick(e) {
-      if (!menu.contains(e.target) && !btn.contains(e.target)) close();
-    }
-    function onEsc(e) {
-      if (e.key === "Escape") close();
-    }
-
-    btn.addEventListener("click", () => {
-      const isOpen = menu.classList.toggle("show");
-      btn.setAttribute("aria-expanded", String(isOpen));
-      if (isOpen) {
-        document.addEventListener("click", onDocClick, true);
-        document.addEventListener("keydown", onEsc, true);
-      } else {
-        close();
-      }
-    });
-  }
+    new Date(iso + (iso?.length === 10 ? "T00:00:00" : ""))
+      .toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
 
   // ---- Chart (simple canvas bar chart, no external libs)
   function drawBarChart(canvas, dataObj) {
@@ -159,10 +107,10 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${fmtDate(txn.date)}</td>
-          <td>${txn.merchant}</td>
-          <td>${txn.category}</td>
+          <td>${txn.merchant || ""}</td>
+          <td>${txn.category || ""}</td>
           <td class="num">${fmtMoney(txn.amount, currency)}</td>
-          <td>${txn.payment_method}</td>
+          <td>${txn.payment_method || ""}</td>
           <td>${txn.notes || ""}</td>
         `;
         tbody.appendChild(tr);
@@ -193,13 +141,7 @@
   }
 
   async function init() {
-    // 1) Bring in shared header/footer first so their elements exist
-    await loadSharedChrome();
-
-    // 2) Now wire account menu (IDs come from your header component)
-    initAccountMenuFromHeader();
-
-    // 3) Rest of the page
+    // default.js already injected header/footer; this file only handles page logic.
     wireActions();
     personalizeWelcome();
 
@@ -216,15 +158,12 @@
       renderBreakdown(document.getElementById("categoryList"), summary.categories || {}, summary.currency);
     } catch (err) {
       console.error(err);
-      document.getElementById("lastUpdated").textContent = "Could not load data.";
+      const status = document.getElementById("lastUpdated");
+      if (status) status.textContent = "Could not load data.";
       const tb = document.getElementById("txnTbody");
       if (tb) tb.innerHTML = `<tr><td colspan="6" class="subtle">Failed to load transactions.</td></tr>`;
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    // If you want the "Home" nav link to show active in your shared header,
-    // it already has class="active" in the component.
-    init();
-  });
+  document.addEventListener("DOMContentLoaded", init);
 })();
