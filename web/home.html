@@ -28,28 +28,28 @@
       </div>
 
       <div class="quick-actions" role="group" aria-label="Quick actions">
-        <button class="btn primary" id="btnUpload">Upload Receipt</button>
+        <button class="btn btn--primary" id="btnUpload">Upload Receipt</button>
         <button class="btn" id="btnAddTxn">Add Transaction</button>
         <button class="btn" id="btnExport">Export CSV</button>
-        <a class="btn linkish" href="reports.html" id="btnReports">Go to Reports →</a>
+        <a class="btn btn--link" href="reports.html" id="btnReports">Go to Reports →</a>
       </div>
     </section>
 
     <!-- KPI cards -->
     <section class="kpis" aria-label="Summary metrics">
-      <article class="kpi" aria-live="polite">
+      <article class="kpi card" aria-live="polite">
         <h2>Total Income</h2>
         <p class="kpi-value" id="kpiIncome">—</p>
         <span class="kpi-sub">This month</span>
       </article>
 
-      <article class="kpi">
+      <article class="kpi card">
         <h2>Total Spending</h2>
         <p class="kpi-value negative" id="kpiSpending">—</p>
         <span class="kpi-sub">This month</span>
       </article>
 
-      <article class="kpi">
+      <article class="kpi card">
         <h2>Net Balance</h2>
         <p class="kpi-value" id="kpiBalance">—</p>
         <span class="kpi-sub">Income − Spending</span>
@@ -58,7 +58,7 @@
 
     <!-- Chart + breakdown -->
     <section class="chart-section">
-      <div class="chart-card">
+      <div class="chart-card card">
         <div class="chart-header">
           <h2>Spending by Category</h2>
           <div class="legend" id="chartLegend" aria-hidden="true"></div>
@@ -67,7 +67,7 @@
         <p class="chart-caption subtle">Bars scaled to the highest category.</p>
       </div>
 
-      <aside class="breakdown" aria-label="Category breakdown">
+      <aside class="breakdown card" aria-label="Category breakdown">
         <h3>Category Breakdown</h3>
         <ul id="categoryList" class="cat-list"></ul>
       </aside>
@@ -77,10 +77,10 @@
     <section class="recent" aria-label="Recent transactions">
       <div class="recent-header">
         <h2>Recent Transactions</h2>
-        <a class="btn linkish" href="records.html">View all</a>
+        <a class="btn btn--link" href="records.html">View all</a>
       </div>
 
-      <div class="table-wrap" role="region" aria-label="Recent transactions table" tabindex="0">
+      <div class="table-wrap card" role="region" aria-label="Recent transactions table" tabindex="0">
         <table class="txn-table">
           <thead>
             <tr>
@@ -100,11 +100,11 @@
     </section>
   </main>
 
- <!-- Footer injected by default.js -->
+  <!-- Footer injected by default.js -->
   <div id="footer"></div>
 
   <!-- Scripts -->
   <script src="scripts/default.js" defer></script>
-  <script defer src="scripts/home.js"></script>
+  <script src="scripts/home.js" defer></script>
 </body>
 </html>
