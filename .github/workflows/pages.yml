@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy static site from /web to GitHub Pages
 on:
   push:
     branches: [ main ]
@@ -19,14 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Copy everything into ./dist for publishing
+      # Copy only the /web folder into dist for publishing
       - name: Prepare static site folder
         run: |
           mkdir -p dist
-          shopt -s extglob dotglob
-          cp -R !(dist|.git|.github) dist || true
+          cp -R web/* dist/
 
-      # Avoid Jekyll processing (important if you ever have _folders)
+      # Avoid Jekyll processing (important for underscores)
       - name: Add .nojekyll
         run: |
           touch dist/.nojekyll
