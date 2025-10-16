@@ -1,24 +1,4 @@
 {
-  "summary": {
-    "total_spending": 348.30,
-    "total_income": 2150.00,
-    "net_balance": 1801.70,
-    "currency": "USD",
-    "categories": {
-      "Food": 124.50,
-      "Travel": 58.90,
-      "Office": 89.20,
-      "Utilities": 42.30,
-      "Other": 33.40
-    },
-    "income_sources": {
-      "Salary": 2000.00,
-      "Interest": 50.00,
-      "Freelance": 100.00
-    },
-    "last_updated": "2025-10-14T20:45:00Z"
-  },
-
   "transactions": [
     {
       "id": "TXN-001",

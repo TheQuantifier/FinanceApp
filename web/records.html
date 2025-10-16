@@ -6,7 +6,7 @@
   <title>Finance App — Records</title>
 
   <!-- Meta -->
-  <meta name="description" content="Browse, search, filter, and export your transactions." />
+  <meta name="description" content="Browse, search, filter, and export your expense and income transactions." />
   <meta name="author" content="Finance App" />
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
@@ -19,22 +19,21 @@
   <div id="header"></div>
 
   <main>
-    <!-- Page header / actions -->
+    <!-- ==================== EXPENSES ==================== -->
     <section class="records-hero">
       <div class="title-wrap">
-        <h1>Records</h1>
-        <p class="subtle">Search, filter, sort, and export your transactions.</p>
+        <h1>Expenses</h1>
+        <p class="subtle">Search, filter, sort, and export your expense transactions.</p>
       </div>
 
-      <div class="actions" role="group" aria-label="Records quick actions">
+      <div class="actions" role="group" aria-label="Expense quick actions">
         <button class="btn" id="btnAddTxn">Add Transaction</button>
         <button class="btn" id="btnUpload">Upload Receipt</button>
-        <button class="btn btn--primary" id="btnExport">Export CSV</button>
+        <button class="btn btn--primary" id="btnExportExpenses">Export CSV</button>
       </div>
     </section>
 
-    <!-- Filters -->
-    <section class="filters card" aria-label="Filters">
+    <section class="filters card" aria-label="Expense filters">
       <form id="filtersForm">
         <div class="grid">
           <label>
@@ -46,7 +45,7 @@
             <span>Category</span>
             <select id="category">
               <option value="">All</option>
-              <!-- filled dynamically -->
+              <!-- filled dynamically from data -->
             </select>
           </label>
 
@@ -112,11 +111,10 @@
       </form>
     </section>
 
-    <!-- Table -->
     <section class="records-table">
-      <div class="table-wrap card" role="region" aria-label="All transactions table" tabindex="0">
-        <table class="txn-table" aria-describedby="tableCaption">
-          <caption id="tableCaption" class="sr-only">Transactions matching current filters.</caption>
+      <div class="table-wrap card" role="region" aria-label="Expenses table" tabindex="0">
+        <table class="txn-table" aria-describedby="tableCaptionExpenses">
+          <caption id="tableCaptionExpenses" class="sr-only">Expenses matching current filters.</caption>
           <thead>
             <tr>
               <th scope="col">Date</th>
@@ -133,10 +131,130 @@
         </table>
       </div>
 
-      <nav class="pager" aria-label="Pagination">
+      <nav class="pager" aria-label="Expenses pagination">
         <button class="btn" id="prevPage" aria-label="Previous page">← Prev</button>
         <span id="pageInfo" class="subtle" aria-live="polite">Page 1 of 1</span>
         <button class="btn" id="nextPage" aria-label="Next page">Next →</button>
+      </nav>
+    </section>
+
+    <!-- ==================== INCOME ==================== -->
+    <hr class="section-divider" />
+
+    <section class="records-hero">
+      <div class="title-wrap">
+        <h1>Income</h1>
+        <p class="subtle">Search, filter, sort, and export your income transactions.</p>
+      </div>
+
+      <div class="actions" role="group" aria-label="Income quick actions">
+        <button class="btn btn--primary" id="btnExportIncome">Export CSV</button>
+      </div>
+    </section>
+
+    <section class="filters card" aria-label="Income filters">
+      <form id="filtersFormIncome">
+        <div class="grid">
+          <label>
+            <span>Search</span>
+            <input type="search" id="qIncome" placeholder="Source, notes, category…" />
+          </label>
+
+          <label>
+            <span>Source (Category)</span>
+            <select id="categoryIncome">
+              <option value="">All</option>
+              <!-- filled dynamically from income categories -->
+            </select>
+          </label>
+
+          <label>
+            <span>Method</span>
+            <select id="methodIncome">
+              <option value="">All</option>
+              <option>ACH</option>
+              <option>Check</option>
+              <option>Cash</option>
+              <option>PayPal</option>
+              <option>Direct Deposit</option>
+              <option>Other</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Min Date</span>
+            <input type="date" id="minDateIncome" />
+          </label>
+
+          <label>
+            <span>Max Date</span>
+            <input type="date" id="maxDateIncome" />
+          </label>
+
+          <label>
+            <span>Min Amount</span>
+            <input type="number" step="0.01" id="minAmtIncome" placeholder="0.00" />
+          </label>
+
+          <label>
+            <span>Max Amount</span>
+            <input type="number" step="0.01" id="maxAmtIncome" placeholder="99999.99" />
+          </label>
+
+          <label>
+            <span>Sort</span>
+            <select id="sortIncome">
+              <option value="date_desc">Date ↓ (newest)</option>
+              <option value="date_asc">Date ↑ (oldest)</option>
+              <option value="amount_desc">Amount ↓</option>
+              <option value="amount_asc">Amount ↑</option>
+              <option value="source_asc">Source A–Z</option>
+              <option value="source_desc">Source Z–A</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Rows per page</span>
+            <select id="pageSizeIncome">
+              <option>10</option>
+              <option selected>25</option>
+              <option>50</option>
+              <option>100</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filter-buttons">
+          <button class="btn" type="submit">Apply</button>
+          <button class="btn btn--link" type="button" id="btnClearIncome">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="records-table">
+      <div class="table-wrap card" role="region" aria-label="Income table" tabindex="0">
+        <table class="txn-table" aria-describedby="tableCaptionIncome">
+          <caption id="tableCaptionIncome" class="sr-only">Income matching current filters.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Source</th>
+              <th scope="col">Category</th>
+              <th scope="col" class="num">Amount</th>
+              <th scope="col">Method</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTbodyIncome">
+            <tr><td colspan="6" class="subtle">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="pager" aria-label="Income pagination">
+        <button class="btn" id="prevPageIncome" aria-label="Previous page">← Prev</button>
+        <span id="pageInfoIncome" class="subtle" aria-live="polite">Page 1 of 1</span>
+        <button class="btn" id="nextPageIncome" aria-label="Next page">Next →</button>
       </nav>
     </section>
   </main>

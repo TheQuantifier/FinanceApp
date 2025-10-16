@@ -7,7 +7,7 @@
 
   const fmtMoney = (value, currency) =>
     new Intl.NumberFormat(undefined, { style: "currency", currency: currency || CURRENCY_FALLBACK })
-      .format(value ?? 0);
+      .format((Number.isFinite(value) ? value : 0));
 
   const fmtDate = (iso) =>
     new Date(iso + (iso?.length === 10 ? "T00:00:00" : ""))
@@ -89,11 +89,45 @@
       });
   }
 
-  function renderKpis(summary) {
-    $("#kpiIncome").textContent = fmtMoney(summary.total_income, summary.currency);
-    $("#kpiSpending").textContent = fmtMoney(summary.total_spending, summary.currency);
-    $("#kpiBalance").textContent = fmtMoney(summary.net_balance, summary.currency);
-    $("#lastUpdated").textContent = `Data updated ${new Date(summary.last_updated).toLocaleString()}`;
+  // ----- compute overview dynamically from JSON -----
+  function computeOverview(json) {
+    const expenses = (json.transactions || []).filter(Boolean);
+    const income = (json.income || []).filter(Boolean);
+
+    const currency =
+      json.summary?.currency ||
+      // try to infer from a txn if you ever add a currency field there; else fallback:
+      CURRENCY_FALLBACK;
+
+    const total_spending = expenses.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const total_income   = income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+    const net_balance    = total_income - total_spending;
+
+    // build expense category totals for chart/breakdown
+    const categories = expenses.reduce((acc, t) => {
+      const key = t.category || "Uncategorized";
+      acc[key] = (acc[key] || 0) + (Number(t.amount) || 0);
+      return acc;
+    }, {});
+
+    // last updated: latest date seen across expenses + income; fallback to summary.last_updated
+    const dates = [
+      ...expenses.map(t => t.date),
+      ...income.map(i => i.date),
+    ].filter(Boolean);
+    const latestISO = dates.length ? dates.sort().slice(-1)[0] : null;
+    const last_updated = latestISO
+      ? new Date(latestISO + (latestISO.length === 10 ? "T00:00:00" : "")).toISOString()
+      : (json.summary?.last_updated || new Date().toISOString());
+
+    return { total_spending, total_income, net_balance, currency, categories, last_updated };
+  }
+
+  function renderKpisFromComputed(comp) {
+    $("#kpiIncome").textContent = fmtMoney(comp.total_income, comp.currency);
+    $("#kpiSpending").textContent = fmtMoney(comp.total_spending, comp.currency);
+    $("#kpiBalance").textContent = fmtMoney(comp.net_balance, comp.currency);
+    $("#lastUpdated").textContent = `Data updated ${new Date(comp.last_updated).toLocaleString()}`;
   }
 
   function renderTransactions(tbody, txns, currency) {
@@ -147,20 +181,24 @@
 
     try {
       const data = await loadData();
-      const { summary, transactions } = data;
 
-      renderKpis(summary);
-      renderTransactions(document.getElementById("txnTbody"), transactions || [], summary.currency);
+      // 1) Compute overview from raw arrays (ignore summary totals)
+      const computed = computeOverview(data);
+      renderKpisFromComputed(computed);
 
-      const canvas = document.getElementById("categoriesChart");
-      drawBarChart(canvas, summary.categories || {});
-      renderLegend(document.getElementById("chartLegend"), summary.categories || {});
-      renderBreakdown(document.getElementById("categoryList"), summary.categories || {}, summary.currency);
+      // 2) Recent expenses table (keep as expenses only, per your columns)
+      renderTransactions($("#txnTbody"), data.transactions || [], computed.currency);
+
+      // 3) Chart + legend + breakdown from computed expense categories
+      const canvas = $("#categoriesChart");
+      drawBarChart(canvas, computed.categories || {});
+      renderLegend($("#chartLegend"), computed.categories || {});
+      renderBreakdown($("#categoryList"), computed.categories || {}, computed.currency);
     } catch (err) {
       console.error(err);
-      const status = document.getElementById("lastUpdated");
+      const status = $("#lastUpdated");
       if (status) status.textContent = "Could not load data.";
-      const tb = document.getElementById("txnTbody");
+      const tb = $("#txnTbody");
       if (tb) tb.innerHTML = `<tr><td colspan="6" class="subtle">Failed to load transactions.</td></tr>`;
     }
   }
