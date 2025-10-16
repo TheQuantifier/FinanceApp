@@ -1,4 +1,5 @@
 /* ========== FINANCE APP LANDING (Light Theme, Fixed Header/Footer) ========== */
+html, body { margin: 0; padding: 0; }
 
 .landing-light {
   background: #fff;
@@ -12,9 +13,10 @@
 
 /* ===== HEADER (Locked to Top) ===== */
 .nf-header {
-  position: fixed; /* lock to top */
+  position: fixed;
   top: 0;
   left: 0;
+  right: 0;
   width: 100%;
   z-index: 1000;
   background: #fff;
