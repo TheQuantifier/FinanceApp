@@ -24,7 +24,7 @@ main {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin: 2rem 0 1.5rem; /* merged top/bottom margins */
+  margin: 1rem 0 1.5rem; /* merged top/bottom margins */
   padding-top: 2rem;      /* keep your extra top breathing room */
 }
 .welcome h1 { font-size: 1.6rem; }
