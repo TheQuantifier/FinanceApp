@@ -121,7 +121,14 @@
       list = list.filter(txn =>
         matchesText(txn, state.q) &&
         (!state.category || txn.category === state.category) &&
-        (!state.method || (txn.payment_method || "").toLowerCase() === state.method.toLowerCase()) &&
+        (
+          !state.method ||
+          (
+            state.method.toLowerCase() === "other"
+              ? !["cash", "credit card", "debit card", "direct deposit", "ach", "check", "paypal"].includes((txn.payment_method || "").toLowerCase())
+              : (txn.payment_method || "").toLowerCase() === state.method.toLowerCase()
+          )
+        ) &&
         withinDate(txn, state.minDate, state.maxDate) &&
         withinAmount(txn, state.minAmt, state.maxAmt)
       );
