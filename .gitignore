@@ -2,7 +2,6 @@
 node_modules
 .next
 dist
-.env
 # Python / worker
 __pycache__/
 *.pyc
