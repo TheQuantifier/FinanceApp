@@ -7,6 +7,11 @@
   --text: #222;
   --radius: 10px;
   --max-width: 900px;
+  /* Shared tokens moved from page files */
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.04);
 }
 
 * {
@@ -246,6 +251,68 @@ footer {
   border-top: 1px solid #ddd;
   font-size: 0.9rem;
   color: #555;
+}
+
+/* ===== UTILITIES (moved from page files) ===== */
+.subtle { color: var(--muted); }
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+}
+.btn:hover { background: #f7f7f7; }
+/* Support both modifier syntaxes */
+.btn--primary, .btn.btn--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.btn--primary:hover, .btn.btn--primary:hover { filter: brightness(0.95); }
+.btn--link, .btn.btn--link {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  padding-left: 0;
+}
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+.txn-table { width: 100%; border-collapse: collapse; }
+.txn-table th, .txn-table td {
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid #f1f3f5;
+  white-space: nowrap;
+}
+.txn-table thead th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.txn-table .num { text-align: right; }
+.txn-table tbody tr:hover { background: #fafafa; }
+
+/* Accessibility helper */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 1px, 1px); white-space: nowrap; border: 0;
 }
 
 /* ===== SMALL SCREENS ===== */

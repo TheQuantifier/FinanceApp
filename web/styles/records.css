@@ -1,38 +1,4 @@
-/* ========== RECORDS PAGE (Expenses + Income) ========== */
-
-:root {
-  --muted: #6b7280;
-  --card-bg: #ffffff;
-  --border: #e5e7eb;
-  --shadow-sm: 0 2px 6px rgba(0,0,0,0.04);
-}
-
-.subtle { color: var(--muted); }
-
-/* Buttons */
-.btn {
-  display: inline-block;
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--radius);
-  border: 1px solid #ddd;
-  background: #fff;
-  cursor: pointer;
-  font-weight: 600;
-  text-decoration: none;
-}
-.btn:hover { background: #f7f7f7; }
-.btn.btn--primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.btn.btn--primary:hover { filter: brightness(0.95); }
-.btn.btn--link {
-  border: 0;
-  background: transparent;
-  color: var(--primary);
-  padding-left: 0;
-}
+/* ========== RECORDS PAGE (Expenses + Income) — page-specific only ========== */
 
 /* Section separator */
 .section-divider {
@@ -52,15 +18,6 @@
 }
 .records-hero h1 { margin: 0; }
 .records-hero .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-
-/* Card */
-.card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 1rem;
-}
 
 /* Filters */
 .filters.card { margin: 1rem 0 1.25rem; }
@@ -82,22 +39,8 @@
 
 .filter-buttons { display: flex; gap: 0.6rem; }
 
-/* Table */
+/* Table wrapper for this page */
 .records-table .table-wrap { overflow-x: auto; }
-.txn-table { width: 100%; border-collapse: collapse; }
-.txn-table th, .txn-table td {
-  padding: 0.7rem 0.8rem;
-  border-bottom: 1px solid #f1f3f5;
-  white-space: nowrap;
-}
-.txn-table thead th {
-  text-align: left;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.92rem;
-}
-.txn-table .num { text-align: right; }
-.txn-table tbody tr:hover { background: #fafafa; }
 
 /* Pager */
 .pager {
@@ -106,14 +49,6 @@
   gap: 0.7rem;
   justify-content: center;
   padding: 0.8rem 0;
-}
-
-/* Accessibility helper */
-.sr-only {
-  position: absolute !important;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0, 0, 1px, 1px); white-space: nowrap; border: 0;
 }
 
 /* Responsive */
