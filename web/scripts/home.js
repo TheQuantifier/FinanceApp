@@ -171,9 +171,6 @@
   
     return json;
   }
-  
-  
-  
 
   function wireActions() {
     const modal = $("#addTxnModal");
@@ -206,12 +203,12 @@
         notes: $("#txnNotes").value
       };
     
-      // ✅ Save transaction in localStorage
+      // Save transaction in localStorage
       const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
       stored.push(newTxn);
       localStorage.setItem("userTxns", JSON.stringify(stored));
     
-      // ✅ Add visually to the table right away
+      // Add visually to the table right away
       const tbody = $("#txnTbody");
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -224,7 +221,7 @@
       `;
       tbody.prepend(tr);
     
-      // ✅ Close modal and notify
+      // Close modal and notify
       $("#addTxnModal").classList.add("hidden");
       alert("Transaction added successfully!");
     });    
