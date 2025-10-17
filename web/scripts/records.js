@@ -68,8 +68,8 @@
     // cfg: {
     //   prefix: "exp" | "inc",
     //   rows: () => array,
-    //   textFields: ["merchant","category","notes"] or ["source","category","notes"],
-    //   sortKeys: { alpha: "merchant" | "source" }
+    //   textFields: ["source","category","notes"] or ["source","category","notes"],
+    //   sortKeys: { alpha: "source" | "source" }
     //   columns: (txn) => string (row HTML)
     // }
     const els = {
@@ -138,12 +138,12 @@
           case "date_desc": return b.date.localeCompare(a.date);
           case "amount_asc": return (a.amount ?? 0) - (b.amount ?? 0);
           case "amount_desc": return (b.amount ?? 0) - (a.amount ?? 0);
-          case "merchant_asc":
+          case "source_asc":
           case "source_asc": {
             const k = cfg.sortKeys.alpha;
             return (a[k] || "").localeCompare(b[k] || "");
           }
-          case "merchant_desc":
+          case "source_desc":
           case "source_desc": {
             const k = cfg.sortKeys.alpha;
             return (b[k] || "").localeCompare(a[k] || "");
@@ -207,7 +207,7 @@
 
     function exportCSV() {
       const filtered = applyFilters();
-      const header = ["Date", cfg.sortKeys.alpha === "merchant" ? "Merchant" : "Source", "Category", "Amount", "Method", "Notes"];
+      const header = ["Date", cfg.sortKeys.alpha === "Source" ? "Source" : "Source", "Category", "Amount", "Method", "Notes"];
       const lines = [header.join(",")];
       for (const t of filtered) {
         const alphaValue = (t[cfg.sortKeys.alpha] || "").replace(/"/g, '""');
@@ -265,15 +265,15 @@
     try {
       await loadData();
 
-      // Expenses controller (uses merchant)
+      // Expenses controller (uses Source)
       const expensesCtrl = makeController({
         prefix: "exp",
         rows: () => EXP_RAW,
-        textFields: ["merchant", "category", "notes"],
-        sortKeys: { alpha: "merchant" },
+        textFields: ["source", "category", "notes"],
+        sortKeys: { alpha: "source" },
         columns: (t) => `
           <td>${fmtDate(t.date)}</td>
-          <td>${t.merchant || ""}</td>
+          <td>${t.source || ""}</td>
           <td>${t.category || ""}</td>
           <td class="num">${fmtMoney(t.amount, summaryCurrency)}</td>
           <td>${t.payment_method || ""}</td>
