@@ -16,22 +16,23 @@
   const MAX_MB = 20;
   const ACCEPTED = ["application/pdf", "image/png", "image/jpeg", "image/heic", "image/heif"];
 
-  /** In-memory queue of chosen files */
+  // In-memory queue of chosen files
   let queue = [];
 
-  // Helpers
+  // ---------- Helpers ----------
   const bytesToSize = (bytes) => {
     const units = ["B", "KB", "MB", "GB"];
     let i = 0, n = bytes;
     while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
-    return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+    const fixed = n >= 10 || i === 0 ? 0 : 1;
+    return `${n.toFixed(fixed)} ${units[i]}`;
   };
 
   const extFromName = (name) => (name.includes(".") ? name.split(".").pop().toUpperCase() : "");
 
   const isAccepted = (file) => {
     if (ACCEPTED.includes(file.type)) return true;
-    // Some browsers may not set HEIC/HEIF types reliably; fall back to extension check.
+    // Fallback by extension (some browsers don't set HEIC/HEIF types reliably)
     const ext = extFromName(file.name).toLowerCase();
     return ["pdf", "png", "jpg", "jpeg", "heic", "heif"].includes(ext);
   };
@@ -40,11 +41,10 @@
 
   function renderQueue() {
     fileList.innerHTML = "";
-    if (queue.length === 0) {
-      uploadBtn.disabled = true;
-      return;
-    }
-    uploadBtn.disabled = false;
+    const hasItems = queue.length > 0;
+    uploadBtn.disabled = !hasItems;
+
+    if (!hasItems) return;
 
     queue.forEach((file, idx) => {
       const item = document.createElement("div");
@@ -94,13 +94,14 @@
       item.appendChild(thumb);
       item.appendChild(meta);
       item.appendChild(actions);
-
       fileList.appendChild(item);
     });
   }
 
   function addFiles(files) {
     const incoming = Array.from(files || []);
+    if (incoming.length === 0) return; // user hit Cancel – do nothing
+
     const accepted = [];
     let rejected = 0;
 
@@ -112,23 +113,29 @@
       accepted.push(f);
     });
 
-    queue = queue.concat(accepted);
-    renderQueue();
+    if (accepted.length) {
+      queue = queue.concat(accepted);
+      renderQueue();
+      statusMsg.textContent = `${accepted.length} file(s) added.`;
+    }
 
     if (rejected > 0) {
       statusMsg.textContent = `${rejected} file(s) skipped due to type or size limits (max ${MAX_MB}MB).`;
-    } else if (accepted.length > 0) {
-      statusMsg.textContent = `${accepted.length} file(s) added.`;
     }
   }
 
-  // Input click / change
+  // ---------- Events ----------
+
+  // Input: change (native dialog). If user cancels, FileList is empty and addFiles no-ops.
   fileInput.addEventListener("change", (e) => addFiles(e.target.files));
 
-  // Dropzone open file dialog when clicked or Enter/Space
-  dropzone.addEventListener("click", () => fileInput.click());
+  // Accessibility: open dialog via keyboard when dropzone is focused.
+  // (We intentionally DO NOT add a click handler to avoid double-open.)
   dropzone.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") fileInput.click();
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fileInput.click();
+    }
   });
 
   // Drag & drop
@@ -143,7 +150,9 @@
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (evt === "drop") addFiles(e.dataTransfer.files);
+      if (evt === "drop" && e.dataTransfer && e.dataTransfer.files) {
+        addFiles(e.dataTransfer.files);
+      }
       dropzone.classList.remove("is-dragover");
     })
   );
@@ -151,14 +160,17 @@
   // Clear
   clearBtn.addEventListener("click", () => {
     queue = [];
-    fileInput.value = "";
+    fileInput.value = ""; // reset input so selecting the same file again re-triggers 'change'
     renderQueue();
     statusMsg.textContent = "Cleared selection.";
   });
 
-  // Mock upload (replace with your API call)
+  // Mock upload (replace with real API call)
   uploadBtn.addEventListener("click", async () => {
+    if (queue.length === 0) return;
+
     uploadBtn.disabled = true;
+    dropzone.setAttribute("aria-busy", "true");
     statusMsg.textContent = "Uploading…";
 
     // Simulate network delay
@@ -181,5 +193,6 @@
     statusMsg.textContent = `Uploaded ${queue.length} file(s).`;
     queue = [];
     renderQueue();
+    dropzone.removeAttribute("aria-busy");
   });
 })();
