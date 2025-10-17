@@ -158,7 +158,7 @@
   }
 
   async function loadData() {
-    const resp = await fetch("data/sample.json", { cache: "no-store" });
+    const resp = await fetch(DATA_URL, { cache: "no-store" });
     if (!resp.ok) throw new Error(`Failed to load data (${resp.status})`);
     const json = await resp.json();
   

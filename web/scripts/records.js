@@ -24,15 +24,18 @@
     if (!resp.ok) throw new Error(`Failed to load data (${resp.status})`);
     const json = await resp.json();
 
-    EXP_RAW = json.expenses || []; // expenses come from "expenses"
-    INC_RAW = json.income || [];       // income comes from "income"
+    const localTxns = JSON.parse(localStorage.getItem("userTxns") || "[]");
+    const localExpenses = localTxns.filter(txn => txn.type === "expense");
+    const localIncome = localTxns.filter(txn => txn.type === "income");
+
+    EXP_RAW = [...(json.expenses || []), ...localExpenses]; // expenses come from "expenses"
+    INC_RAW = [...(json.income || []), ...localIncome];      // income comes from "income"
     summaryCurrency = json.summary?.currency || CURRENCY_FALLBACK;
 
     hydrateCategoryFilters(json);
   }
 
   function hydrateCategoryFilters(json) {
-    // Expenses: prefer summary.categories, fallback to EXP_RAW unique categories
     const expSel = $("#category");
     if (expSel) {
       const expCats =
@@ -47,7 +50,6 @@
       }
     }
 
-    // Income: prefer summary.income_sources, fallback to INC_RAW unique categories
     const incSel = $("#categoryIncome");
     if (incSel) {
       const incCats =
@@ -63,15 +65,8 @@
     }
   }
 
-  // ---- Generic controller factory (configured per section)
+  // ---- Generic controller factory
   function makeController(cfg) {
-    // cfg: {
-    //   prefix: "exp" | "inc",
-    //   rows: () => array,
-    //   textFields: ["source","category","notes"] or ["source","category","notes"],
-    //   sortKeys: { alpha: "source" | "source" }
-    //   columns: (txn) => string (row HTML)
-    // }
     const els = {
       q: $(`#${cfg.prefix === "exp" ? "q" : "qIncome"}`),
       category: $(`#${cfg.prefix === "exp" ? "category" : "categoryIncome"}`),
@@ -123,7 +118,6 @@
 
     function applyFilters() {
       let list = cfg.rows().slice();
-
       list = list.filter(txn =>
         matchesText(txn, state.q) &&
         (!state.category || txn.category === state.category) &&
@@ -131,27 +125,17 @@
         withinDate(txn, state.minDate, state.maxDate) &&
         withinAmount(txn, state.minAmt, state.maxAmt)
       );
-
       list.sort((a, b) => {
         switch (state.sort) {
           case "date_asc": return a.date.localeCompare(b.date);
           case "date_desc": return b.date.localeCompare(a.date);
           case "amount_asc": return (a.amount ?? 0) - (b.amount ?? 0);
           case "amount_desc": return (b.amount ?? 0) - (a.amount ?? 0);
-          case "source_asc":
-          case "source_asc": {
-            const k = cfg.sortKeys.alpha;
-            return (a[k] || "").localeCompare(b[k] || "");
-          }
-          case "source_desc":
-          case "source_desc": {
-            const k = cfg.sortKeys.alpha;
-            return (b[k] || "").localeCompare(a[k] || "");
-          }
+          case "source_asc": return (a[cfg.sortKeys.alpha] || "").localeCompare(b[cfg.sortKeys.alpha] || "");
+          case "source_desc": return (b[cfg.sortKeys.alpha] || "").localeCompare(a[cfg.sortKeys.alpha] || "");
           default: return 0;
         }
       });
-
       return list;
     }
 
@@ -207,13 +191,12 @@
 
     function exportCSV() {
       const filtered = applyFilters();
-      const header = ["Date", cfg.sortKeys.alpha === "Source" ? "Source" : "Source", "Category", "Amount", "Method", "Notes"];
+      const header = ["Date", "Source", "Category", "Amount", "Method", "Notes"];
       const lines = [header.join(",")];
       for (const t of filtered) {
-        const alphaValue = (t[cfg.sortKeys.alpha] || "").replace(/"/g, '""');
         const row = [
           t.date,
-          alphaValue,
+          (t[cfg.sortKeys.alpha] || "").replace(/"/g, '""'),
           (t.category || "").replace(/"/g, '""'),
           (Number(t.amount) ?? 0).toFixed(2),
           (t.payment_method || "").replace(/"/g, '""'),
@@ -253,19 +236,79 @@
     return { wire, updateView, readForm };
   }
 
-  // Shared quick actions (expense section)
-  function wireTopActions() {
-    $("#btnAddTxn")?.addEventListener("click", () => alert("Open add transaction modal…"));
-    $("#btnUpload")?.addEventListener("click", () => alert("Open upload flow…"));
+  // ---- Modal actions
+  function wireModals() {
+    const modals = {
+      expense: $("#addExpenseModal"),
+      income: $("#addIncomeModal")
+    };
+
+    const forms = {
+      expense: $("#expenseForm"),
+      income: $("#incomeForm")
+    };
+
+    // Open modals
+    $("#btnAddExpense")?.addEventListener("click", () => modals.expense.classList.remove("hidden"));
+    $("#btnAddIncome")?.addEventListener("click", () => modals.income.classList.remove("hidden"));
+
+    // Cancel buttons
+    $("#cancelExpenseBtn")?.addEventListener("click", () => modals.expense.classList.add("hidden"));
+    $("#cancelIncomeBtn")?.addEventListener("click", () => modals.income.classList.add("hidden"));
+
+    // Save Expense
+    forms.expense?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const txn = {
+        type: "expense",
+        date: $("#expenseDate").value,
+        source: $("#expenseSource").value,
+        category: $("#expenseCategory").value,
+        amount: parseFloat($("#expenseAmount").value) || 0,
+        payment_method: $("#expenseMethod").value,
+        notes: $("#expenseNotes").value
+      };
+      EXP_RAW.push(txn);
+      const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
+      stored.push(txn);
+      localStorage.setItem("userTxns", JSON.stringify(stored));
+      modals.expense.classList.add("hidden");
+      forms.expense.reset();
+      alert("Expense added!");
+    });
+
+    // Save Income
+    forms.income?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const txn = {
+        type: "income",
+        date: $("#incomeDate").value,
+        source: $("#incomeSource").value,
+        category: $("#incomeCategory").value,
+        amount: parseFloat($("#incomeAmount").value) || 0,
+        payment_method: $("#incomeMethod").value,
+        notes: $("#incomeNotes").value
+      };
+      INC_RAW.push(txn);
+      const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
+      stored.push(txn);
+      localStorage.setItem("userTxns", JSON.stringify(stored));
+      modals.income.classList.add("hidden");
+      forms.income.reset();
+      alert("Income added!");
+    });
+
+    // Optional: keep upload buttons
+    $("#btnUploadExpense")?.addEventListener("click", () => alert("Upload expense flow…"));
+    $("#btnUploadIncome")?.addEventListener("click", () => alert("Upload income flow…"));
   }
 
   async function init() {
-    wireTopActions();
+    wireModals();
 
     try {
       await loadData();
 
-      // Expenses controller (uses Source)
       const expensesCtrl = makeController({
         prefix: "exp",
         rows: () => EXP_RAW,
@@ -281,7 +324,6 @@
         `
       });
 
-      // Income controller (uses source)
       const incomeCtrl = makeController({
         prefix: "inc",
         rows: () => INC_RAW,
@@ -299,10 +341,8 @@
 
       expensesCtrl.wire();
       incomeCtrl.wire();
-
       expensesCtrl.readForm();
       incomeCtrl.readForm();
-
       expensesCtrl.updateView();
       incomeCtrl.updateView();
     } catch (err) {
