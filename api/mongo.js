@@ -16,20 +16,17 @@ let _db = null;
 async function connectMongo() {
   if (_db) return _db;
   _client = new MongoClient(uri, {
-    // sensible defaults
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 8000,
   });
   await _client.connect();
   _db = _client.db(dbName);
 
-  // Ensure basic indexes (idempotent)
+  // Create useful indexes for quick lookups
   await Promise.all([
-    _db.collection("receipts").createIndex({ uploaded_at: -1 }),
-    _db.collection("receipts").createIndex({ parse_status: 1 }),
-    _db.collection("transactions").createIndex({ date: 1 }),
-    _db.collection("transactions").createIndex({ category: 1 }),
-    _db.collection("transactions").createIndex({ receipt_id: 1 }),
+    _db.collection("records").createIndex({ date: -1 }),
+    _db.collection("records").createIndex({ type: 1 }),
+    _db.collection("records").createIndex({ method: 1 }),
   ]);
 
   console.log(`✅ Mongo connected → db: ${dbName}`);
