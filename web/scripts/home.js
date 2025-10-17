@@ -158,16 +158,78 @@
   }
 
   async function loadData() {
-    const resp = await fetch(DATA_URL, { cache: "no-store" });
+    const resp = await fetch("data/sample.json", { cache: "no-store" });
     if (!resp.ok) throw new Error(`Failed to load data (${resp.status})`);
-    return resp.json();
+    const json = await resp.json();
+  
+    const localTxns = JSON.parse(localStorage.getItem("userTxns") || "[]");
+    const localExpenses = localTxns.filter(txn => txn.type === "expense");
+    const localIncome = localTxns.filter(txn => txn.type === "income");
+  
+    json.expenses = [...(json.expenses || []), ...localExpenses];
+    json.income = [...(json.income || []), ...localIncome];
+  
+    return json;
   }
+  
+  
+  
 
   function wireActions() {
+    const modal = $("#addTxnModal");
+    const form = $("#txnForm");
+    const btnCancel = $("#btnCancelModal");
+  
     $("#btnUpload")?.addEventListener("click", () => alert("Open upload flow…"));
-    $("#btnAddTxn")?.addEventListener("click", () => alert("Open add transaction modal…"));
     $("#btnExport")?.addEventListener("click", () => alert("Exporting CSV…"));
+  
+    // Show modal
+    $("#btnAddTxn")?.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+    });
+  
+    // Hide modal
+    btnCancel?.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+  
+    // Handle Save
+    form?.addEventListener("submit", (e) => {
+      e.preventDefault();
+    
+      const newTxn = {
+        date: $("#txnDate").value,
+        source: $("#txnSource").value,
+        category: $("#txnCategory").value,
+        amount: parseFloat($("#txnAmount").value),
+        payment_method: $("#txnMethod").value,
+        notes: $("#txnNotes").value
+      };
+    
+      // ✅ Save transaction in localStorage
+      const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
+      stored.push(newTxn);
+      localStorage.setItem("userTxns", JSON.stringify(stored));
+    
+      // ✅ Add visually to the table right away
+      const tbody = $("#txnTbody");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${fmtDate(newTxn.date)}</td>
+        <td>${newTxn.source}</td>
+        <td>${newTxn.category}</td>
+        <td class="num">${fmtMoney(newTxn.amount, "USD")}</td>
+        <td>${newTxn.payment_method}</td>
+        <td>${newTxn.notes}</td>
+      `;
+      tbody.prepend(tr);
+    
+      // ✅ Close modal and notify
+      $("#addTxnModal").classList.add("hidden");
+      alert("Transaction added successfully!");
+    });    
   }
+  
 
   function personalizeWelcome() {
     const name = (window.currentUser && window.currentUser.name) || null;

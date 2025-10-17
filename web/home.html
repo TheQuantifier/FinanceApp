@@ -106,6 +106,55 @@
   <!-- Footer injected by default.js -->
   <div id="footer"></div>
 
+  <!-- ========== ADD TRANSACTION MODAL ========== -->
+  <div id="addTxnModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-content card">
+      <h2 id="modalTitle">Add New Transaction</h2>
+
+      <form id="txnForm" class="txn-form">
+        <div class="form-row">
+          <label>
+            <span>Date</span>
+            <input type="date" id="txnDate" value="2025-10-17" required />
+          </label>
+          <label>
+            <span>Amount</span>
+            <input type="number" id="txnAmount" value="45.50" step="0.01" required />
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>
+            <span>Source</span>
+            <input type="text" id="txnSource" value="Grocery Store" required />
+          </label>
+          <label>
+            <span>Category</span>
+            <input type="text" id="txnCategory" value="Food" required />
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>
+            <span>Payment Method</span>
+            <input type="text" id="txnMethod" value="Credit Card" />
+          </label>
+          <label>
+            <span>Notes</span>
+            <input type="text" id="txnNotes" value="Weekly groceries" />
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn btn--primary">Save</button>
+          <button type="button" class="btn" id="btnCancelModal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+
   <!-- Scripts -->
   <script src="scripts/default.js" defer></script>
   <script src="scripts/home.js" defer></script>
