@@ -91,7 +91,7 @@
 
   // ----- compute overview dynamically from JSON -----
   function computeOverview(json) {
-    const expenses = (json.transactions || []).filter(Boolean);
+    const expenses = (json.expenses || []).filter(Boolean);
     const income = (json.income || []).filter(Boolean);
 
     const currency =
@@ -130,7 +130,7 @@
     $("#lastUpdated").textContent = `Data updated ${new Date(comp.last_updated).toLocaleString()}`;
   }
 
-  function renderTransactions(tbody, txns, currency) {
+  function renderexpenses(tbody, txns, currency) {
     if (!tbody) return;
     tbody.innerHTML = "";
     (txns || [])
@@ -141,7 +141,7 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${fmtDate(txn.date)}</td>
-          <td>${txn.merchant || ""}</td>
+          <td>${txn.source || ""}</td>
           <td>${txn.category || ""}</td>
           <td class="num">${fmtMoney(txn.amount, currency)}</td>
           <td>${txn.payment_method || ""}</td>
@@ -152,7 +152,7 @@
 
     if (!tbody.children.length) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="6" class="subtle">No transactions yet.</td>`;
+      tr.innerHTML = `<td colspan="6" class="subtle">No expenses yet.</td>`;
       tbody.appendChild(tr);
     }
   }
@@ -187,7 +187,7 @@
       renderKpisFromComputed(computed);
 
       // 2) Recent expenses table (keep as expenses only, per your columns)
-      renderTransactions($("#txnTbody"), data.transactions || [], computed.currency);
+      renderexpenses($("#txnTbody"), data.expenses || [], computed.currency);
 
       // 3) Chart + legend + breakdown from computed expense categories
       const canvas = $("#categoriesChart");
@@ -199,7 +199,7 @@
       const status = $("#lastUpdated");
       if (status) status.textContent = "Could not load data.";
       const tb = $("#txnTbody");
-      if (tb) tb.innerHTML = `<tr><td colspan="6" class="subtle">Failed to load transactions.</td></tr>`;
+      if (tb) tb.innerHTML = `<tr><td colspan="6" class="subtle">Failed to load expenses.</td></tr>`;
     }
   }
 

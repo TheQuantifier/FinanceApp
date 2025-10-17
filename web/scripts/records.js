@@ -24,7 +24,7 @@
     if (!resp.ok) throw new Error(`Failed to load data (${resp.status})`);
     const json = await resp.json();
 
-    EXP_RAW = json.transactions || []; // expenses come from "transactions"
+    EXP_RAW = json.expenses || []; // expenses come from "expenses"
     INC_RAW = json.income || [];       // income comes from "income"
     summaryCurrency = json.summary?.currency || CURRENCY_FALLBACK;
 

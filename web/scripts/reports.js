@@ -9,7 +9,7 @@ async function loadReports() {
 
     const data = await response.json();
 
-    const txns = (data.transactions || []).filter(Boolean);
+    const txns = (data.expenses || []).filter(Boolean);
     const incomes = (data.income || []).filter(Boolean);
 
     const derived = computeSummaryFromRaw(txns, incomes, data.summary?.currency);
@@ -29,15 +29,15 @@ async function loadReports() {
 
 // ========== Derivations from raw data ==========
 
-function computeSummaryFromRaw(transactions, income, currencyHint) {
+function computeSummaryFromRaw(expenses, income, currencyHint) {
   const CURRENCY_FALLBACK = "USD";
   const currency = currencyHint || CURRENCY_FALLBACK;
 
-  // 1) Total spending and category sums from transactions
+  // 1) Total spending and category sums from expenses
   const categories = {};
   let total_spending = 0;
 
-  for (const t of transactions) {
+  for (const t of expenses) {
     const amt = toNumber(t?.amount);
     total_spending += amt;
     const cat = t?.category || "Uncategorized";
@@ -47,7 +47,7 @@ function computeSummaryFromRaw(transactions, income, currencyHint) {
   // 2) Monthly average spending (based on months that have at least one expense)
   //    Fallback to simple average across categories if no month info found.
   const monthsWithSpend = new Set();
-  for (const t of transactions) {
+  for (const t of expenses) {
     const key = yyyymm(t?.date);
     if (key) monthsWithSpend.add(key);
   }
@@ -134,12 +134,12 @@ function renderCategoryChart(categories) {
 }
 
 // Chart 2: Income & Expenses Over Time (sums by day, with toggles)
-function renderIncomeExpenseOverTime(transactions, income) {
+function renderIncomeExpenseOverTime(expenses, income) {
   const ctx = document.getElementById("monthlyChart");
   if (!ctx) return;
 
   // Sum by ISO date (YYYY-MM-DD). Missing/invalid dates get ignored.
-  const expenseByDate = sumByDate(transactions);
+  const expenseByDate = sumByDate(expenses);
   const incomeByDate = sumByDate(income);
 
   // Union of all dates

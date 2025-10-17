@@ -1,0 +1,19 @@
+All - 
+Uplaod Banner image and User account logo
+
+
+Home - 
+Fix Recent Income
+
+Upload - 
+
+
+Records - 
+Fix other method filter. 
+Make sure all the category filters make sense and are inclusive. 
+
+
+Reports - 
+
+
+About - 
