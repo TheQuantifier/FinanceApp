@@ -1,0 +1,15 @@
+All - 
+
+Home - 
+
+Upload - 
+
+Records - 
+Save button on Modals
+Upload reciept on Modals
+Export CSV button Modals
+Method search category for other methods. 
+
+Reports - 
+
+About - 
