@@ -1,10 +1,18 @@
 /* ===============================================
    Finance App — upload.js
-   Handles drag & drop, previews, basic validation,
-   and a mock "upload" action (ready to swap for API).
+   Drag & drop / file picker → POST to API /upload
+   Saves file to uploads/ and metadata to MongoDB.
    =============================================== */
 
 (function () {
+  const API_BASE =
+    new URLSearchParams(location.search).get("api") ||
+    (typeof window.API_BASE === "string" && window.API_BASE) ||
+    "http://localhost:4000";
+
+  const ACCEPTED = ["application/pdf", "image/png", "image/jpeg"];
+  const MAX_MB = 50;
+
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   const fileList = document.getElementById("fileList");
@@ -13,37 +21,85 @@
   const statusMsg = document.getElementById("statusMsg");
   const recentTableBody = document.getElementById("recentTableBody");
 
-  const MAX_MB = 20;
-  const ACCEPTED = ["application/pdf", "image/png", "image/jpeg", "image/heic", "image/heif"];
+  if (!dropzone || !fileInput) {
+    console.error("upload.js: Missing #dropzone or #fileInput in the DOM.");
+    return;
+  }
 
-  // In-memory queue of chosen files
+  // Make sure the zone can be clicked
+  dropzone.style.pointerEvents = "auto";
+  dropzone.setAttribute("role", "button");
+  dropzone.setAttribute("tabindex", "0");
+
   let queue = [];
+  let pickerArmed = false; // single-open guard
 
   // ---------- Helpers ----------
+  const setStatus = (msg, isError = false) => {
+    if (!statusMsg) return;
+    statusMsg.textContent = msg;
+    statusMsg.classList.toggle("error", !!isError);
+  };
+
   const bytesToSize = (bytes) => {
     const units = ["B", "KB", "MB", "GB"];
-    let i = 0, n = bytes;
+    let i = 0, n = bytes || 0;
     while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
     const fixed = n >= 10 || i === 0 ? 0 : 1;
     return `${n.toFixed(fixed)} ${units[i]}`;
   };
 
   const extFromName = (name) => (name.includes(".") ? name.split(".").pop().toUpperCase() : "");
-
   const isAccepted = (file) => {
     if (ACCEPTED.includes(file.type)) return true;
-    // Fallback by extension (some browsers don't set HEIC/HEIF types reliably)
     const ext = extFromName(file.name).toLowerCase();
-    return ["pdf", "png", "jpg", "jpeg", "heic", "heif"].includes(ext);
+    return ["pdf", "png", "jpg", "jpeg"].includes(ext);
   };
-
   const overLimit = (file) => file.size > MAX_MB * 1024 * 1024;
 
+  const fetchJSON = async (url, opts) => {
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let json;
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+    if (!res.ok) {
+      const msg = json?.error || `HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      throw err;
+    }
+    return json;
+  };
+
+  // ---------- Recent uploads ----------
+  const refreshRecent = async () => {
+    if (!recentTableBody) return;
+    try {
+      const rows = await fetchJSON(`${API_BASE}/receipts`, { mode: "cors" });
+      recentTableBody.innerHTML = "";
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        const when = r.uploaded_at ? new Date(r.uploaded_at).toLocaleString() : "—";
+        tr.innerHTML = `
+          <td>${r.original_filename || r.stored_filename || "—"}</td>
+          <td>${r.mimetype || "—"}</td>
+          <td class="num">${(r.size_bytes && bytesToSize(r.size_bytes)) || "—"}</td>
+          <td>${when}</td>
+          <td>${r.parse_status || "raw"}</td>
+        `;
+        recentTableBody.appendChild(tr);
+      }
+    } catch {
+      /* optional */
+    }
+  };
+
+  // ---------- Queue / UI ----------
   function renderQueue() {
+    if (!fileList || !uploadBtn) return;
     fileList.innerHTML = "";
     const hasItems = queue.length > 0;
     uploadBtn.disabled = !hasItems;
-
     if (!hasItems) return;
 
     queue.forEach((file, idx) => {
@@ -53,7 +109,7 @@
       const thumb = document.createElement("div");
       thumb.className = "file-thumb";
 
-      if (file.type.startsWith("image/")) {
+      if ((file.type || "").startsWith("image/")) {
         const img = document.createElement("img");
         img.alt = "";
         img.style.width = "100%";
@@ -100,42 +156,71 @@
 
   function addFiles(files) {
     const incoming = Array.from(files || []);
-    if (incoming.length === 0) return; // user hit Cancel – do nothing
+    if (incoming.length === 0) return; // user canceled
 
     const accepted = [];
     let rejected = 0;
 
     incoming.forEach((f) => {
-      if (!isAccepted(f) || overLimit(f)) {
-        rejected++;
-        return;
-      }
+      if (!isAccepted(f) || overLimit(f)) { rejected++; return; }
       accepted.push(f);
     });
 
     if (accepted.length) {
       queue = queue.concat(accepted);
       renderQueue();
-      statusMsg.textContent = `${accepted.length} file(s) added.`;
+      setStatus(`${accepted.length} file(s) added.`);
     }
-
     if (rejected > 0) {
-      statusMsg.textContent = `${rejected} file(s) skipped due to type or size limits (max ${MAX_MB}MB).`;
+      setStatus(`${rejected} file(s) skipped (PDF/PNG/JPG only, ≤ ${MAX_MB} MB).`, true);
     }
   }
 
-  // ---------- Events ----------
+  // ---------- Picker (no double-open, capture click) ----------
+  function openPickerOnce() {
+    if (!fileInput || pickerArmed) return;
+    pickerArmed = true;
 
-  // Input: change (native dialog). If user cancels, FileList is empty and addFiles no-ops.
-  fileInput.addEventListener("change", (e) => addFiles(e.target.files));
+    const disarm = () => { pickerArmed = false; };
+    const onChange = () => { disarm(); fileInput.removeEventListener("change", onChange); };
+    fileInput.addEventListener("change", onChange, { once: true });
 
-  // Accessibility: open dialog via keyboard when dropzone is focused.
-  // (We intentionally DO NOT add a click handler to avoid double-open.)
+    // Safety disarm if user cancels and 'change' doesn't fire
+    setTimeout(disarm, 2500);
+
+    // Prefer modern showPicker if available
+    try {
+      if (typeof fileInput.showPicker === "function") {
+        fileInput.showPicker();
+      } else {
+        fileInput.click();
+      }
+    } catch {
+      // Fallback to click if showPicker throws (Safari)
+      try { fileInput.click(); } catch {}
+    }
+  }
+
+  // If someone clicks the hidden input directly, don’t bubble up
+  fileInput.addEventListener("click", (e) => e.stopPropagation(), true);
+
+  // Click handler in capture phase so overlays can’t swallow it
+  dropzone.addEventListener("click", (e) => {
+    openPickerOnce();
+  }, true);
+
+  // Keyboard access
   dropzone.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      fileInput.click();
+      openPickerOnce();
     }
+  });
+
+  // Native input change
+  fileInput.addEventListener("change", (e) => {
+    addFiles(e.target.files);
+    e.target.value = ""; // allow re-selecting same file
   });
 
   // Drag & drop
@@ -150,7 +235,7 @@
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (evt === "drop" && e.dataTransfer && e.dataTransfer.files) {
+      if (evt === "drop" && e.dataTransfer?.files) {
         addFiles(e.dataTransfer.files);
       }
       dropzone.classList.remove("is-dragover");
@@ -158,41 +243,45 @@
   );
 
   // Clear
-  clearBtn.addEventListener("click", () => {
+  clearBtn?.addEventListener("click", () => {
     queue = [];
-    fileInput.value = ""; // reset input so selecting the same file again re-triggers 'change'
+    fileInput.value = "";
     renderQueue();
-    statusMsg.textContent = "Cleared selection.";
+    setStatus("Cleared selection.");
   });
 
-  // Mock upload (replace with real API call)
-  uploadBtn.addEventListener("click", async () => {
+  // Upload (first file in queue)
+  uploadBtn?.addEventListener("click", async () => {
     if (queue.length === 0) return;
 
+    const file = queue[0];
+    const fd = new FormData();
+    fd.append("receipt", file, file.name);
+
     uploadBtn.disabled = true;
-    dropzone.setAttribute("aria-busy", "true");
-    statusMsg.textContent = "Uploading…";
+    dropzone?.setAttribute("aria-busy", "true");
+    setStatus("Uploading…");
 
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 700));
+    try {
+      const json = await fetchJSON(`${API_BASE}/upload`, {
+        method: "POST",
+        body: fd,
+        mode: "cors",
+      });
 
-    // On success: add to recent table (mock)
-    const now = new Date();
-    queue.forEach((f) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${f.name}</td>
-        <td>${(f.type || extFromName(f.name)).toUpperCase()}</td>
-        <td>${now.toLocaleDateString()}</td>
-        <td class="num">${bytesToSize(f.size)}</td>
-        <td>Processed</td>
-      `;
-      recentTableBody.prepend(tr);
-    });
-
-    statusMsg.textContent = `Uploaded ${queue.length} file(s).`;
-    queue = [];
-    renderQueue();
-    dropzone.removeAttribute("aria-busy");
+      setStatus(`Uploaded: ${json?.file?.name || file.name}. Receipt ID: ${json?.receipt_id || "—"}`);
+      queue.shift();
+      renderQueue();
+      await refreshRecent();
+    } catch (err) {
+      setStatus(`Upload failed: ${err.message}`, true);
+    } finally {
+      uploadBtn.disabled = queue.length === 0;
+      dropzone?.removeAttribute("aria-busy");
+    }
   });
+
+  // Initial draw
+  renderQueue();
+  refreshRecent();
 })();
