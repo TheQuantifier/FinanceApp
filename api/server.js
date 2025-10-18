@@ -47,12 +47,7 @@ function isAllowedFile(file) {
   return [".pdf", ".png", ".jpg", ".jpeg"].includes(ext);
 }
 
-/* =======================================================================
-   Optional OCR (Python worker)
-   - Enable by setting OCR_ENABLED=true in .env
-   - Optionally set PYTHON_BIN to an explicit interpreter path
-   - Gracefully skips if missing or errors (no crashes)
-   ======================================================================= */
+// Optional OCR setup
 const workerDir = path.resolve(process.cwd(), "worker");
 const ocrScript = path.join(workerDir, "ocr_demo.py");
 const OCR_ENABLED = (process.env.OCR_ENABLED || "false").toLowerCase() === "true";
@@ -103,19 +98,19 @@ async function runOCR(absPath) {
   });
 }
 
-// Routes
+// ------------------ ROUTES ------------------
+// Health check
 app.get("/", (_req, res) => res.send("Finance Tracker API is live"));
-
 app.get("/health", (_req, res) => {
   try {
-    getDb(); // Ensure a DB is attached
+    getDb();
     res.json({ ok: true });
   } catch {
     res.status(503).json({ ok: false });
   }
 });
 
-// Quick manual upload test form (optional)
+// Simple upload test form
 app.get("/test", (_req, res) => res.send(`
   <form action="/upload" method="post" enctype="multipart/form-data">
     <input type="file" name="receipt" />
@@ -123,7 +118,7 @@ app.get("/test", (_req, res) => res.send(`
   </form>
 `));
 
-// Upload route
+// ------------------ Upload ------------------
 app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -135,14 +130,7 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
     const absPath = path.resolve(req.file.path);
     const ocr = await runOCR(absPath);
 
-    // Only treat OCR as valid text if it isn't a status line
-    const ocrText =
-      ocr && typeof ocr.ocr_text === "string" && !/^OCR (disabled|skipped|failed|error)/i.test(ocr.ocr_text)
-        ? ocr.ocr_text
-        : null;
-
-    // Parse file content (PDF/CSV/Image text) into structured fields
-    const parsedData = await parseFile(absPath, req.file.mimetype, ocrText);
+    const parsedData = await parseFile(absPath, req.file.mimetype, ocr.ocr_text);
 
     const { Receipt } = getModels();
     const doc = await Receipt.create({
@@ -153,7 +141,7 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
       size_bytes: req.file.size,
       uploaded_at: new Date(),
       parse_status: parsedData ? "parsed" : "raw",
-      ocr_text: ocrText, // store real OCR text only; null otherwise
+      ocr_text: ocr.ocr_text,
       date: parsedData?.Date || null,
       source: parsedData?.Source || null,
       category: parsedData?.Category || null,
@@ -164,37 +152,60 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
 
     res.json({
       message: "File uploaded and parsed successfully.",
-      receipt_id: String(doc._id),
-      extracted: parsedData,
+      receipt: doc,  // send the full doc back
     });
+    
   } catch (e) {
     next(e);
   }
 });
 
-// Get all receipts
+// ------------------ Receipts ------------------
+
+// Get all receipts (cleaned to 6 fields)
+// Get all receipts with structured fields + file info
 app.get("/receipts", async (_req, res, next) => {
   try {
     const { Receipt } = getModels();
     const rows = await Receipt.find({})
-      .select("-ocr_text")
       .sort({ uploaded_at: -1 })
       .limit(100)
       .lean();
-    res.json(rows.map(r => ({ ...r, _id: String(r._id) })));
+
+    // Return **fields exactly as the frontend expects**
+    const uploads = rows.map(r => ({
+      _id: String(r._id),
+      original_filename: r.original_filename,
+      mimetype: r.mimetype,
+      size_bytes: r.size_bytes,
+      uploaded_at: r.uploaded_at,
+      parse_status: r.parse_status
+    }));
+
+    res.json(uploads);
   } catch (e) {
     next(e);
   }
 });
 
-// Get one receipt
+
+
+// Get single receipt by ID (cleaned to 6 fields)
 app.get("/receipts/:id", async (req, res, next) => {
   try {
     const { Receipt } = getModels();
-    const row = await Receipt.findById(req.params.id).lean();
-    if (!row) return res.status(404).json({ error: "Not found" });
-    row._id = String(row._id);
-    res.json(row);
+    const r = await Receipt.findById(req.params.id).lean();
+    if (!r) return res.status(404).json({ error: "Not found" });
+
+    res.json({
+      _id: String(r._id),
+      Date: r.date || null,
+      Source: r.source || null,
+      Category: r.category || null,
+      Amount: r.amount || null,
+      Method: r.method || null,
+      Notes: r.notes || null
+    });
   } catch (e) {
     next(e);
   }
@@ -204,12 +215,12 @@ app.get("/receipts/:id", async (req, res, next) => {
 app.delete("/receipts/:id", async (req, res, next) => {
   try {
     const { Receipt } = getModels();
-    const row = await Receipt.findById(req.params.id);
-    if (!row) return res.status(404).json({ error: "Not found" });
+    const r = await Receipt.findById(req.params.id);
+    if (!r) return res.status(404).json({ error: "Not found" });
 
-    try { if (row.path && fs.existsSync(row.path)) fs.unlinkSync(row.path); } catch {}
-
+    try { if (r.path && fs.existsSync(r.path)) fs.unlinkSync(r.path); } catch {}
     await Receipt.findByIdAndDelete(req.params.id);
+
     res.json({ deleted: req.params.id });
   } catch (e) {
     next(e);
@@ -225,15 +236,13 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: err?.message || "Server error" });
 });
 
-// Start server
+// ------------------ START SERVER ------------------
 const port = Number(process.env.PORT || 4000);
 connectMongo()
   .then(() => {
-    app.listen(port, () => {
-      console.log(`API running at http://localhost:${port}`);
-    });
+    app.listen(port, () => console.log(`API running at http://localhost:${port}`));
   })
-  .catch((err) => {
+  .catch(err => {
     console.error("MongoDB connection failed:", err.message);
     process.exit(1);
   });

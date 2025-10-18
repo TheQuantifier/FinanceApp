@@ -28,23 +28,24 @@ RecordSchema.index({ date: -1 });
 RecordSchema.index({ type: 1 });
 RecordSchema.index({ method: 1 });
 
-const ReceiptSchema = new mongoose.Schema(
-  {
-    original_filename: String,
-    stored_filename: String,
-    path: String,
-    mimetype: String,
-    size_bytes: Number,
-    uploaded_at: { type: Date, default: () => new Date() },
-    parse_status: { type: String, default: "raw" },
-    ocr_text: String,
-    source: String,
-    date: String,
-    currency: { type: String, default: "USD" },
-    total_amount_cents: Number
-  },
-  { timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" } }
-);
+const ReceiptSchema = new mongoose.Schema({
+  original_filename: String,
+  stored_filename: String,
+  path: String,
+  mimetype: String,
+  size_bytes: Number,
+  uploaded_at: Date,
+  parse_status: String,
+  ocr_text: String,
+  date: String,       // ISO or string like "YYYY-MM-DD"
+  source: String,
+  category: String,
+  amount: Number,
+  method: String,
+  notes: String,
+  currency: { type: String, default: "USD" }
+}, { timestamps: true });
+
 
 ReceiptSchema.index({ uploaded_at: -1 });
 
