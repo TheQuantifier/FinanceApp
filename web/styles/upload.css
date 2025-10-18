@@ -122,20 +122,37 @@
 .recent { padding: 1.25rem; }
 
 .actions-col { width: 1%; white-space: nowrap; }
+
+/* Icon button: keep focus ring on the button (accessible), not on the image */
 .icon-btn {
   border: none;
   background: none;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:hover { background: #f3f4f6; }
-.icon-btn:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* Prefer focus-visible so mouse clicks don’t show a ring */
+.icon-btn:focus { outline: none; }
+.icon-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
+/* Trash icon image: no borders/outline */
 .icon-trash {
   width: 20px;
   height: 20px;
   object-fit: contain;
   vertical-align: middle;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
-
+/* Extra safety for any img placed inside the icon button */
+.icon-btn img {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
