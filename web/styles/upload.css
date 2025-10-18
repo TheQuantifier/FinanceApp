@@ -53,9 +53,7 @@
 }
 .tips li { margin: 0.25rem 0; }
 
-.file-list-wrap {
-  margin-top: 1rem;
-}
+.file-list-wrap { margin-top: 1rem; }
 .file-list-title {
   font-size: 1.05rem;
   margin-bottom: 0.5rem;
@@ -88,9 +86,7 @@
   color: var(--muted);
   overflow: hidden;
 }
-.file-meta {
-  min-width: 0;
-}
+.file-meta { min-width: 0; }
 .file-name {
   font-weight: 600;
   overflow: hidden;
@@ -121,10 +117,25 @@
   margin-top: 0.9rem;
 }
 
-.status {
-  margin-top: 0.6rem;
+.status { margin-top: 0.6rem; }
+
+.recent { padding: 1.25rem; }
+
+.actions-col { width: 1%; white-space: nowrap; }
+.icon-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+}
+.icon-btn:hover { background: #f3f4f6; }
+.icon-btn:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.icon-trash {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
-.recent {
-  padding: 1.25rem;
-}

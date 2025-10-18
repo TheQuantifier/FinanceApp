@@ -72,27 +72,73 @@
   };
 
   // ---------- Recent uploads ----------
+  const trashSVG = `<img src="images/trash.jpg" alt="Delete" class="icon-trash" />`;
+
+
+  const renderRecentRows = (rows) => {
+    recentTableBody.innerHTML = "";
+    if (!rows.length) {
+      recentTableBody.innerHTML = `<tr><td colspan="6" class="subtle">No uploads yet.</td></tr>`;
+      return;
+    }
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      tr.dataset.id = r._id;
+      const when = r.uploaded_at ? new Date(r.uploaded_at).toLocaleString() : "—";
+      tr.innerHTML = `
+        <td>${r.original_filename || r.stored_filename || "—"}</td>
+        <td>${r.mimetype || "—"}</td>
+        <td class="num">${(r.size_bytes && bytesToSize(r.size_bytes)) || "—"}</td>
+        <td>${when}</td>
+        <td>${r.parse_status || "raw"}</td>
+        <td class="num">
+          <button class="icon-btn js-delete" data-id="${r._id}" title="Delete" aria-label="Delete this receipt">
+            ${trashSVG}
+          </button>
+        </td>
+      `;
+      recentTableBody.appendChild(tr);
+    }
+  };
+
   const refreshRecent = async () => {
     if (!recentTableBody) return;
     try {
       const rows = await fetchJSON(`${API_BASE}/receipts`, { mode: "cors" });
-      recentTableBody.innerHTML = "";
-      for (const r of rows) {
-        const tr = document.createElement("tr");
-        const when = r.uploaded_at ? new Date(r.uploaded_at).toLocaleString() : "—";
-        tr.innerHTML = `
-          <td>${r.original_filename || r.stored_filename || "—"}</td>
-          <td>${r.mimetype || "—"}</td>
-          <td class="num">${(r.size_bytes && bytesToSize(r.size_bytes)) || "—"}</td>
-          <td>${when}</td>
-          <td>${r.parse_status || "raw"}</td>
-        `;
-        recentTableBody.appendChild(tr);
-      }
-    } catch {
-      /* optional */
+      renderRecentRows(rows || []);
+    } catch (err) {
+      recentTableBody.innerHTML = `<tr><td colspan="6" class="subtle">Failed to load uploads.</td></tr>`;
     }
   };
+
+  // Delegated click for delete buttons
+  recentTableBody?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".js-delete");
+    if (!btn) return;
+    const id = btn.getAttribute("data-id");
+    if (!id) return;
+    const row = btn.closest("tr");
+
+    if (!confirm("Delete this receipt? This removes the DB record and attempts to delete the file on disk.")) return;
+
+    btn.disabled = true;
+    try {
+      await fetchJSON(`${API_BASE}/receipts/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        mode: "cors",
+      });
+      // Optimistic remove
+      if (row && row.parentNode) row.parentNode.removeChild(row);
+      // If table is empty, refresh to show placeholder
+      if (!recentTableBody.querySelector("tr")) {
+        await refreshRecent();
+      }
+      setStatus("Deleted.");
+    } catch (err) {
+      setStatus(`Delete failed: ${err.message}`, true);
+      btn.disabled = false;
+    }
+  });
 
   // ---------- Queue / UI ----------
   function renderQueue() {
@@ -188,7 +234,6 @@
     // Safety disarm if user cancels and 'change' doesn't fire
     setTimeout(disarm, 2500);
 
-    // Prefer modern showPicker if available
     try {
       if (typeof fileInput.showPicker === "function") {
         fileInput.showPicker();
@@ -196,18 +241,15 @@
         fileInput.click();
       }
     } catch {
-      // Fallback to click if showPicker throws (Safari)
       try { fileInput.click(); } catch {}
     }
   }
 
-  // If someone clicks the hidden input directly, don’t bubble up
+  // Prevent bubbling from the hidden input
   fileInput.addEventListener("click", (e) => e.stopPropagation(), true);
 
   // Click handler in capture phase so overlays can’t swallow it
-  dropzone.addEventListener("click", (e) => {
-    openPickerOnce();
-  }, true);
+  dropzone.addEventListener("click", () => openPickerOnce(), true);
 
   // Keyboard access
   dropzone.addEventListener("keydown", (e) => {
