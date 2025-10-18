@@ -10,3 +10,7 @@ __pycache__/
 uploads/*
 !uploads/.gitkeep
 .env
+# Python virtual environment 
+.venv/
+venv/
+ENV/
