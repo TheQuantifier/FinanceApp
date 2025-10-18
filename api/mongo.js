@@ -38,7 +38,7 @@ const ReceiptSchema = new mongoose.Schema(
     uploaded_at: { type: Date, default: () => new Date() },
     parse_status: { type: String, default: "raw" },
     ocr_text: String,
-    merchant: String,
+    source: String,
     date: String,
     currency: { type: String, default: "USD" },
     total_amount_cents: Number

@@ -47,7 +47,12 @@ function isAllowedFile(file) {
   return [".pdf", ".png", ".jpg", ".jpeg"].includes(ext);
 }
 
-// Optional OCR setup
+/* =======================================================================
+   Optional OCR (Python worker)
+   - Enable by setting OCR_ENABLED=true in .env
+   - Optionally set PYTHON_BIN to an explicit interpreter path
+   - Gracefully skips if missing or errors (no crashes)
+   ======================================================================= */
 const workerDir = path.resolve(process.cwd(), "worker");
 const ocrScript = path.join(workerDir, "ocr_demo.py");
 const OCR_ENABLED = (process.env.OCR_ENABLED || "false").toLowerCase() === "true";
@@ -103,13 +108,14 @@ app.get("/", (_req, res) => res.send("Finance Tracker API is live"));
 
 app.get("/health", (_req, res) => {
   try {
-    getDb();
+    getDb(); // Ensure a DB is attached
     res.json({ ok: true });
   } catch {
     res.status(503).json({ ok: false });
   }
 });
 
+// Quick manual upload test form (optional)
 app.get("/test", (_req, res) => res.send(`
   <form action="/upload" method="post" enctype="multipart/form-data">
     <input type="file" name="receipt" />
@@ -129,8 +135,14 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
     const absPath = path.resolve(req.file.path);
     const ocr = await runOCR(absPath);
 
+    // Only treat OCR as valid text if it isn't a status line
+    const ocrText =
+      ocr && typeof ocr.ocr_text === "string" && !/^OCR (disabled|skipped|failed|error)/i.test(ocr.ocr_text)
+        ? ocr.ocr_text
+        : null;
+
     // Parse file content (PDF/CSV/Image text) into structured fields
-    const parsedData = await parseFile(absPath, req.file.mimetype, ocr.ocr_text);
+    const parsedData = await parseFile(absPath, req.file.mimetype, ocrText);
 
     const { Receipt } = getModels();
     const doc = await Receipt.create({
@@ -141,7 +153,7 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
       size_bytes: req.file.size,
       uploaded_at: new Date(),
       parse_status: parsedData ? "parsed" : "raw",
-      ocr_text: ocr.ocr_text,
+      ocr_text: ocrText, // store real OCR text only; null otherwise
       date: parsedData?.Date || null,
       source: parsedData?.Source || null,
       category: parsedData?.Category || null,
