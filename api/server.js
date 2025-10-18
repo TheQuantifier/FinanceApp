@@ -9,19 +9,20 @@ require("dotenv").config();
 
 const { connectMongo, getDb, getModels } = require("./mongo");
 const recordsRouter = require("./records");
+const { parseFile } = require("./utils/fileParser");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===== Upload directory (root-level, sibling of .env) =====
+// Upload directory (outside api/, sibling of this folder)
 const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
-  console.log("📂 Created uploads directory:", uploadDir);
+  console.log("Created uploads directory:", uploadDir);
 }
 
-// ===== Multer storage =====
+// Multer storage config
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
@@ -31,10 +32,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// Allow-list for files
 function isAllowedFile(file) {
   const allowedMimes = new Set([
     "application/pdf",
@@ -47,29 +47,17 @@ function isAllowedFile(file) {
   return [".pdf", ".png", ".jpg", ".jpeg"].includes(ext);
 }
 
-/* =======================================================================
-   Optional OCR (Python worker)
-   - Enable by setting OCR_ENABLED=true in .env
-   - Optionally set PYTHON_BIN to an explicit interpreter path
-   - Gracefully skips if missing or errors (no crashes)
-   ======================================================================= */
+// Optional OCR setup
 const workerDir = path.resolve(process.cwd(), "worker");
 const ocrScript = path.join(workerDir, "ocr_demo.py");
 const OCR_ENABLED = (process.env.OCR_ENABLED || "false").toLowerCase() === "true";
 
 function resolvePythonBin() {
-  // Highest priority: explicit env override
   if (process.env.PYTHON_BIN && fs.existsSync(process.env.PYTHON_BIN)) return process.env.PYTHON_BIN;
-
-  // Windows venv
   const winVenvPy = path.join(workerDir, ".venv", "Scripts", "python.exe");
   if (process.platform === "win32" && fs.existsSync(winVenvPy)) return winVenvPy;
-
-  // *nix venv
   const nixVenvPy = path.join(workerDir, ".venv", "bin", "python");
   if (fs.existsSync(nixVenvPy)) return nixVenvPy;
-
-  // Fallbacks
   return process.platform === "win32" ? "python" : "python3";
 }
 
@@ -84,9 +72,7 @@ async function runOCR(absPath) {
   const PYTHON = resolvePythonBin();
 
   return new Promise((resolve) => {
-    let out = "", err = "";
-    let crashed = false;
-
+    let out = "", err = "", crashed = false;
     const py = spawn(PYTHON, [ocrScript, absPath], { cwd: workerDir });
 
     py.on("error", (e) => {
@@ -112,19 +98,18 @@ async function runOCR(absPath) {
   });
 }
 
-// ===== Routes =====
-app.get("/", (_req, res) => res.send("🚀 Finance Tracker API is live"));
+// Routes
+app.get("/", (_req, res) => res.send("Finance Tracker API is live"));
 
 app.get("/health", (_req, res) => {
   try {
-    getDb(); // Ensure a DB is attached
+    getDb();
     res.json({ ok: true });
   } catch {
     res.status(503).json({ ok: false });
   }
 });
 
-// Quick manual upload test form (optional)
 app.get("/test", (_req, res) => res.send(`
   <form action="/upload" method="post" enctype="multipart/form-data">
     <input type="file" name="receipt" />
@@ -132,7 +117,7 @@ app.get("/test", (_req, res) => res.send(`
   </form>
 `));
 
-// Upload route → save file → (optional OCR) → store via Mongoose
+// Upload route
 app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -144,6 +129,9 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
     const absPath = path.resolve(req.file.path);
     const ocr = await runOCR(absPath);
 
+    // Parse file content (PDF/CSV/Image text) into structured fields
+    const parsedData = await parseFile(absPath, req.file.mimetype, ocr.ocr_text);
+
     const { Receipt } = getModels();
     const doc = await Receipt.create({
       original_filename: req.file.originalname,
@@ -152,27 +140,27 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
       mimetype: req.file.mimetype,
       size_bytes: req.file.size,
       uploaded_at: new Date(),
-      parse_status: "raw",
-      ocr_text: typeof ocr === "object"
-        ? (ocr.ocr_text || JSON.stringify(ocr))
-        : String(ocr || ""),
-      merchant: null,
-      date: null,
-      currency: "USD",
-      total_amount_cents: null,
+      parse_status: parsedData ? "parsed" : "raw",
+      ocr_text: ocr.ocr_text,
+      date: parsedData?.Date || null,
+      source: parsedData?.Source || null,
+      category: parsedData?.Category || null,
+      amount: parsedData?.Amount || null,
+      method: parsedData?.Method || null,
+      notes: parsedData?.Notes || null,
     });
 
     res.json({
-      message: "✅ File uploaded and stored in MongoDB.",
+      message: "File uploaded and parsed successfully.",
       receipt_id: String(doc._id),
-      file: { name: req.file.originalname, storedName: req.file.filename },
+      extracted: parsedData,
     });
   } catch (e) {
     next(e);
   }
 });
 
-// List receipts (recent first, omit OCR text by default) — using Mongoose
+// Get all receipts
 app.get("/receipts", async (_req, res, next) => {
   try {
     const { Receipt } = getModels();
@@ -181,15 +169,13 @@ app.get("/receipts", async (_req, res, next) => {
       .sort({ uploaded_at: -1 })
       .limit(100)
       .lean();
-
-    // Normalize _id to string
     res.json(rows.map(r => ({ ...r, _id: String(r._id) })));
   } catch (e) {
     next(e);
   }
 });
 
-// Get a single receipt (includes OCR text) — using Mongoose
+// Get one receipt
 app.get("/receipts/:id", async (req, res, next) => {
   try {
     const { Receipt } = getModels();
@@ -202,14 +188,13 @@ app.get("/receipts/:id", async (req, res, next) => {
   }
 });
 
-// Delete a receipt and try to delete the file — using Mongoose
+// Delete receipt
 app.delete("/receipts/:id", async (req, res, next) => {
   try {
     const { Receipt } = getModels();
     const row = await Receipt.findById(req.params.id);
     if (!row) return res.status(404).json({ error: "Not found" });
 
-    // Best-effort delete of disk file
     try { if (row.path && fs.existsSync(row.path)) fs.unlinkSync(row.path); } catch {}
 
     await Receipt.findByIdAndDelete(req.params.id);
@@ -219,12 +204,12 @@ app.delete("/receipts/:id", async (req, res, next) => {
   }
 });
 
-// Mount records router (JSON CRUD for user-entered txns)
+// Mount records router
 app.use("/records", recordsRouter);
 
 // Error handler
 app.use((err, _req, res, _next) => {
-  console.error("❌ Error:", err?.message || err);
+  console.error("Error:", err?.message || err);
   res.status(500).json({ error: err?.message || "Server error" });
 });
 
@@ -233,10 +218,10 @@ const port = Number(process.env.PORT || 4000);
 connectMongo()
   .then(() => {
     app.listen(port, () => {
-      console.log(`✅ API running → http://localhost:${port}`);
+      console.log(`API running at http://localhost:${port}`);
     });
   })
   .catch((err) => {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("MongoDB connection failed:", err.message);
     process.exit(1);
   });
