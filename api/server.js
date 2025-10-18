@@ -181,8 +181,8 @@ app.get("/receipts", async (_req, res, next) => {
       uploaded_at: r.uploaded_at,
       parse_status: r.parse_status
     }));
-
     res.json(uploads);
+    
   } catch (e) {
     next(e);
   }

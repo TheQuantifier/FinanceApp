@@ -2,7 +2,7 @@
    Finance App — upload.js
    Drag & drop / file picker → POST to API /upload
    Saves file to uploads/ and metadata to MongoDB.
-   Updates "Recent uploads" instantly.
+   Automatically uploads all queued files.
    =============================================== */
 
    (function () {
@@ -26,10 +26,6 @@
       console.error("upload.js: Missing #dropzone or #fileInput in the DOM.");
       return;
     }
-  
-    dropzone.style.pointerEvents = "auto";
-    dropzone.setAttribute("role", "button");
-    dropzone.setAttribute("tabindex", "0");
   
     let queue = [];
     let pickerArmed = false;
@@ -101,7 +97,6 @@
     };
   
     const refreshRecent = async () => {
-      if (!recentTableBody) return;
       try {
         const rows = await fetchJSON(`${API_BASE}/receipts`, { mode: "cors" });
         renderRecentRows(rows || []);
@@ -110,7 +105,7 @@
       }
     };
   
-    // Delete receipt
+    // ---------- Delete buttons ----------
     recentTableBody?.addEventListener("click", async (e) => {
       const btn = e.target.closest(".js-delete");
       if (!btn) return;
@@ -122,14 +117,9 @@
   
       btn.disabled = true;
       try {
-        await fetchJSON(`${API_BASE}/receipts/${encodeURIComponent(id)}`, {
-          method: "DELETE",
-          mode: "cors",
-        });
+        await fetchJSON(`${API_BASE}/receipts/${encodeURIComponent(id)}`, { method: "DELETE", mode: "cors" });
         if (row && row.parentNode) row.parentNode.removeChild(row);
-        if (!recentTableBody.querySelector("tr")) {
-          await refreshRecent();
-        }
+        if (!recentTableBody.querySelector("tr")) await refreshRecent();
         setStatus("Deleted.");
       } catch (err) {
         setStatus(`Delete failed: ${err.message}`, true);
@@ -137,9 +127,8 @@
       }
     });
   
-    // ---------- Queue / UI ----------
+    // ---------- Queue ----------
     function renderQueue() {
-      if (!fileList || !uploadBtn) return;
       fileList.innerHTML = "";
       const hasItems = queue.length > 0;
       uploadBtn.disabled = !hasItems;
@@ -199,12 +188,12 @@
   
     function addFiles(files) {
       const incoming = Array.from(files || []);
-      if (incoming.length === 0) return;
+      if (!incoming.length) return;
   
       const accepted = [];
       let rejected = 0;
   
-      incoming.forEach((f) => {
+      incoming.forEach(f => {
         if (!isAccepted(f) || overLimit(f)) { rejected++; return; }
         accepted.push(f);
       });
@@ -223,113 +212,55 @@
     function openPickerOnce() {
       if (!fileInput || pickerArmed) return;
       pickerArmed = true;
-  
       const disarm = () => { pickerArmed = false; };
       const onChange = () => { disarm(); fileInput.removeEventListener("change", onChange); };
       fileInput.addEventListener("change", onChange, { once: true });
-  
       setTimeout(disarm, 2500);
-  
-      try {
-        if (typeof fileInput.showPicker === "function") {
-          fileInput.showPicker();
-        } else {
-          fileInput.click();
-        }
-      } catch {
-        try { fileInput.click(); } catch {}
-      }
+      try { fileInput.showPicker?.() ?? fileInput.click(); } catch { fileInput.click(); }
     }
   
     fileInput.addEventListener("click", (e) => e.stopPropagation(), true);
     dropzone.addEventListener("click", () => openPickerOnce(), true);
     dropzone.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        openPickerOnce();
-      }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPickerOnce(); }
     });
-    fileInput.addEventListener("change", (e) => {
-      addFiles(e.target.files);
-      e.target.value = "";
-    });
+    fileInput.addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
   
-    ["dragenter", "dragover"].forEach(evt =>
-      dropzone.addEventListener(evt, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.add("is-dragover");
-      })
-    );
-    ["dragleave", "drop"].forEach(evt =>
-      dropzone.addEventListener(evt, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (evt === "drop" && e.dataTransfer?.files) addFiles(e.dataTransfer.files);
-        dropzone.classList.remove("is-dragover");
-      })
-    );
+    ["dragenter","dragover"].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add("is-dragover"); }));
+    ["dragleave","drop"].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); if (evt === "drop" && e.dataTransfer?.files) addFiles(e.dataTransfer.files); dropzone.classList.remove("is-dragover"); }));
   
-    clearBtn?.addEventListener("click", () => {
-      queue = [];
-      fileInput.value = "";
-      renderQueue();
-      setStatus("Cleared selection.");
-    });
+    clearBtn?.addEventListener("click", () => { queue=[]; fileInput.value=""; renderQueue(); setStatus("Cleared selection."); });
   
-    // ---------- Upload ----------
-    uploadBtn?.addEventListener("click", async () => {
-      if (queue.length === 0) return;
-    
-      const file = queue[0];
-      const fd = new FormData();
-      fd.append("receipt", file, file.name);
-    
-      uploadBtn.disabled = true;
-      dropzone?.setAttribute("aria-busy", "true");
-      setStatus("Uploading…");
-    
-      try {
-        const json = await fetchJSON(`${API_BASE}/upload`, {
-          method: "POST",
-          body: fd,
-          mode: "cors",
-        });
-    
-        setStatus(`Uploaded: ${file.name}`);
-    
-        // Remove file from queue
-        queue.shift();
-        renderQueue();
-    
-        // Fetch the uploaded receipt by ID and prepend to table
-        if (json.receipt_id) {
-          const newReceipt = await fetchJSON(`${API_BASE}/receipts/${json.receipt_id}`);
-          const rowData = [{
-            _id: json.receipt_id,
-            original_filename: newReceipt.original_filename || file.name,
-            stored_filename: newReceipt.stored_filename || "",
-            mimetype: newReceipt.mimetype || file.type,
-            size_bytes: newReceipt.size_bytes || file.size,
-            uploaded_at: newReceipt.uploaded_at || new Date(),
-            parse_status: newReceipt.parse_status || "raw"
-          }];
-          // Prepend new row
-          const existing = await fetchJSON(`${API_BASE}/receipts`, { mode: "cors" });
-          renderRecentRows(rowData.concat(existing));
-        } else {
-          await refreshRecent();
+    // ---------- Upload all queued files ----------
+    async function uploadAll() {
+      while (queue.length > 0) {
+        const file = queue[0];
+        const fd = new FormData();
+        fd.append("receipt", file, file.name);
+  
+        uploadBtn.disabled = true;
+        dropzone?.setAttribute("aria-busy", "true");
+        setStatus(`Uploading ${file.name}…`);
+  
+        try {
+          const json = await fetchJSON(`${API_BASE}/upload`, { method: "POST", body: fd, mode: "cors" });
+          setStatus(`Uploaded: ${file.name}`);
+          queue.shift();
+          renderQueue();
+          await refreshRecent(); // update table immediately
+        } catch (err) {
+          setStatus(`Upload failed: ${err.message}`, true);
+          break; // stop queue on error
+        } finally {
+          dropzone?.removeAttribute("aria-busy");
         }
-    
-      } catch (err) {
-        setStatus(`Upload failed: ${err.message}`, true);
-      } finally {
-        uploadBtn.disabled = queue.length === 0;
-        dropzone?.removeAttribute("aria-busy");
       }
-    });
-    
-    // Initial draw
+      uploadBtn.disabled = queue.length === 0;
+    }
+  
+    uploadBtn?.addEventListener("click", uploadAll);
+  
+    // ---------- Init ----------
     renderQueue();
     refreshRecent();
   })();
