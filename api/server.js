@@ -119,20 +119,31 @@ app.get("/test", (_req, res) => res.send(`
 `));
 
 // ------------------ Upload ------------------
+// File upload
 app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     if (!isAllowedFile(req.file)) {
-      try { fs.unlinkSync(req.file.path); } catch {}
+      fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: "Only PDF/PNG/JPG allowed" });
     }
 
     const absPath = path.resolve(req.file.path);
+
+    // Run OCR (always)
     const ocr = await runOCR(absPath);
 
-    const parsedData = await parseFile(absPath, req.file.mimetype, ocr.ocr_text);
+    // Parse file using your parser
+    let parsedData = {};
+    try {
+      parsedData = await parseFile(absPath, req.file.mimetype, ocr.ocr_text) || {};
+    } catch (e) {
+      console.warn("File parsing failed:", e.message || e);
+    }
 
     const { Receipt } = getModels();
+
+    // Use parsed values if available; fallback to OCR text or defaults
     const doc = await Receipt.create({
       original_filename: req.file.originalname,
       stored_filename: req.file.filename,
@@ -141,24 +152,24 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
       size_bytes: req.file.size,
       uploaded_at: new Date(),
       parse_status: parsedData ? "parsed" : "raw",
-      ocr_text: ocr.ocr_text,
+      ocr_text: ocr.ocr_text || "",
       date: parsedData?.Date || null,
-      source: parsedData?.Source || null,
-      category: parsedData?.Category || null,
-      amount: parsedData?.Amount || null,
+      source: parsedData?.Source || (ocr.ocr_text ? ocr.ocr_text.slice(0, 100) : null),
+      category: parsedData?.Category || "other",
+      amount: parsedData?.Amount ?? null,
       method: parsedData?.Method || null,
-      notes: parsedData?.Notes || null,
+      notes: parsedData?.Notes || (ocr.ocr_text || ""),
+      type: parsedData?.Type || "expense",
+      currency: "USD"
     });
 
-    res.json({
-      message: "File uploaded and parsed successfully.",
-      receipt: doc,  // send the full doc back
-    });
-    
-  } catch (e) {
-    next(e);
+    res.json({ message: "File uploaded and parsed.", receipt: doc });
+  } catch (err) {
+    console.error("Upload error:", err);
+    next(err);
   }
 });
+
 
 // ------------------ Receipts ------------------
 
