@@ -1,6 +1,10 @@
+// frontend/records.js
 // ========== RECORDS PAGE LOGIC (Expenses + Income; header/footer handled by default.js) ==========
 (() => {
-  const DATA_URL = "data/sample.json"; // adjust if needed
+  // Use the receipts endpoint (returns an array of Receipt documents)
+  const DATA_URL = "http://localhost:4000/receipts";
+  // POST new manual transactions to the records router (mounted at /records)
+  const POST_URL = "http://localhost:4000/records";
   const CURRENCY_FALLBACK = "USD";
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -9,40 +13,73 @@
   const fmtMoney = (value, currency) =>
     new Intl.NumberFormat(undefined, { style: "currency", currency: currency || CURRENCY_FALLBACK }).format(value ?? 0);
 
-  const fmtDate = (iso) =>
-    new Date(iso + (iso?.length === 10 ? "T00:00:00" : "")).toLocaleDateString(undefined, {
-      year: "numeric", month: "short", day: "2-digit"
-    });
+  const fmtDate = (isoOrStr) => {
+    if (!isoOrStr) return "";
+    // Try to parse common formats (YYYY-MM-DD or MM/DD/YYYY). If it's already ISO, Date will handle it.
+    try {
+      // Normalize: accept "MM/DD/YYYY" and "YYYY-MM-DD"
+      const d = parseDate(isoOrStr);
+      if (!d || Number.isNaN(d.getTime())) return String(isoOrStr);
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+    } catch {
+      return String(isoOrStr);
+    }
+  };
 
   // ---- Data
   let EXP_RAW = [];
   let INC_RAW = [];
   let summaryCurrency = CURRENCY_FALLBACK;
 
+  // Robust date parser: accept YYYY-MM-DD and MM/DD/YYYY
+  function parseDate(s) {
+    if (!s) return null;
+    if (s instanceof Date) return s;
+    const trimmed = String(s).trim();
+    // YYYY-MM-DD
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) return new Date(`${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00`);
+    // MM/DD/YYYY or M/D/YYYY
+    const mdMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (mdMatch) {
+      const mm = mdMatch[1].padStart(2, "0");
+      const dd = mdMatch[2].padStart(2, "0");
+      const yyyy = mdMatch[3];
+      return new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+    }
+    // fallback - let Date try (may be locale dependent)
+    const d = new Date(trimmed);
+    return isNaN(d) ? null : d;
+  }
+
+  // ----------------- LOAD DATA -----------------
   async function loadData() {
     const resp = await fetch(DATA_URL, { cache: "no-store" });
     if (!resp.ok) throw new Error(`Failed to load data (${resp.status})`);
     const json = await resp.json();
-
-    const localTxns = JSON.parse(localStorage.getItem("userTxns") || "[]");
-    const localExpenses = localTxns.filter(txn => txn.type === "expense");
-    const localIncome = localTxns.filter(txn => txn.type === "income");
-
-    EXP_RAW = [...(json.expenses || []), ...localExpenses]; // expenses come from "expenses"
-    INC_RAW = [...(json.income || []), ...localIncome];      // income comes from "income"
-    summaryCurrency = json.summary?.currency || CURRENCY_FALLBACK;
-
+    
+    console.log("Fetched JSON", json);
+    // The backend returns a flat array, so split manually if needed
+    EXP_RAW = json.filter(r => r.type === "expense");
+    INC_RAW = json.filter(r => r.type === "income");
+  
+    // If no type field exists, assume all are expenses
+    if (!EXP_RAW.length && !INC_RAW.length) {
+      EXP_RAW = json;
+    }
+  
+    summaryCurrency = json[0]?.currency || CURRENCY_FALLBACK;
+  
+    // Pass json here
     hydrateCategoryFilters(json);
   }
 
-  function hydrateCategoryFilters(json) {
+  function hydrateCategoryFilters() {
     const expSel = $("#category");
     if (expSel) {
-      const expCats =
-        Object.keys(json.summary?.categories || {}).length
-          ? Object.keys(json.summary.categories)
-          : Array.from(new Set(EXP_RAW.map(t => t.category).filter(Boolean)));
-      expCats.sort((a, b) => a.localeCompare(b));
+      // Clear existing options
+      expSel.innerHTML = `<option value="">All</option>`;
+      const expCats = Array.from(new Set(EXP_RAW.map(t => (t.category || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
       for (const name of expCats) {
         const opt = document.createElement("option");
         opt.value = name; opt.textContent = name;
@@ -52,11 +89,8 @@
 
     const incSel = $("#categoryIncome");
     if (incSel) {
-      const incCats =
-        Object.keys(json.summary?.income_sources || {}).length
-          ? Object.keys(json.summary.income_sources)
-          : Array.from(new Set(INC_RAW.map(t => t.category).filter(Boolean)));
-      incCats.sort((a, b) => a.localeCompare(b));
+      incSel.innerHTML = `<option value="">All</option>`;
+      const incCats = Array.from(new Set(INC_RAW.map(t => (t.category || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
       for (const name of incCats) {
         const opt = document.createElement("option");
         opt.value = name; opt.textContent = name;
@@ -65,7 +99,7 @@
     }
   }
 
-  // ---- Generic controller factory
+  // ----------------- CONTROLLER FACTORY -----------------
   function makeController(cfg) {
     const els = {
       q: $(`#${cfg.prefix === "exp" ? "q" : "qIncome"}`),
@@ -98,21 +132,28 @@
     function matchesText(txn, q) {
       if (!q) return true;
       const t = q.toLowerCase();
-      return cfg.textFields.some(f => (txn[f] || "").toLowerCase().includes(t));
+      return cfg.textFields.some(f => (String(txn[f] || "").toLowerCase().includes(t)));
     }
 
     function withinDate(txn, minDate, maxDate) {
       if (!minDate && !maxDate) return true;
-      const d = txn.date;
-      if (minDate && d < minDate) return false;
-      if (maxDate && d > maxDate) return false;
+      const d = parseDate(txn.date);
+      if (!d) return false;
+      if (minDate) {
+        const md = parseDate(minDate);
+        if (md && d < md) return false;
+      }
+      if (maxDate) {
+        const xd = parseDate(maxDate);
+        if (xd && d > xd) return false;
+      }
       return true;
     }
 
     function withinAmount(txn, minAmt, maxAmt) {
       const a = Number(txn.amount) || 0;
-      if (minAmt !== "" && a < Number(minAmt)) return false;
-      if (maxAmt !== "" && a > Number(maxAmt)) return false;
+      if (minAmt !== "" && minAmt != null && !Number.isNaN(Number(minAmt)) && a < Number(minAmt)) return false;
+      if (maxAmt !== "" && maxAmt != null && !Number.isNaN(Number(maxAmt)) && a > Number(maxAmt)) return false;
       return true;
     }
 
@@ -120,24 +161,25 @@
       let list = cfg.rows().slice();
       list = list.filter(txn =>
         matchesText(txn, state.q) &&
-        (!state.category || txn.category === state.category) &&
+        (!state.category || (txn.category || "") === state.category) &&
         (
           !state.method ||
           (
             state.method.toLowerCase() === "other"
-              ? !["cash", "credit card", "debit card", "direct deposit", "ach", "check", "paypal"].includes((txn.payment_method || "").toLowerCase())
-              : (txn.payment_method || "").toLowerCase() === state.method.toLowerCase()
+              ? !["cash", "credit card", "debit card", "direct deposit", "ach", "check", "paypal"].includes(((txn.method || "")).toLowerCase())
+              : (txn.method || "").toLowerCase() === state.method.toLowerCase()
           )
         ) &&
         withinDate(txn, state.minDate, state.maxDate) &&
         withinAmount(txn, state.minAmt, state.maxAmt)
       );
+
       list.sort((a, b) => {
         switch (state.sort) {
-          case "date_asc": return a.date.localeCompare(b.date);
-          case "date_desc": return b.date.localeCompare(a.date);
-          case "amount_asc": return (a.amount ?? 0) - (b.amount ?? 0);
-          case "amount_desc": return (b.amount ?? 0) - (a.amount ?? 0);
+          case "date_asc": return (a.date || "").localeCompare(b.date || "");
+          case "date_desc": return (b.date || "").localeCompare(a.date || "");
+          case "amount_asc": return (Number(a.amount) || 0) - (Number(b.amount) || 0);
+          case "amount_desc": return (Number(b.amount) || 0) - (Number(a.amount) || 0);
           case "source_asc": return (a[cfg.sortKeys.alpha] || "").localeCompare(b[cfg.sortKeys.alpha] || "");
           case "source_desc": return (b[cfg.sortKeys.alpha] || "").localeCompare(a[cfg.sortKeys.alpha] || "");
           default: return 0;
@@ -202,11 +244,11 @@
       const lines = [header.join(",")];
       for (const t of filtered) {
         const row = [
-          t.date,
+          t.date || "",
           (t[cfg.sortKeys.alpha] || "").replace(/"/g, '""'),
           (t.category || "").replace(/"/g, '""'),
           (Number(t.amount) ?? 0).toFixed(2),
-          (t.payment_method || "").replace(/"/g, '""'),
+          (t.method || "").replace(/"/g, '""'),
           (t.notes || "").replace(/"/g, '""'),
         ].map(v => /[",\n]/.test(v) ? `"${v}"` : String(v));
         lines.push(row.join(","));
@@ -243,7 +285,7 @@
     return { wire, updateView, readForm };
   }
 
-  // ---- Modal actions
+  // ----------------- MODALS -----------------
   function wireModals() {
     const modals = {
       expense: $("#addExpenseModal"),
@@ -263,8 +305,24 @@
     $("#cancelExpenseBtn")?.addEventListener("click", () => modals.expense.classList.add("hidden"));
     $("#cancelIncomeBtn")?.addEventListener("click", () => modals.income.classList.add("hidden"));
 
-    // Save Expense
-    forms.expense?.addEventListener("submit", (e) => {
+    // Save to backend
+    async function saveTransaction(txn) {
+      // Validate amount as number so server accepts it
+      if (typeof txn.amount !== "number") txn.amount = parseFloat(txn.amount) || 0;
+      const resp = await fetch(POST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(txn)
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(()=>({error:"save failed"}));
+        throw new Error(err?.error || `Save failed (${resp.status})`);
+      }
+      // reload from DB
+      await loadData();
+    }
+
+    forms.expense?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const txn = {
         type: "expense",
@@ -272,20 +330,21 @@
         source: $("#expenseSource").value,
         category: $("#expenseCategory").value,
         amount: parseFloat($("#expenseAmount").value) || 0,
-        payment_method: $("#expenseMethod").value,
+        method: $("#expenseMethod").value,
         notes: $("#expenseNotes").value
       };
-      EXP_RAW.push(txn);
-      const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
-      stored.push(txn);
-      localStorage.setItem("userTxns", JSON.stringify(stored));
-      modals.expense.classList.add("hidden");
-      forms.expense.reset();
-      alert("Expense added!");
+      try {
+        await saveTransaction(txn);
+        modals.expense.classList.add("hidden");
+        forms.expense.reset();
+        alert("Expense added!");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save expense: " + err.message);
+      }
     });
 
-    // Save Income
-    forms.income?.addEventListener("submit", (e) => {
+    forms.income?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const txn = {
         type: "income",
@@ -293,23 +352,22 @@
         source: $("#incomeSource").value,
         category: $("#incomeCategory").value,
         amount: parseFloat($("#incomeAmount").value) || 0,
-        payment_method: $("#incomeMethod").value,
+        method: $("#incomeMethod").value,
         notes: $("#incomeNotes").value
       };
-      INC_RAW.push(txn);
-      const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
-      stored.push(txn);
-      localStorage.setItem("userTxns", JSON.stringify(stored));
-      modals.income.classList.add("hidden");
-      forms.income.reset();
-      alert("Income added!");
+      try {
+        await saveTransaction(txn);
+        modals.income.classList.add("hidden");
+        forms.income.reset();
+        alert("Income added!");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save income: " + err.message);
+      }
     });
-
-    // Optional: keep upload buttons
-    $("#btnUploadExpense")?.addEventListener("click", () => alert("Upload expense flow…"));
-    $("#btnUploadIncome")?.addEventListener("click", () => alert("Upload income flow…"));
   }
 
+  // ----------------- INIT -----------------
   async function init() {
     wireModals();
 
@@ -326,7 +384,7 @@
           <td>${t.source || ""}</td>
           <td>${t.category || ""}</td>
           <td class="num">${fmtMoney(t.amount, summaryCurrency)}</td>
-          <td>${t.payment_method || ""}</td>
+          <td>${t.method || ""}</td>
           <td>${t.notes || ""}</td>
         `
       });
@@ -341,7 +399,7 @@
           <td>${t.source || ""}</td>
           <td>${t.category || ""}</td>
           <td class="num">${fmtMoney(t.amount, summaryCurrency)}</td>
-          <td>${t.payment_method || ""}</td>
+          <td>${t.method || ""}</td>
           <td>${t.notes || ""}</td>
         `
       });

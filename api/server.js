@@ -170,7 +170,6 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
   }
 });
 
-
 // ------------------ Receipts ------------------
 
 // Get all receipts (cleaned to 6 fields)
