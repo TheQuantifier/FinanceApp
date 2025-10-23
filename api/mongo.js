@@ -14,14 +14,17 @@ if (!uri) {
 const RecordSchema = new mongoose.Schema(
   {
     type: { type: String, enum: ["expense", "income"], required: true },
-    date: { type: String, required: true }, // keep ISO yyyy-mm-dd from UI; convert later if you prefer Date
+    date: { type: String, required: true },
+    source: { type: String },
     amount: { type: Number, required: true },
     method: { type: String },
     category: { type: String },
     notes: { type: String },
+    currency: { type: String, default: "USD" },
   },
   { timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" } }
 );
+
 
 // Helpful indexes
 RecordSchema.index({ date: -1 });
@@ -37,7 +40,7 @@ const ReceiptSchema = new mongoose.Schema({
   uploaded_at: Date,
   parse_status: String,
   ocr_text: String,
-  date: String,       // ISO or string like "YYYY-MM-DD"
+  date: String,
   source: String,
   category: String,
   amount: Number,

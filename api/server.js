@@ -162,7 +162,6 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
       type: parsedData?.Type || "expense",
       currency: "USD"
     });
-
     res.json({ message: "File uploaded and parsed.", receipt: doc });
   } catch (err) {
     console.error("Upload error:", err);
@@ -171,10 +170,10 @@ app.post("/upload", upload.single("receipt"), async (req, res, next) => {
 });
 
 // ------------------ Receipts ------------------
-
 // Get all receipts (cleaned to 6 fields)
 // Get all receipts with structured fields + file info
-app.get("/receipts", async (_req, res, next) => {
+// Get all receipts with parsed fields
+app.get("/api/receipts", async (_req, res, next) => {
   try {
     const { Receipt } = getModels();
     const rows = await Receipt.find({})
@@ -182,26 +181,27 @@ app.get("/receipts", async (_req, res, next) => {
       .limit(100)
       .lean();
 
-    // Return **fields exactly as the frontend expects**
-    const uploads = rows.map(r => ({
+    // Return full parsed financial fields
+    const cleaned = rows.map(r => ({
       _id: String(r._id),
-      original_filename: r.original_filename,
-      mimetype: r.mimetype,
-      size_bytes: r.size_bytes,
+      date: r.date || null,
+      source: r.source || null,
+      category: r.category || null,
+      amount: r.amount ?? null,
+      method: r.method || null,
+      notes: r.notes || null,
+      parse_status: r.parse_status,
       uploaded_at: r.uploaded_at,
-      parse_status: r.parse_status
     }));
-    res.json(uploads);
-    
+    res.json(cleaned);
   } catch (e) {
+    console.error("Error fetching receipts:", e);
     next(e);
   }
 });
 
-
-
 // Get single receipt by ID (cleaned to 6 fields)
-app.get("/receipts/:id", async (req, res, next) => {
+app.get("/api/receipts/:id", async (req, res, next) => {
   try {
     const { Receipt } = getModels();
     const r = await Receipt.findById(req.params.id).lean();
@@ -222,7 +222,7 @@ app.get("/receipts/:id", async (req, res, next) => {
 });
 
 // Delete receipt
-app.delete("/receipts/:id", async (req, res, next) => {
+app.delete("/api/receipts/:id", async (req, res, next) => {
   try {
     const { Receipt } = getModels();
     const r = await Receipt.findById(req.params.id);
@@ -238,7 +238,7 @@ app.delete("/receipts/:id", async (req, res, next) => {
 });
 
 // Mount records router
-app.use("/records", recordsRouter);
+app.use("/api/records", recordsRouter);
 
 // Error handler
 app.use((err, _req, res, _next) => {
