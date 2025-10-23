@@ -5,6 +5,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const authRouter = require("./auth");
 require("dotenv").config();
 
 const { connectMongo, getDb, getModels } = require("./mongo");
@@ -12,8 +13,9 @@ const recordsRouter = require("./records");
 const { parseFile } = require("./utils/fileParser");
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
+app.use("/api/auth", authRouter);
 
 // Upload directory (outside api/, sibling of this folder)
 const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads");
