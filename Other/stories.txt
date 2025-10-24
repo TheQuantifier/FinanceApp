@@ -1,14 +1,37 @@
-All - 
+🏠 Home (Dashboard Overview)
+Goal: Give a snapshot of the user’s finances — not all the details.
+✅ Keep these:
+Welcome message → “Welcome back, [Name]”
+Two or three summary cards:
+Total Income
+Total Expenses
+Net Balance or Spending This Month
+Quick links:
+“Upload a Receipt” → opens Upload page
+“View Reports” → opens Reports page
+🚫 Remove from Home:
+Recent receipts table (move to Records)
+Spending by category (move to Reports)
+This keeps Home clean and fast — a snapshot + entry point.
 
-Home - 
+📤 Upload
+Goal: Handle uploading and OCR scanning.
+✅ Keep everything here (upload modal, OCR, etc.) — this is a functional page.
+📜 Records
+Goal: Be the main data table.
+✅ Display full list of receipts, edit/delete, and export.
+No summary stats here — just detailed history.
 
-Upload - 
+📈 Reports
+Goal: Visualization + insights.
+✅ Show spending trends, charts, and optional AI summary.
+This page should feel analytical — where users see patterns.
 
-Records - 
-Upload reciept on Modals
-Export CSV button Modals
-Method search category for other methods. 
-
-Reports - 
-
-About - 
+ℹ️ About
+Goal: Brand + story of the app (simple content page).
+So the page balance becomes:
+Home = Summary
+Upload = Action
+Records = Data
+Reports = Insights
+About = Context

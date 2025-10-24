@@ -7,7 +7,6 @@ Fix Recent Income
 Upload - 
 
 Records - 
-Make sure all the category filters make sense and are inclusive. 
 
 Reports - 
 
