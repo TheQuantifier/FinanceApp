@@ -6,10 +6,11 @@
 BASE URL:
 The API module automatically points to:
     https://your-render-service.onrender.com/api
-or for local development:
+
+For local testing:
     http://localhost:5000/api
 
-All functions return Promises and must be called with:
+All functions return Promises and should be called with:
     await api.auth.login(...)
 or
     api.records.getAll().then(...)
@@ -25,7 +26,7 @@ or
 ------------------------------------------------------------
 DESCRIPTION:
     Creates a new user account and logs them in automatically.
-    Sets the JWT cookie.
+    Saves the JWT cookie in the browser.
 
 ARGUMENTS:
     email (string)
@@ -43,8 +44,7 @@ EXAMPLE:
  auth.login(email, password)
 ------------------------------------------------------------
 DESCRIPTION:
-    Logs an existing user in.
-    Sets the JWT cookie.
+    Logs in a user and stores their JWT cookie.
 
 ARGUMENTS:
     email (string)
@@ -61,7 +61,7 @@ EXAMPLE:
  auth.logout()
 ------------------------------------------------------------
 DESCRIPTION:
-    Logs current user out by clearing their cookie.
+    Logs the user out by clearing their cookie.
 
 ARGUMENTS:
     none
@@ -77,7 +77,7 @@ EXAMPLE:
  auth.me()
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves the currently logged-in user from their cookie.
+    Retrieves the currently authenticated user from their cookie.
 
 ARGUMENTS:
     none
@@ -97,7 +97,7 @@ EXAMPLE:
  records.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-    Fetches all financial records belonging to the logged-in user.
+    Returns all financial records belonging to the logged-in user.
 
 ARGUMENTS:
     none
@@ -119,24 +119,40 @@ RETURNS:
     ]
 
 EXAMPLE:
-    const records = await api.records.getAll();
+    const list = await api.records.getAll();
+
+
+------------------------------------------------------------
+ records.getOne(recordId)
+------------------------------------------------------------
+DESCRIPTION:
+    Retrieves one financial record by ID.
+
+ARGUMENTS:
+    recordId (string)
+
+RETURNS:
+    Single record object.
+
+EXAMPLE:
+    const record = await api.records.getOne("675ab92f19c9fd7fd050cb92");
 
 
 ------------------------------------------------------------
  records.create({ type, amount, category, date, note })
 ------------------------------------------------------------
 DESCRIPTION:
-    Creates a new financial record for the user.
+    Creates a new financial record for the logged-in user.
 
 ARGUMENTS:
-    type      (string: "income" or "expense")
+    type      (string: "income" | "expense")
     amount    (number)
     category  (string)
     date      (string or Date)
     note      (string, optional)
 
 RETURNS:
-    Newly created record object.
+    The newly created record.
 
 EXAMPLE:
     await api.records.create({
@@ -172,36 +188,35 @@ EXAMPLE:
  receipts.upload(file)
 ------------------------------------------------------------
 DESCRIPTION:
-    Uploads a receipt image/PDF file.
-    Runs OCR on the backend.
-    Saves the OCR text and metadata.
+    Uploads a file (PDF/JPG/PNG).
+    Saved to MongoDB GridFS.
+    OCR is run on the server.
+    Returns the receipt metadata + OCR text.
 
 ARGUMENTS:
-    file (File object from input[type="file"])
+    file (File from <input type="file">)
 
 RETURNS:
-    Newly created receipt:
     {
       _id,
       user,
       originalFilename,
-      storedFilename,
+      storedFileId,
       ocrText,
       createdAt,
       updatedAt
     }
 
 EXAMPLE:
-    const input = document.querySelector("#fileInput");
-    const file = input.files[0];
-    const receipt = await api.receipts.upload(file);
+    const file = document.querySelector("#fileInput").files[0];
+    const result = await api.receipts.upload(file);
 
 
 ------------------------------------------------------------
  receipts.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-    Fetches all uploaded receipts for the logged-in user.
+    Fetches all receipts for the logged-in user.
 
 ARGUMENTS:
     none
@@ -210,14 +225,14 @@ RETURNS:
     Array of receipt objects.
 
 EXAMPLE:
-    const receipts = await api.receipts.getAll();
+    const list = await api.receipts.getAll();
 
 
 ------------------------------------------------------------
  receipts.getOne(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves a single receipt by its ID.
+    Retrieves one receipt by ID.
 
 ARGUMENTS:
     receiptId (string)
@@ -227,6 +242,71 @@ RETURNS:
 
 EXAMPLE:
     const r = await api.receipts.getOne("677cb9123abc9123abc9123a");
+
+
+------------------------------------------------------------
+ receipts.download(receiptId)
+------------------------------------------------------------
+DESCRIPTION:
+    Downloads the original uploaded file from GridFS.
+    Returns a Blob that you can use manually.
+
+ARGUMENTS:
+    receiptId (string)
+
+RETURNS:
+    Blob
+
+EXAMPLE:
+    const blob = await api.receipts.download("675ca881ab9c45f123abc911");
+
+
+------------------------------------------------------------
+ receipts.downloadToFile(receiptId, filename)
+------------------------------------------------------------
+DESCRIPTION:
+    Downloads and automatically triggers a browser file save.
+
+ARGUMENTS:
+    receiptId (string)
+    filename (string, default "receipt")
+
+RETURNS:
+    void (creates a downloaded file)
+
+EXAMPLE:
+    await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "myreceipt.pdf");
+
+
+------------------------------------------------------------
+ receipts.remove(receiptId)
+------------------------------------------------------------
+DESCRIPTION:
+    (Future-ready; optional backend route)
+    Deletes a receipt and its GridFS file.
+
+ARGUMENTS:
+    receiptId (string)
+
+RETURNS:
+    { message: "Receipt deleted" }
+
+
+------------------------------------------------------------
+ receipts.preview(receiptId)
+------------------------------------------------------------
+DESCRIPTION:
+    (Future-ready)
+    Retrieves the receipt file as a Blob for embedding in an IMG or PDF.viewer.
+
+ARGUMENTS:
+    receiptId (string)
+
+RETURNS:
+    Blob
+
+EXAMPLE:
+    const pdfBlob = await api.receipts.preview(id);
 
 
 ============================================================

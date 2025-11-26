@@ -7,7 +7,7 @@
 // Change this to your Render backend URL once deployed:
 const API_BASE = "https://your-render-service.onrender.com/api";
 
-// During local testing, you can comment that out and use:
+// During local testing:
 // const API_BASE = "http://localhost:5000/api";
 
 
@@ -17,7 +17,7 @@ const API_BASE = "https://your-render-service.onrender.com/api";
 
 async function request(path, options = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
-        credentials: "include",       // allows cookies for JWT
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...(options.headers || {})
@@ -25,13 +25,11 @@ async function request(path, options = {}) {
         ...options,
     });
 
-    // Attempt to parse JSON
     let data = null;
     try {
         data = await res.json();
     } catch {}
 
-    // Normalize error handling
     if (!res.ok) {
         const message = data?.message || `Request failed (${res.status})`;
         throw new Error(message);
@@ -81,7 +79,7 @@ export const auth = {
 
 export const records = {
 
-    // Get all records
+    // Get all records for logged-in user
     async getAll() {
         return request("/records");
     },
@@ -94,7 +92,12 @@ export const records = {
         });
     },
 
-    // Delete record by ID
+    // Get one record
+    async getOne(id) {
+        return request(`/records/${id}`);
+    },
+
+    // Delete record
     async remove(id) {
         return request(`/records/${id}`, {
             method: "DELETE",
@@ -109,7 +112,7 @@ export const records = {
 
 export const receipts = {
 
-    // Upload a receipt file
+    // Upload a receipt file (PDF/JPG/PNG)
     async upload(file) {
         const formData = new FormData();
         formData.append("file", file);
@@ -117,7 +120,7 @@ export const receipts = {
         const res = await fetch(`${API_BASE}/receipts/upload`, {
             method: "POST",
             credentials: "include",
-            body: formData,
+            body: formData, // no JSON header!
         });
 
         let data;
@@ -134,35 +137,67 @@ export const receipts = {
         return data;
     },
 
-    // Get all receipts
+    // Get all receipts for this user
     async getAll() {
         return request("/receipts");
     },
 
-    // Get one receipt
+    // Get a single receipt
     async getOne(id) {
         return request(`/receipts/${id}`);
+    },
+
+    // Download receipt file stored in GridFS
+    async download(id) {
+        const res = await fetch(`${API_BASE}/receipts/${id}/download`, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!res.ok) {
+            throw new Error("Download failed");
+        }
+
+        const blob = await res.blob();
+        return blob;  // Caller decides how to save
+    },
+
+    // Trigger download in browser directly
+    async downloadToFile(id, filename = "receipt") {
+        const blob = await this.download(id);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = filename;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    },
+
+    // (Optional) Future: Delete receipt
+    async remove(id) {
+        return request(`/receipts/${id}`, {
+            method: "DELETE",
+        });
+    },
+
+    // (Optional) Future: Preview receipt inline
+    async preview(id) {
+        const res = await fetch(`${API_BASE}/receipts/${id}/preview`, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!res.ok) throw new Error("Preview failed");
+
+        return await res.blob(); // Caller loads into <img> or <embed>
     },
 };
 
 
 // --------------------------------------
-// EXPORTED API OBJECT (optional convenience)
+// EXPORTED API OBJECT
 // --------------------------------------
 
 export const api = { auth, records, receipts };
-
-/**
- * Implement this way:
- * <script type="module">
-    import { api } from "/scripts/api.js";
-
-    async function loadData() {
-        const user = await api.auth.me();
-        const recs = await api.records.getAll();
-        console.log(user, recs);
-    }
-
-    loadData();
-</script>
- */
