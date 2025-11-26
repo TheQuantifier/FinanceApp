@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login | Finance App</title>
+  <title>Welcome | Finance App</title>
 
   <!-- Meta -->
-  <meta name="description" content="Login to your Finance App account." />
+  <meta name="description" content="Finance App helps you effortlessly scan receipts, organize expenses, and stay tax-ready year-round." />
   <meta name="author" content="Finance App" />
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/auth.css" />
 </head>
-<body class="landing-dark">
+<body class="landing-light">
   <!-- Header -->
   <header class="nf-header" role="banner">
     <div class="nf-header-inner">
@@ -22,51 +22,100 @@
         <span class="nf-logo">Finance App</span>
       </div>
       <nav class="nf-auth-right" aria-label="Authentication">
-        <a href="register.html" class="nf-login">Register</a>
+        <a href="login.html" class="nf-login">Login</a>
       </nav>
     </div>
   </header>
 
-  <!-- Main -->
-  <main class="main main--login">
+  <!-- Hero -->
+  <main class="main main--register">
     <section class="nf-hero">
       <div class="nf-hero-content">
-        <h1 class="nf-title">Welcome back</h1>
-        <p class="nf-subtitle">Log in to manage your finances and view your records.</p>
+        <h1 class="nf-title">Take control of your finances.</h1>
+        <p class="nf-subtitle">
+          Scan receipts in seconds. Categorize automatically. Be tax-ready all year.
+        </p>
 
-        <form id="loginForm" class="nf-signup" autocomplete="off">
+        <!-- Create account box -->
+        <form id="registerForm" class="auth-form" novalidate>
+          <label for="name">Full Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="Your Name"
+            autocomplete="name"
+            required
+          />
+
+          <label for="email">Email Address</label>
           <input
             type="email"
             id="email"
-            class="nf-input"
-            placeholder="Email address"
-            aria-label="Email address"
+            name="email"
+            placeholder="you@example.com"
+            autocomplete="email"
             required
           />
+
+          <label for="password">Password</label>
           <input
             type="password"
             id="password"
-            class="nf-input"
-            placeholder="Password"
-            aria-label="Password"
+            name="password"
+            placeholder="Create a strong password"
+            autocomplete="new-password"
+            minlength="6"
             required
           />
-          <button type="submit" class="nf-btn">Login</button>
+          <button type="submit" id="registerBtn">Create Account</button>
+          <p id="registerMessage" class="form-message" aria-live="polite"></p>
         </form>
+        <div class="auth-links">
+          <p>Already have an account? <a href="login.html">Login</a></p>
+        </div>
+      </div>
+    </section>
 
-        <p class="nf-hint">
-          Don’t have an account? <a href="register.html">Create one</a>.
+    <!-- ABOUT SECTION -->
+    <section class="nf-about">
+      <div class="nf-about-inner">
+        <h2>What is Finance App?</h2>
+        <p>
+          Finance App is your digital assistant for managing expenses and receipts with ease. Whether you’re a freelancer, small business owner, or
+          simply looking to better understand your spending habits, our platform simplifies financial organization from start to finish.
         </p>
-        <p id="loginError" class="nf-error"></p>
+
+        <div class="nf-about-grid">
+          <div class="nf-about-card">
+            <h3>📸 Smart Scanning</h3>
+            <p>Upload photos or PDFs and let our intelligent OCR automatically extract and categorize receipt data.</p>
+          </div>
+          <div class="nf-about-card">
+            <h3>📊 Instant Insights</h3>
+            <p>Get a clear view of your spending trends with interactive graphs and exportable summaries for tax season.</p>
+          </div>
+          <div class="nf-about-card">
+            <h3>💾 Easy Exports</h3>
+            <p>Download your reports to Excel, QuickBooks, or CSV in one click — ready for accountants or personal review.</p>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
+  <!-- Footer -->
   <footer class="nf-footer" role="contentinfo">
     <div class="nf-footer-inner">
       <p>&copy; <span id="year"></span> Finance App. All rights reserved.</p>
+      <nav class="nf-legal" aria-label="Footer">
+        <a href="privacy.html">Privacy</a><span class="sep">•</span>
+        <a href="terms.html">Terms</a><span class="sep">•</span>
+        <a href="contact.html">Contact</a>
+      </nav>
     </div>
   </footer>
-    <script src="scripts/login.js" defer></script>
+
+  <script src="scripts/register.js"></script>
 </body>
 </html>
