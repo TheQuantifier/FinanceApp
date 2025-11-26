@@ -1,0 +1,234 @@
+============================================================
+ FRONTEND API REFERENCE — FinanceApp
+ All callable functions from web/scripts/api.js
+============================================================
+
+BASE URL:
+The API module automatically points to:
+    https://your-render-service.onrender.com/api
+or for local development:
+    http://localhost:5000/api
+
+All functions return Promises and must be called with:
+    await api.auth.login(...)
+or
+    api.records.getAll().then(...)
+============================================================
+
+
+============================================================
+ 1. AUTH MODULE
+============================================================
+
+------------------------------------------------------------
+ auth.register(email, password, name)
+------------------------------------------------------------
+DESCRIPTION:
+    Creates a new user account and logs them in automatically.
+    Sets the JWT cookie.
+
+ARGUMENTS:
+    email (string)
+    password (string)
+    name (string)
+
+RETURNS:
+    { user: { id, email, name, createdAt } }
+
+EXAMPLE:
+    await api.auth.register("john@example.com", "mypassword", "John");
+
+
+------------------------------------------------------------
+ auth.login(email, password)
+------------------------------------------------------------
+DESCRIPTION:
+    Logs an existing user in.
+    Sets the JWT cookie.
+
+ARGUMENTS:
+    email (string)
+    password (string)
+
+RETURNS:
+    { user }
+
+EXAMPLE:
+    await api.auth.login("john@example.com", "mypassword");
+
+
+------------------------------------------------------------
+ auth.logout()
+------------------------------------------------------------
+DESCRIPTION:
+    Logs current user out by clearing their cookie.
+
+ARGUMENTS:
+    none
+
+RETURNS:
+    { message: "Logged out" }
+
+EXAMPLE:
+    await api.auth.logout();
+
+
+------------------------------------------------------------
+ auth.me()
+------------------------------------------------------------
+DESCRIPTION:
+    Retrieves the currently logged-in user from their cookie.
+
+ARGUMENTS:
+    none
+
+RETURNS:
+    { user }
+
+EXAMPLE:
+    const currentUser = await api.auth.me();
+
+
+============================================================
+ 2. RECORDS MODULE
+============================================================
+
+------------------------------------------------------------
+ records.getAll()
+------------------------------------------------------------
+DESCRIPTION:
+    Fetches all financial records belonging to the logged-in user.
+
+ARGUMENTS:
+    none
+
+RETURNS:
+    Array of record objects:
+    [
+      {
+        _id,
+        user,
+        type ("income"|"expense"),
+        amount,
+        category,
+        date,
+        note,
+        createdAt,
+        updatedAt
+      }
+    ]
+
+EXAMPLE:
+    const records = await api.records.getAll();
+
+
+------------------------------------------------------------
+ records.create({ type, amount, category, date, note })
+------------------------------------------------------------
+DESCRIPTION:
+    Creates a new financial record for the user.
+
+ARGUMENTS:
+    type      (string: "income" or "expense")
+    amount    (number)
+    category  (string)
+    date      (string or Date)
+    note      (string, optional)
+
+RETURNS:
+    Newly created record object.
+
+EXAMPLE:
+    await api.records.create({
+        type: "expense",
+        amount: 25.50,
+        category: "Food",
+        date: "2025-01-28",
+        note: "Lunch at campus"
+    });
+
+
+------------------------------------------------------------
+ records.remove(recordId)
+------------------------------------------------------------
+DESCRIPTION:
+    Deletes a financial record by ID.
+
+ARGUMENTS:
+    recordId (string)
+
+RETURNS:
+    { message: "Record deleted" }
+
+EXAMPLE:
+    await api.records.remove("675ab92f19c9fd7fd050cb92");
+
+
+============================================================
+ 3. RECEIPTS MODULE
+============================================================
+
+------------------------------------------------------------
+ receipts.upload(file)
+------------------------------------------------------------
+DESCRIPTION:
+    Uploads a receipt image/PDF file.
+    Runs OCR on the backend.
+    Saves the OCR text and metadata.
+
+ARGUMENTS:
+    file (File object from input[type="file"])
+
+RETURNS:
+    Newly created receipt:
+    {
+      _id,
+      user,
+      originalFilename,
+      storedFilename,
+      ocrText,
+      createdAt,
+      updatedAt
+    }
+
+EXAMPLE:
+    const input = document.querySelector("#fileInput");
+    const file = input.files[0];
+    const receipt = await api.receipts.upload(file);
+
+
+------------------------------------------------------------
+ receipts.getAll()
+------------------------------------------------------------
+DESCRIPTION:
+    Fetches all uploaded receipts for the logged-in user.
+
+ARGUMENTS:
+    none
+
+RETURNS:
+    Array of receipt objects.
+
+EXAMPLE:
+    const receipts = await api.receipts.getAll();
+
+
+------------------------------------------------------------
+ receipts.getOne(receiptId)
+------------------------------------------------------------
+DESCRIPTION:
+    Retrieves a single receipt by its ID.
+
+ARGUMENTS:
+    receiptId (string)
+
+RETURNS:
+    Receipt object.
+
+EXAMPLE:
+    const r = await api.receipts.getOne("677cb9123abc9123abc9123a");
+
+
+============================================================
+ END OF FILE
+============================================================
