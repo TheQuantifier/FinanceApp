@@ -7,28 +7,13 @@ const receiptSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
 
-    originalFilename: {
-      type: String,
-      required: true,
-    },
+    originalFilename: { type: String, required: true },
 
-    storedFilename: {
-      type: String, // multer disk filename
-      required: true,
-    },
+    storedFileId: { type: mongoose.Schema.Types.ObjectId, required: true },
 
-    ocrText: {
-      type: String,
-      default: '',
-    },
-
-    linkedRecord: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Record',
-    },
+    ocrText: { type: String, default: '' }
   },
   { timestamps: true }
 );

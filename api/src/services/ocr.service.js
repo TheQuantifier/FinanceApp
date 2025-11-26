@@ -1,21 +1,22 @@
 // src/services/ocr.service.js
 const { spawn } = require('child_process');
 const path = require('path');
-const { ocrWorkerScript } = require('../config/env');
 
-exports.runOcr = function runOcr(filePath) {
+exports.runOcrBuffer = function runOcrBuffer(buffer) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.resolve(process.cwd(), 'worker', 'ocr_demo.py');
 
-    // Spawn python worker
-    const py = spawn('python3', [scriptPath, filePath], {
-      stdio: ['ignore', 'pipe', 'pipe'],
+    const py = spawn('python3', [scriptPath], {
+      stdio: ['pipe', 'pipe', 'pipe'] // allow stdin
     });
 
     let stdout = '';
     let stderr = '';
 
-    // Collect output
+    // Write buffer to python input stream
+    py.stdin.write(buffer);
+    py.stdin.end();
+
     py.stdout.on('data', (data) => {
       stdout += data.toString();
     });
@@ -24,26 +25,16 @@ exports.runOcr = function runOcr(filePath) {
       stderr += data.toString();
     });
 
-    // Timeout safety (20 seconds)
-    const timeout = setTimeout(() => {
-      py.kill('SIGKILL');
-      reject(new Error('OCR timed out'));
-    }, 20000);
-
     py.on('close', (code) => {
-      clearTimeout(timeout);
-
       if (code !== 0) {
-        return reject(
-          new Error(`OCR worker exited with code ${code}: ${stderr}`)
-        );
+        return reject(new Error(`OCR failed: ${stderr}`));
       }
 
       try {
         const parsed = JSON.parse(stdout);
         resolve(parsed);
-      } catch (err) {
-        reject(new Error('Failed to parse OCR output: ' + err.message));
+      } catch (e) {
+        reject(new Error('Failed to parse OCR output'));
       }
     });
   });

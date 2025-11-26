@@ -1,43 +1,37 @@
 #!/usr/bin/env python3
 import sys
 import json
+import fitz       # PyMuPDF
 import pytesseract
 from PIL import Image
-import fitz  # PyMuPDF
+import io
 
-def ocr_image(path):
-    try:
-        img = Image.open(path)
-        text = pytesseract.image_to_string(img)
-        return text
-    except Exception as e:
-        return ""
-
-def ocr_pdf(path):
+def process_pdf(buffer):
     text = ""
     try:
-        doc = fitz.open(path)
-        for page in doc:
+        pdf = fitz.open(stream=buffer, filetype="pdf")
+        for page in pdf:
             text += page.get_text()
         return text
-    except Exception:
+    except:
+        return ""
+
+def process_image(buffer):
+    try:
+        img = Image.open(io.BytesIO(buffer))
+        return pytesseract.image_to_string(img)
+    except:
         return ""
 
 def main():
-    if len(sys.argv) < 2:
-        print(json.dumps({"text": ""}))
-        return
+    buffer = sys.stdin.buffer.read()   # read raw bytes
 
-    file_path = sys.argv[1].lower()
-
-    text = ""
-
-    if file_path.endswith(".pdf"):
-        text = ocr_pdf(sys.argv[1])
+    # Detect PDF
+    if buffer.startswith(b"%PDF"):
+        text = process_pdf(buffer)
     else:
-        text = ocr_image(sys.argv[1])
+        text = process_image(buffer)
 
-    # Always JSON
     print(json.dumps({"text": text}))
 
 if __name__ == "__main__":
