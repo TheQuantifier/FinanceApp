@@ -1,11 +1,6 @@
 /* ========== HOME DASHBOARD PAGE (page-specific only) ========== */
 
 /* Page container overrides */
-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.2rem;
-}
 
 /* Local tokens */
 :root {
