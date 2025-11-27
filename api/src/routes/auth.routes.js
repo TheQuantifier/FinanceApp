@@ -4,9 +4,13 @@ const router = express.Router();
 const controller = require('../controllers/auth.controller');
 const auth = require('../middleware/auth');
 
+// Public
 router.post('/register', controller.register);
 router.post('/login', controller.login);
 router.post('/logout', controller.logout);
+
+// Authenticated
 router.get('/me', auth, controller.me);
+router.put('/me', auth, controller.updateMe);
 
 module.exports = router;

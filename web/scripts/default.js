@@ -2,8 +2,11 @@
    Finance App – default.js
    Shared script for all pages.
    Loads header/footer, sets active nav link,
-   and manages account dropdown interactions.
+   manages account dropdown, and updates
+   login/logout state from the backend API.
    =============================================== */
+
+import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   loadHeaderAndFooter();
@@ -21,8 +24,11 @@ function loadHeaderAndFooter() {
     })
     .then((html) => {
       document.getElementById("header").innerHTML = html;
+
       setActiveNavLink();
-      initAccountMenu(); // initialize dropdown behavior after header loads
+      initAccountMenu();
+      updateHeaderAuthState();   // <-- NEW
+      wireLogoutButton();        // <-- NEW
     })
     .catch((err) => console.error("Header load failed:", err));
 
@@ -47,11 +53,8 @@ function setActiveNavLink() {
 
   navLinks.forEach((link) => {
     const linkPage = link.getAttribute("href");
-    if (linkPage === currentPage) {
-      link.classList.add("active");
-    } else {
-      link.classList.remove("active");
-    }
+    if (linkPage === currentPage) link.classList.add("active");
+    else link.classList.remove("active");
   });
 }
 
@@ -64,13 +67,11 @@ function initAccountMenu() {
 
   if (!icon || !menu) return;
 
-  // Toggle dropdown visibility on icon click
   icon.addEventListener("click", () => {
     const isOpen = menu.classList.toggle("show");
     icon.setAttribute("aria-expanded", isOpen);
   });
 
-  // Close menu when clicking outside
   document.addEventListener("click", (e) => {
     if (!icon.contains(e.target) && !menu.contains(e.target)) {
       menu.classList.remove("show");
@@ -78,12 +79,60 @@ function initAccountMenu() {
     }
   });
 
-  // Allow ESC key to close
   icon.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       menu.classList.remove("show");
       icon.setAttribute("aria-expanded", "false");
       icon.blur();
+    }
+  });
+}
+
+/**
+ * Detects login status and updates header UI
+ * (shows username, hides login/register, etc.)
+ */
+async function updateHeaderAuthState() {
+  try {
+    const { user } = await api.auth.me();
+
+    // Logged-in UI visible
+    document.querySelectorAll(".auth-logged-in")
+      .forEach((el) => el.classList.remove("hidden"));
+
+    // Logged-out UI hidden
+    document.querySelectorAll(".auth-logged-out")
+      .forEach((el) => el.classList.add("hidden"));
+
+    // Show name
+    const nameEl = document.getElementById("headerUserName");
+    if (nameEl) nameEl.textContent = user.name || "Account";
+
+  } catch {
+    // Logged-out UI visible
+    document.querySelectorAll(".auth-logged-in")
+      .forEach((el) => el.classList.add("hidden"));
+
+    // Logged-in UI hidden
+    document.querySelectorAll(".auth-logged-out")
+      .forEach((el) => el.classList.remove("hidden"));
+  }
+}
+
+/**
+ * Wires the Logout button (after header loads)
+ */
+function wireLogoutButton() {
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("#logoutBtn");
+    if (!btn) return;
+
+    try {
+      await api.auth.logout();
+      window.location.href = "login.html";
+    } catch (err) {
+      console.error("Logout failed:", err);
+      alert("Could not log out.");
     }
   });
 }

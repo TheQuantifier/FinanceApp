@@ -1,25 +1,31 @@
-// reports.js
-// Dynamically loads report data from /data/sample.json and generates charts
-// Now computes all summary values from raw arrays (no summary object required).
+// scripts/reports.js
+// Generates reports using live backend data via api.records.getAll()
 
+import { api } from "./api.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadReports();
+});
+
+// ======================================================
+// MAIN LOADER
+// ======================================================
 async function loadReports() {
   try {
-    const response = await fetch("data/sample.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("Failed to load report data.");
+    // Replace static JSON with live backend call
+    const all = await api.records.getAll();
 
-    const data = await response.json();
+    const expenses = all.filter(r => r.type === "expense");
+    const income = all.filter(r => r.type === "income");
 
-    const txns = (data.expenses || []).filter(Boolean);
-    const incomes = (data.income || []).filter(Boolean);
+    const derived = computeSummaryFromRaw(expenses, income);
 
-    const derived = computeSummaryFromRaw(txns, incomes, data.summary?.currency);
-
-    // Populate summary cards
+    // Update summary cards
     updateSummary(derived);
 
-    // Generate charts
+    // Render charts
     renderCategoryChart(derived.categories);
-    renderIncomeExpenseOverTime(txns, incomes);
+    renderIncomeExpenseOverTime(expenses, income);
 
   } catch (error) {
     console.error("Error loading reports:", error);
@@ -27,13 +33,14 @@ async function loadReports() {
   }
 }
 
-// ========== Derivations from raw data ==========
+// ======================================================
+// SUMMARY FROM RAW RECORDS
+// ======================================================
 
-function computeSummaryFromRaw(expenses, income, currencyHint) {
-  const CURRENCY_FALLBACK = "USD";
-  const currency = currencyHint || CURRENCY_FALLBACK;
+function computeSummaryFromRaw(expenses, income) {
+  const currency = "USD"; // No currency stored per record yet
 
-  // 1) Total spending and category sums from expenses
+  // 1) Expense categories & total spending
   const categories = {};
   let total_spending = 0;
 
@@ -44,14 +51,9 @@ function computeSummaryFromRaw(expenses, income, currencyHint) {
     categories[cat] = (categories[cat] || 0) + amt;
   }
 
-  // 2) Monthly average spending (based on months that have at least one expense)
-  //    Fallback to simple average across categories if no month info found.
-  const monthsWithSpend = new Set();
-  for (const t of expenses) {
-    const key = yyyymm(t?.date);
-    if (key) monthsWithSpend.add(key);
-  }
-  const monthCount = Math.max(1, monthsWithSpend.size);
+  // 2) Monthly spending average (months that contain expenses)
+  const months = new Set(expenses.map(e => yyyymm(e.date)).filter(Boolean));
+  const monthCount = Math.max(1, months.size);
   const monthly_average = total_spending / monthCount;
 
   // 3) Top category
@@ -60,19 +62,19 @@ function computeSummaryFromRaw(expenses, income, currencyHint) {
   return {
     currency,
     total_spending,
-    categories,
     monthly_average,
-    topCategory
+    categories,
+    topCategory,
   };
 }
 
-// ========== Summary Section ==========
+// ======================================================
+// SUMMARY CARDS
+// ======================================================
 
-function updateSummary(derived) {
-  const { currency, total_spending, categories, monthly_average, topCategory } = derived;
-
-  const $ = (id) => document.getElementById(id);
-  const fmt = (n) => `$${(toNumber(n)).toFixed(2)} ${currency}`;
+function updateSummary({ currency, total_spending, monthly_average, topCategory }) {
+  const fmt = (n) => `$${toNumber(n).toFixed(2)} ${currency}`;
+  const $ = id => document.getElementById(id);
 
   $("total-expenses").textContent = fmt(total_spending);
   $("monthly-average").textContent = fmt(monthly_average);
@@ -91,15 +93,16 @@ function getTopCategory(categories) {
   return top;
 }
 
-// ========== Charts ==========
+// ======================================================
+// CHART 1 — Category Doughnut Chart
+// ======================================================
 
-// Chart 1: Spending by Category (with percentage labels)
 function renderCategoryChart(categories) {
   const ctx = document.getElementById("categoryChart");
   if (!ctx) return;
 
   const labels = Object.keys(categories || {});
-  const dataVals = Object.values(categories || {});
+  const values = Object.values(categories || {});
 
   new Chart(ctx, {
     type: "doughnut",
@@ -108,8 +111,11 @@ function renderCategoryChart(categories) {
       datasets: [
         {
           label: "Spending by Category",
-          data: dataVals,
-          backgroundColor: ["#007BFF", "#28A745", "#FFC107", "#DC3545", "#6F42C1", "#17A2B8", "#6610f2", "#6c757d"],
+          data: values,
+          backgroundColor: [
+            "#007BFF", "#28A745", "#FFC107", "#DC3545",
+            "#6F42C1", "#17A2B8", "#6610f2", "#6c757d"
+          ],
         },
       ],
     },
@@ -119,12 +125,11 @@ function renderCategoryChart(categories) {
         datalabels: {
           color: "#fff",
           font: { weight: "bold", size: 13 },
-          formatter: (value, context) => {
-            const arr = context.chart.data.datasets[0].data;
-            const total = arr.reduce((s, v) => s + toNumber(v), 0);
+          formatter: (value, ctx) => {
+            const arr = ctx.chart.data.datasets[0].data;
+            const total = arr.reduce((a, b) => a + toNumber(b), 0);
             if (!total) return "0%";
-            const pct = ((value / total) * 100).toFixed(1);
-            return pct + "%";
+            return ((value / total) * 100).toFixed(1) + "%";
           },
         },
       },
@@ -133,19 +138,22 @@ function renderCategoryChart(categories) {
   });
 }
 
-// Chart 2: Income & Expenses Over Time (sums by day, with toggles)
+// ======================================================
+// CHART 2 — Income & Expenses Over Time
+// ======================================================
+
 function renderIncomeExpenseOverTime(expenses, income) {
   const ctx = document.getElementById("monthlyChart");
   if (!ctx) return;
 
-  // Sum by ISO date (YYYY-MM-DD). Missing/invalid dates get ignored.
   const expenseByDate = sumByDate(expenses);
   const incomeByDate = sumByDate(income);
 
-  // Union of all dates
-  const labels = Array.from(new Set([...Object.keys(expenseByDate), ...Object.keys(incomeByDate)]))
-    .filter(Boolean)
-    .sort();
+  // Combine all dates into a sorted list
+  const labels = Array.from(new Set([
+    ...Object.keys(expenseByDate),
+    ...Object.keys(incomeByDate),
+  ])).filter(Boolean).sort();
 
   const expenseData = labels.map(d => toNumber(expenseByDate[d]));
   const incomeData = labels.map(d => toNumber(incomeByDate[d]));
@@ -181,14 +189,14 @@ function renderIncomeExpenseOverTime(expenses, income) {
         legend: { position: "top" },
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: $${(toNumber(ctx.parsed.y)).toFixed(2)}`
+            label: (ctx) => `${ctx.dataset.label}: $${toNumber(ctx.parsed.y).toFixed(2)}`
           }
         }
       },
     },
   });
 
-  // === Checkboxes for toggling ===
+  // Toggle switches
   const expToggle = document.getElementById("toggle-expenses");
   const incToggle = document.getElementById("toggle-income");
 
@@ -209,45 +217,44 @@ function renderIncomeExpenseOverTime(expenses, income) {
   }
 }
 
-// ========== Helpers ==========
+// ======================================================
+// HELPERS
+// ======================================================
 
 function toNumber(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n : 0;
 }
 
-// return "YYYY-MM" or null if invalid
+// "YYYY-MM"
 function yyyymm(iso) {
-  if (!iso || typeof iso !== "string") return null;
-  // Accept "YYYY-MM" or "YYYY-MM-DD"
-  const m = iso.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/);
+  if (!iso) return null;
+  const m = iso.match(/^(\d{4})-(\d{2})/);
   return m ? `${m[1]}-${m[2]}` : null;
 }
 
-// Sum amounts by exact ISO date key "YYYY-MM-DD"
+// Sum by exact ISO date "YYYY-MM-DD"
 function sumByDate(rows) {
-  const map = {};
+  const out = {};
   for (const r of rows || []) {
-    const d = normalizeDateKey(r?.date);
+    const d = normalizeDateKey(r.date);
     if (!d) continue;
-    map[d] = (map[d] || 0) + toNumber(r?.amount);
+    out[d] = (out[d] || 0) + toNumber(r.amount);
   }
-  return map;
+  return out;
 }
 
-// Normalize to "YYYY-MM-DD" if possible, else null
 function normalizeDateKey(iso) {
-  if (!iso || typeof iso !== "string") return null;
-  // If provided as "YYYY-MM", skip (we chart daily)
+  if (!iso) return null;
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) return iso;
-  // Try to parse a Date; if valid, reformat to YYYY-MM-DD
+
   const date = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
   if (isNaN(date)) return null;
-  const yyyy = String(date.getFullYear());
+
+  const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+
   return `${yyyy}-${mm}-${dd}`;
 }
-
-window.addEventListener("DOMContentLoaded", loadReports);

@@ -1,5 +1,6 @@
 <header>
   <div class="navbar">
+    
     <!-- Left: Logo -->
     <div class="logo-group">
       <h1 class="logo">Finance App</h1>
@@ -8,24 +9,51 @@
 
     <!-- Middle: Navigation -->
     <nav class="nav-links">
-      <a href="home.html" class="active">Home</a>
+      <a href="home.html">Home</a>
       <a href="upload.html">Upload</a>
       <a href="records.html">Records</a>
       <a href="reports.html">Reports</a>
       <a href="about.html">About</a>
     </nav>
 
-    <!-- Right: Account controls -->
+    <!-- Right side: Authentication states -->
     <div class="account-controls">
-      <div class="account-icon" id="account-icon" tabindex="0" aria-haspopup="true" aria-expanded="false">
-        <img src="images/user-icon.png" alt="Account" />
+
+      <!-- ========== LOGGED OUT UI ========== -->
+      <div class="auth-logged-out">
+        <a href="login.html" class="login-link">Login</a>
+        <a href="register.html" class="register-link">Register</a>
       </div>
-      <ul class="account-menu" id="account-menu" role="menu">
-        <li><a href="profile.html">Profile</a></li>
-        <li><a href="settings.html">Settings</a></li>
-        <li><a href="help.html">Help</a></li>
-        <li class="logout"><a href="index.html">Log Out</a></li>
-      </ul>
+
+      <!-- ========== LOGGED IN UI ========== -->
+      <div class="auth-logged-in hidden" id="loggedInBlock">
+        <!-- Profile button / avatar -->
+        <div 
+          class="account-icon" 
+          id="account-icon" 
+          tabindex="0" 
+          aria-haspopup="true" 
+          aria-expanded="false">
+          <img src="images/user-icon.png" alt="Account" />
+        </div>
+
+        <!-- Dropdown menu -->
+        <ul class="account-menu" id="account-menu" role="menu">
+          <li class="account-name">
+            <span id="headerUserName">User</span>
+          </li>
+          <li><a href="profile.html">Profile</a></li>
+          <li><a href="settings.html">Settings</a></li>
+          <li><a href="help.html">Help</a></li>
+
+          <!-- Logout button handled by JS -->
+          <li class="logout">
+            <button id="logoutBtn" role="menuitem">Log Out</button>
+          </li>
+        </ul>
+      </div>
+
     </div>
+
   </div>
 </header>

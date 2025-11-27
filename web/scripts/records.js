@@ -1,10 +1,9 @@
 // scripts/records.js
-// Handles fetching records, displaying them in tables, filtering,
-// and managing Add Expense / Add Income modals.
+// Uses centralized API module for all backend requests.
+
+import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://localhost:4000/api";
-
   // =================== Elements ===================
   const expenseTbody = document.getElementById("recordsTbody");
   const incomeTbody = document.getElementById("recordsTbodyIncome");
@@ -42,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${record.date || "—"}</td>
       <td>${record.source || "—"}</td>
       <td>${record.category || "—"}</td>
-      <td class="num">${record.amount != null ? record.amount.toFixed(2) : "0.00"}</td>
+      <td class="num">${Number(record.amount).toFixed(2)}</td>
       <td>${record.method || "—"}</td>
       <td>${record.notes || ""}</td>
     `;
@@ -52,54 +51,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // =================== Load Data ===================
   async function loadRecords() {
     try {
-      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading expenses…</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading income…</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
 
-      const [recordsRes, receiptsRes] = await Promise.all([
-        fetch(`${API_BASE}/records`),
-        fetch(`${API_BASE}/receipts`)
-      ]);
+      const records = await api.records.getAll();
 
-      if (!recordsRes.ok || !receiptsRes.ok)
-        throw new Error("Failed to fetch data from backend");
-
-      const records = await recordsRes.json();
-      const receipts = await receiptsRes.json();
-
-      const all = [];
-
-      for (const r of records) {
-        all.push({
-          date: r.date || "",
-          source: r.source || "",
-          category: r.category || "",
-          amount: Number(r.amount) || 0,
-          method: r.method || "",
-          notes: r.notes || "",
-          type: r.type || "expense",
-        });
-      }
-
-      for (const r of receipts) {
-        all.push({
-          date: r.date || "",
-          source: r.source || "",
-          category: r.category || "",
-          amount: Number(r.amount) || 0,
-          method: r.method || "",
-          notes: r.notes || "",
-          type: r.type || (r.amount >= 0 ? "income" : "expense"),
-        });
-      }
-
-      const expenses = all.filter(r => r.type === "expense");
-      const income = all.filter(r => r.type === "income");
+      const expenses = records.filter(r => r.type === "expense");
+      const income = records.filter(r => r.type === "income");
 
       renderTable(expenses, expenseTbody, filtersForm, expensePageInfo);
       renderTable(income, incomeTbody, filtersFormIncome, incomePageInfo);
 
     } catch (err) {
-      console.error("Error loading records:", err);
+      console.error(err);
       expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading expenses.</td></tr>`;
       incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading income.</td></tr>`;
     }
@@ -125,12 +89,15 @@ document.addEventListener("DOMContentLoaded", () => {
         (r.source && r.source.toLowerCase().includes(q)) ||
         (r.category && r.category.toLowerCase().includes(q)) ||
         (r.notes && r.notes.toLowerCase().includes(q));
+
       const matchCat = !category || r.category === category;
       const matchMethod = !method || r.method === method;
       const matchDate =
         (!minDate || r.date >= minDate) &&
         (!maxDate || r.date <= maxDate);
+
       const matchAmt = r.amount >= minAmt && r.amount <= maxAmt;
+
       return matchQ && matchCat && matchMethod && matchDate && matchAmt;
     });
 
@@ -169,26 +136,22 @@ document.addEventListener("DOMContentLoaded", () => {
   cancelExpenseBtn?.addEventListener("click", () => hideModal(addExpenseModal));
   cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
 
+  // ---- Create EXPENSE ----
   expenseForm?.addEventListener("submit", async e => {
     e.preventDefault();
+
     const payload = {
       type: "expense",
       date: document.getElementById("expenseDate").value,
       source: document.getElementById("expenseSource").value,
       category: document.getElementById("expenseCategory").value,
-      amount: parseFloat(document.getElementById("expenseAmount").value) || 0,
+      amount: parseFloat(document.getElementById("expenseAmount").value),
       method: document.getElementById("expenseMethod").value,
-      notes: document.getElementById("expenseNotes").value,
-      currency: "USD",
+      note: document.getElementById("expenseNotes").value,
     };
-  
+
     try {
-      const res = await fetch(`${API_BASE}/records`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to save expense");
+      await api.records.create(payload);
       hideModal(addExpenseModal);
       expenseForm.reset();
       loadRecords();
@@ -196,27 +159,23 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Error saving expense: " + err.message);
     }
   });
-  
+
+  // ---- Create INCOME ----
   incomeForm?.addEventListener("submit", async e => {
     e.preventDefault();
+
     const payload = {
       type: "income",
       date: document.getElementById("incomeDate").value,
       source: document.getElementById("incomeSource").value,
       category: document.getElementById("incomeCategory").value,
-      amount: parseFloat(document.getElementById("incomeAmount").value) || 0,
+      amount: parseFloat(document.getElementById("incomeAmount").value),
       method: document.getElementById("incomeMethod").value,
-      notes: document.getElementById("incomeNotes").value,
-      currency: "USD",
+      note: document.getElementById("incomeNotes").value,
     };
-  
+
     try {
-      const res = await fetch(`${API_BASE}/records`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to save income");
+      await api.records.create(payload);
       hideModal(addIncomeModal);
       incomeForm.reset();
       loadRecords();
@@ -224,12 +183,13 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Error saving income: " + err.message);
     }
   });
-  
+
   // =================== Filter Events ===================
   filtersForm?.addEventListener("submit", e => {
     e.preventDefault();
     loadRecords();
   });
+
   filtersFormIncome?.addEventListener("submit", e => {
     e.preventDefault();
     loadRecords();
@@ -239,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
     filtersForm.reset();
     loadRecords();
   });
+
   document.getElementById("btnClearIncome")?.addEventListener("click", () => {
     filtersFormIncome.reset();
     loadRecords();

@@ -1,5 +1,8 @@
+// web/scripts/register.js
+
+import { api } from "./api.js";
+
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://localhost:4000/api/auth";
   const form = document.getElementById("registerForm");
   const msg = document.getElementById("registerMessage");
 
@@ -13,12 +16,12 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.textContent = "";
     msg.style.color = "";
 
-    // --- Collect input values ---
+    // --- Get field values ---
     const name = document.getElementById("name")?.value.trim();
     const email = document.getElementById("email")?.value.trim();
     const password = document.getElementById("password")?.value;
 
-    // --- Basic validation ---
+    // --- Validation ---
     if (!name || !email || !password) {
       msg.textContent = "Please fill in all fields.";
       msg.style.color = "red";
@@ -26,48 +29,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!email.includes("@") || !email.includes(".")) {
-      msg.textContent = "Please enter a valid email address.";
+      msg.textContent = "Please enter a valid email.";
       msg.style.color = "red";
       return;
     }
 
     if (password.length < 8) {
-      msg.textContent = "Password must be at least 6 characters long.";
+      msg.textContent = "Password must be at least 8 characters long.";
       msg.style.color = "red";
       return;
     }
 
-    // --- Prepare request body ---
-    const payload = { name, email, password };
-
-    msg.textContent = "Creating your account...";
+    msg.textContent = "Creating your account…";
     msg.style.color = "black";
 
     try {
-      const res = await fetch(`${API_BASE}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      // ---- CALL BACKEND THROUGH api.js ----
+      const result = await api.auth.register(email, password, name);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        msg.textContent = data.error || "Registration failed. Please try again.";
-        msg.style.color = "red";
-        return;
-      }
-
-      // --- Success message and redirect ---
-      msg.textContent = "✅ Account created successfully! Redirecting...";
+      msg.textContent = "✅ Account created! Redirecting…";
       msg.style.color = "green";
 
+      // Wait briefly then redirect
       setTimeout(() => {
         window.location.href = "login.html";
-      }, 1500);
+      }, 1200);
+
     } catch (err) {
       console.error("Registration error:", err);
-      msg.textContent = "⚠️ Something went wrong. Please try again later.";
+      msg.textContent = err.message || "Registration failed.";
       msg.style.color = "red";
     }
   });

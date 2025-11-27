@@ -11,21 +11,45 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     password: {
       type: String,
       required: true,
       minlength: 8,
     },
+
+    // Required display name
     name: {
       type: String,
       required: true,
       trim: true,
     },
+
+    // Optional editable profile fields
+    preferredName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    bio: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   { timestamps: true }
 );
 
-// Hash password before saving
+// --------------------------------------------------
+// Password Hashing Middleware
+// --------------------------------------------------
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(12);

@@ -34,7 +34,7 @@ ARGUMENTS:
     name (string)
 
 RETURNS:
-    { user: { id, email, name, createdAt } }
+    { user: { _id, email, name, createdAt, ... } }
 
 EXAMPLE:
     await api.auth.register("john@example.com", "mypassword", "John");
@@ -77,7 +77,7 @@ EXAMPLE:
  auth.me()
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves the currently authenticated user from their cookie.
+    Retrieves the currently authenticated user based on their JWT cookie.
 
 ARGUMENTS:
     none
@@ -87,6 +87,27 @@ RETURNS:
 
 EXAMPLE:
     const currentUser = await api.auth.me();
+
+
+------------------------------------------------------------
+ auth.updateProfile(updates)
+------------------------------------------------------------
+DESCRIPTION:
+    Updates the logged-in user's profile fields.
+    Uses PUT /auth/me on the backend.
+    Can update: name, preferredName, email, phone, bio.
+
+ARGUMENTS:
+    updates (object)
+
+RETURNS:
+    { user }
+
+EXAMPLE:
+    await api.auth.updateProfile({
+        name: "John Hand",
+        phone: "555-1234"
+    });
 
 
 ============================================================
@@ -132,7 +153,7 @@ ARGUMENTS:
     recordId (string)
 
 RETURNS:
-    Single record object.
+    Record object.
 
 EXAMPLE:
     const record = await api.records.getOne("675ab92f19c9fd7fd050cb92");
@@ -152,7 +173,7 @@ ARGUMENTS:
     note      (string, optional)
 
 RETURNS:
-    The newly created record.
+    Newly created record.
 
 EXAMPLE:
     await api.records.create({
@@ -189,7 +210,7 @@ EXAMPLE:
 ------------------------------------------------------------
 DESCRIPTION:
     Uploads a file (PDF/JPG/PNG).
-    Saved to MongoDB GridFS.
+    Stored in MongoDB GridFS.
     OCR is run on the server.
     Returns the receipt metadata + OCR text.
 
@@ -201,7 +222,7 @@ RETURNS:
       _id,
       user,
       originalFilename,
-      storedFileId,
+      storedFilename,
       ocrText,
       createdAt,
       updatedAt
@@ -248,8 +269,7 @@ EXAMPLE:
  receipts.download(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Downloads the original uploaded file from GridFS.
-    Returns a Blob that you can use manually.
+    Downloads the original file from GridFS as a Blob.
 
 ARGUMENTS:
     receiptId (string)
@@ -265,25 +285,24 @@ EXAMPLE:
  receipts.downloadToFile(receiptId, filename)
 ------------------------------------------------------------
 DESCRIPTION:
-    Downloads and automatically triggers a browser file save.
+    Downloads and automatically saves the file to disk.
 
 ARGUMENTS:
     receiptId (string)
     filename (string, default "receipt")
 
 RETURNS:
-    void (creates a downloaded file)
+    void
 
 EXAMPLE:
-    await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "myreceipt.pdf");
+    await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "receipt.pdf");
 
 
 ------------------------------------------------------------
  receipts.remove(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    (Future-ready; optional backend route)
-    Deletes a receipt and its GridFS file.
+    Deletes a receipt record (and GridFS file if supported).
 
 ARGUMENTS:
     receiptId (string)
@@ -296,8 +315,7 @@ RETURNS:
  receipts.preview(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    (Future-ready)
-    Retrieves the receipt file as a Blob for embedding in an IMG or PDF.viewer.
+    Returns the file as a Blob for embedding in IMG, <embed>, or iframe.
 
 ARGUMENTS:
     receiptId (string)
