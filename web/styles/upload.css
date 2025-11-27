@@ -13,6 +13,7 @@
   margin-bottom: 1.5rem;
 }
 
+/* Dropzone */
 .dropzone {
   position: relative;
   border: 2px dashed var(--border);
@@ -23,7 +24,10 @@
   transition: border-color 0.15s ease, background 0.15s ease;
   margin-top: 0.5rem;
 }
-.dropzone:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
+.dropzone:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .dropzone.is-dragover {
   border-color: var(--primary);
   background: #f6fbff;
@@ -38,7 +42,9 @@
   height: 32px;
   opacity: 0.8;
 }
-.dz-text strong { display: block; }
+.dz-text strong {
+  display: block;
+}
 .dz-input {
   position: absolute;
   inset: 0;
@@ -46,14 +52,20 @@
   cursor: pointer;
 }
 
+/* Tips */
 .tips {
   margin: 0.9rem 0 0;
   padding-left: 1.1rem;
   color: var(--muted);
 }
-.tips li { margin: 0.25rem 0; }
+.tips li {
+  margin: 0.25rem 0;
+}
 
-.file-list-wrap { margin-top: 1rem; }
+/* File list */
+.file-list-wrap {
+  margin-top: 1rem;
+}
 .file-list-title {
   font-size: 1.05rem;
   margin-bottom: 0.5rem;
@@ -86,7 +98,9 @@
   color: var(--muted);
   overflow: hidden;
 }
-.file-meta { min-width: 0; }
+.file-meta {
+  min-width: 0;
+}
 .file-name {
   font-weight: 600;
   overflow: hidden;
@@ -110,6 +124,7 @@
   font-weight: 700;
 }
 
+/* Actions row */
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -117,11 +132,18 @@
   margin-top: 0.9rem;
 }
 
-.status { margin-top: 0.6rem; }
+.status {
+  margin-top: 0.6rem;
+}
 
-.recent { padding: 1.25rem; }
+.recent {
+  padding: 1.25rem;
+}
 
-.actions-col { width: 1%; white-space: nowrap; }
+.actions-col {
+  width: 1%;
+  white-space: nowrap;
+}
 
 /* Icon button: keep focus ring on the button (accessible), not on the image */
 .icon-btn {
@@ -132,9 +154,13 @@
   border-radius: 6px;
   -webkit-tap-highlight-color: transparent;
 }
-.icon-btn:hover { background: #f3f4f6; }
+.icon-btn:hover {
+  background: #f3f4f6;
+}
 /* Prefer focus-visible so mouse clicks don’t show a ring */
-.icon-btn:focus { outline: none; }
+.icon-btn:focus {
+  outline: none;
+}
 .icon-btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
