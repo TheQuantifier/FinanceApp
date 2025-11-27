@@ -27,14 +27,17 @@
 
       <!-- ========== LOGGED IN UI ========== -->
       <div class="auth-logged-in hidden" id="loggedInBlock">
-        <!-- Profile button / avatar -->
+
+        <!-- Profile button / avatar (initials auto-generated) -->
         <div 
           class="account-icon" 
           id="account-icon" 
           tabindex="0" 
           aria-haspopup="true" 
           aria-expanded="false">
-          <img src="images/user-icon.png" alt="Account" />
+
+          <!-- Auto-generated initials avatar -->
+          <div id="avatarLetters" class="avatar-initials">?</div>
         </div>
 
         <!-- Dropdown menu -->
@@ -42,18 +45,19 @@
           <li class="account-name">
             <span id="headerUserName">User</span>
           </li>
+          
           <li><a href="profile.html">Profile</a></li>
           <li><a href="settings.html">Settings</a></li>
           <li><a href="help.html">Help</a></li>
 
-          <!-- Logout button handled by JS -->
+          <!-- Logout controlled via JS -->
           <li class="logout">
             <button id="logoutBtn" role="menuitem">Log Out</button>
           </li>
         </ul>
+
       </div>
 
     </div>
-
   </div>
 </header>

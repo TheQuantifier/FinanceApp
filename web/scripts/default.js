@@ -2,8 +2,8 @@
    Finance App – default.js
    Shared script for all pages.
    Loads header/footer, sets active nav link,
-   manages account dropdown, and updates
-   login/logout state from the backend API.
+   manages account dropdown, updates auth state,
+   and renders initials avatar for logged-in users.
    =============================================== */
 
 import { api } from "./api.js";
@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Fetch and inject header & footer, then set active nav link
+ * Fetch and inject header & footer, then init UI
  */
 function loadHeaderAndFooter() {
   // --- Load Header ---
@@ -27,8 +27,8 @@ function loadHeaderAndFooter() {
 
       setActiveNavLink();
       initAccountMenu();
-      updateHeaderAuthState();   // <-- NEW
-      wireLogoutButton();        // <-- NEW
+      updateHeaderAuthState();
+      wireLogoutButton();
     })
     .catch((err) => console.error("Header load failed:", err));
 
@@ -59,12 +59,11 @@ function setActiveNavLink() {
 }
 
 /**
- * Initializes account menu dropdown toggle behavior
+ * Controls the dropdown menu in the header
  */
 function initAccountMenu() {
   const icon = document.getElementById("account-icon");
   const menu = document.getElementById("account-menu");
-
   if (!icon || !menu) return;
 
   icon.addEventListener("click", () => {
@@ -72,6 +71,7 @@ function initAccountMenu() {
     icon.setAttribute("aria-expanded", isOpen);
   });
 
+  // Click outside closes menu
   document.addEventListener("click", (e) => {
     if (!icon.contains(e.target) && !menu.contains(e.target)) {
       menu.classList.remove("show");
@@ -79,6 +79,7 @@ function initAccountMenu() {
     }
   });
 
+  // ESC key closes
   icon.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       menu.classList.remove("show");
@@ -89,38 +90,51 @@ function initAccountMenu() {
 }
 
 /**
- * Detects login status and updates header UI
- * (shows username, hides login/register, etc.)
+ * Converts a full name into initials ("John Hand" → "JH")
+ */
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/**
+ * Updates header state based on authentication
+ * (shows avatar, username, etc.)
  */
 async function updateHeaderAuthState() {
   try {
     const { user } = await api.auth.me();
 
-    // Logged-in UI visible
+    // --- SHOW LOGGED-IN UI ---
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.remove("hidden"));
 
-    // Logged-out UI hidden
+    // --- HIDE LOGGED-OUT UI ---
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.add("hidden"));
 
-    // Show name
+    // --- Username in dropdown ---
     const nameEl = document.getElementById("headerUserName");
     if (nameEl) nameEl.textContent = user.name || "Account";
 
+    // --- Avatar initials ---
+    const avatar = document.getElementById("avatarLetters");
+    if (avatar) avatar.textContent = getInitials(user.name);
+
   } catch {
-    // Logged-out UI visible
+    // Not authenticated
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.add("hidden"));
 
-    // Logged-in UI hidden
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.remove("hidden"));
   }
 }
 
 /**
- * Wires the Logout button (after header loads)
+ * Handles logout click → backend logout → redirect
  */
 function wireLogoutButton() {
   document.addEventListener("click", async (e) => {
