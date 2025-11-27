@@ -16,7 +16,18 @@
   // ---- Chart (simple canvas bar chart, no external libs)
   function drawBarChart(canvas, dataObj) {
     if (!canvas) return;
+
+    // ====== NEW: responsive canvas sizing ======
+    const parentWidth = canvas.parentElement.clientWidth || 600;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = parentWidth * dpr;
+    canvas.height = 300 * dpr;
+
     const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    // ===========================================
+
     const entries = Object.entries(dataObj || {});
     const labels = entries.map(e => e[0]);
     const values = entries.map(e => +e[1] || 0);
@@ -25,8 +36,8 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const P = { t: 20, r: 20, b: 50, l: 40 };
-    const innerW = canvas.width - P.l - P.r;
-    const innerH = canvas.height - P.t - P.b;
+    const innerW = (canvas.width / dpr) - P.l - P.r;
+    const innerH = (canvas.height / dpr) - P.t - P.b;
 
     // axes
     ctx.lineWidth = 1;
@@ -96,25 +107,19 @@
 
     const currency =
       json.summary?.currency ||
-      // try to infer from a txn if you ever add a currency field there; else fallback:
       CURRENCY_FALLBACK;
 
     const total_spending = expenses.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
     const total_income   = income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
     const net_balance    = total_income - total_spending;
 
-    // build expense category totals for chart/breakdown
     const categories = expenses.reduce((acc, t) => {
       const key = t.category || "Uncategorized";
       acc[key] = (acc[key] || 0) + (Number(t.amount) || 0);
       return acc;
     }, {});
 
-    // last updated: latest date seen across expenses + income; fallback to summary.last_updated
-    const dates = [
-      ...expenses.map(t => t.date),
-      ...income.map(i => i.date),
-    ].filter(Boolean);
+    const dates = [...expenses.map(t => t.date), ...income.map(i => i.date)].filter(Boolean);
     const latestISO = dates.length ? dates.sort().slice(-1)[0] : null;
     const last_updated = latestISO
       ? new Date(latestISO + (latestISO.length === 10 ? "T00:00:00" : "")).toISOString()
@@ -180,17 +185,14 @@
     $("#btnUpload")?.addEventListener("click", () => alert("Open upload flow…"));
     $("#btnExport")?.addEventListener("click", () => alert("Exporting CSV…"));
   
-    // Show modal
     $("#btnAddTxn")?.addEventListener("click", () => {
       modal.classList.remove("hidden");
     });
   
-    // Hide modal
     btnCancel?.addEventListener("click", () => {
       modal.classList.add("hidden");
     });
   
-    // Handle Save
     form?.addEventListener("submit", (e) => {
       e.preventDefault();
     
@@ -203,12 +205,10 @@
         notes: $("#txnNotes").value
       };
     
-      // Save transaction in localStorage
       const stored = JSON.parse(localStorage.getItem("userTxns") || "[]");
       stored.push(newTxn);
       localStorage.setItem("userTxns", JSON.stringify(stored));
     
-      // Add visually to the table right away
       const tbody = $("#txnTbody");
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -221,12 +221,10 @@
       `;
       tbody.prepend(tr);
     
-      // Close modal and notify
       $("#addTxnModal").classList.add("hidden");
       alert("Transaction added successfully!");
     });    
   }
-  
 
   function personalizeWelcome() {
     const name = (window.currentUser && window.currentUser.name) || null;
@@ -234,25 +232,26 @@
   }
 
   async function init() {
-    // default.js already injected header/footer; this file only handles page logic.
     wireActions();
     personalizeWelcome();
 
     try {
       const data = await loadData();
 
-      // 1) Compute overview from raw arrays (ignore summary totals)
       const computed = computeOverview(data);
       renderKpisFromComputed(computed);
-
-      // 2) Recent expenses table (keep as expenses only, per your columns)
       renderexpenses($("#txnTbody"), data.expenses || [], computed.currency);
 
-      // 3) Chart + legend + breakdown from computed expense categories
       const canvas = $("#categoriesChart");
       drawBarChart(canvas, computed.categories || {});
       renderLegend($("#chartLegend"), computed.categories || {});
       renderBreakdown($("#categoryList"), computed.categories || {}, computed.currency);
+
+      // ===== NEW: redraw chart on resize =====
+      window.addEventListener("resize", () => {
+        drawBarChart(canvas, computed.categories);
+      });
+
     } catch (err) {
       console.error(err);
       const status = $("#lastUpdated");
