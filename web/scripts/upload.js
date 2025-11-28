@@ -1,6 +1,6 @@
 // scripts/upload.js
-// FinanceApp — Receipt Uploads + Deletion
-// Now aligned with updated backend (DELETE /api/receipts/:id)
+// FinanceApp — Receipt Uploads, Downloads, and Deletion
+// Fully aligned with your updated backend & API module
 
 import { api } from "./api.js";
 
@@ -8,7 +8,7 @@ import { api } from "./api.js";
   const ACCEPTED = ["application/pdf", "image/png", "image/jpeg"];
   const MAX_MB = 50;
 
-  // DOM
+  // DOM elements
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   const fileList = document.getElementById("fileList");
@@ -50,16 +50,16 @@ import { api } from "./api.js";
 
   const isAccepted = (file) =>
     ACCEPTED.includes(file.type) ||
-    ["pdf", "png", "jpg", "jpeg"].includes(
-      extFromName(file.name).toLowerCase()
-    );
+    ["pdf", "png", "jpg", "jpeg"].includes(extFromName(file.name).toLowerCase());
 
   const overLimit = (file) => file.size > MAX_MB * 1024 * 1024;
 
   // ----------------------------------------
-  // Recent Uploads Table Rendering
+  // Recent Uploads Table
   // ----------------------------------------
+
   const trashIcon = `<img src="images/trash.jpg" alt="Delete" class="icon-trash" />`;
+  const downloadIcon = `<img src="images/download.png" alt="Download" class="icon-download" />`;
 
   function renderRecentRows(rows) {
     recentTableBody.innerHTML = "";
@@ -75,17 +75,23 @@ import { api } from "./api.js";
       const created = r.createdAt
         ? new Date(r.createdAt).toLocaleString()
         : "—";
+      const filename = r.originalFilename || "receipt";
 
       const tr = document.createElement("tr");
       tr.dataset.id = id;
 
       tr.innerHTML = `
-        <td>${r.originalFilename || "—"}</td>
+        <td>${filename}</td>
         <td>${r.mimetype || "—"}</td>
-        <td class="num">${bytesToSize(r.sizeBytes)}</td>
+        <td class="num">${bytesToSize(r.sizeBytes || 0)}</td>
         <td>${created}</td>
         <td>${r.ocrText ? "parsed" : "raw"}</td>
-        <td class="num">
+
+        <td class="num actions-col">
+          <button class="icon-btn js-download" data-id="${id}" data-filename="${filename}">
+            ${downloadIcon}
+          </button>
+
           <button class="icon-btn js-delete" data-id="${id}">
             ${trashIcon}
           </button>
@@ -108,31 +114,50 @@ import { api } from "./api.js";
   }
 
   // ----------------------------------------
-  // Delete Receipt
+  // Download + Delete Actions
   // ----------------------------------------
   recentTableBody?.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".js-delete");
-    if (!btn) return;
+    const downloadBtn = e.target.closest(".js-download");
+    const deleteBtn = e.target.closest(".js-delete");
 
-    const id = btn.dataset.id;
-    if (!id) return;
+    // ========= DOWNLOAD =========
+    if (downloadBtn) {
+      const id = downloadBtn.dataset.id;
+      const filename = downloadBtn.dataset.filename || "receipt";
 
-    if (!confirm("Delete this receipt?")) return;
+      try {
+        setStatus("Downloading...");
+        await api.receipts.downloadToFile(id, filename);
+        setStatus("Download complete.");
+      } catch (err) {
+        console.error("Download error:", err);
+        setStatus(`Download failed: ${err.message}`, true);
+      }
+      return;
+    }
 
-    try {
-      btn.disabled = true;
-      await api.receipts.remove(id);
-      setStatus("Receipt deleted.");
-      await refreshRecent();
-    } catch (err) {
-      console.error("Delete error:", err);
-      setStatus(`Delete failed: ${err.message}`, true);
-      btn.disabled = false;
+    // ========= DELETE =========
+    if (deleteBtn) {
+      const id = deleteBtn.dataset.id;
+      if (!id) return;
+
+      if (!confirm("Delete this receipt?")) return;
+
+      try {
+        deleteBtn.disabled = true;
+        await api.receipts.remove(id);
+        setStatus("Receipt deleted.");
+        await refreshRecent();
+      } catch (err) {
+        console.error("Delete error:", err);
+        setStatus(`Delete failed: ${err.message}`, true);
+        deleteBtn.disabled = false;
+      }
     }
   });
 
   // ----------------------------------------
-  // Queue Rendering
+  // Queue Rendering + Local List
   // ----------------------------------------
   function renderQueue() {
     fileList.innerHTML = "";
@@ -157,7 +182,6 @@ import { api } from "./api.js";
         const reader = new FileReader();
         reader.onload = (e) => (img.src = e.target.result);
         reader.readAsDataURL(file);
-
         thumb.appendChild(img);
       } else {
         thumb.textContent = extFromName(file.name) || "FILE";
@@ -171,7 +195,7 @@ import { api } from "./api.js";
         <div class="file-subtle">${file.type || "Unknown"} • ${bytesToSize(file.size)}</div>
       `;
 
-      // Remove button
+      // Remove from queue
       const removeBtn = document.createElement("button");
       removeBtn.className = "file-remove";
       removeBtn.textContent = "✕";
@@ -265,7 +289,9 @@ import { api } from "./api.js";
   ["dragleave", "drop"].forEach((evt) =>
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault();
-      if (evt === "drop") addFiles(e.dataTransfer.files);
+      if (evt === "drop" && e.dataTransfer?.files) {
+        addFiles(e.dataTransfer.files);
+      }
       dropzone.classList.remove("is-dragover");
     })
   );
