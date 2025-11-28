@@ -3,14 +3,37 @@
    Shared script for all pages.
    Loads header/footer, sets active nav link,
    manages account dropdown, updates auth state,
-   and renders initials avatar for logged-in users.
+   renders initials avatar for logged-in users,
+   AND now ensures favicon is always applied.
    =============================================== */
 
 import { api } from "./api.js";
 
+
+// =====================================================
+// 🔥 GLOBAL FAVICON INJECTOR — APPLIES TO ALL PAGES
+// =====================================================
+
+(function ensureFavicon() {
+  const existing = document.querySelector("link[rel='icon']");
+  if (existing) return;
+
+  const link = document.createElement("link");
+  link.rel = "icon";
+  link.type = "image/png";
+  link.href = "images/favicon.png";     // Adjust path if needed
+  document.head.appendChild(link);
+})();
+
+
+// =====================================================
+// Main: load header/footer when DOM is ready
+// =====================================================
+
 document.addEventListener("DOMContentLoaded", () => {
   loadHeaderAndFooter();
 });
+
 
 /**
  * Fetch and inject header & footer, then init UI
@@ -44,8 +67,9 @@ function loadHeaderAndFooter() {
     .catch((err) => console.error("Footer load failed:", err));
 }
 
+
 /**
- * Highlights the current page in the navigation menu
+ * Highlights the current page in the nav menu
  */
 function setActiveNavLink() {
   const currentPage = window.location.pathname.split("/").pop();
@@ -58,8 +82,9 @@ function setActiveNavLink() {
   });
 }
 
+
 /**
- * Controls the dropdown menu in the header
+ * Account dropdown control
  */
 function initAccountMenu() {
   const icon = document.getElementById("account-icon");
@@ -71,7 +96,7 @@ function initAccountMenu() {
     icon.setAttribute("aria-expanded", isOpen);
   });
 
-  // Click outside closes menu
+  // Click outside closes
   document.addEventListener("click", (e) => {
     if (!icon.contains(e.target) && !menu.contains(e.target)) {
       menu.classList.remove("show");
@@ -79,7 +104,7 @@ function initAccountMenu() {
     }
   });
 
-  // ESC key closes
+  // ESC closes
   icon.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       menu.classList.remove("show");
@@ -89,8 +114,9 @@ function initAccountMenu() {
   });
 }
 
+
 /**
- * Converts a full name into initials ("John Hand" → "JH")
+ * Convert full name → initials ("John Hand" → "JH")
  */
 function getInitials(name) {
   if (!name) return "?";
@@ -99,32 +125,32 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+
 /**
- * Updates header state based on authentication
- * (shows avatar, username, etc.)
+ * Update header state based on authentication
  */
 async function updateHeaderAuthState() {
   try {
     const { user } = await api.auth.me();
 
-    // --- SHOW LOGGED-IN UI ---
+    // Show logged-in elements
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.remove("hidden"));
 
-    // --- HIDE LOGGED-OUT UI ---
+    // Hide logged-out elements
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.add("hidden"));
 
-    // --- Username in dropdown ---
+    // Username
     const nameEl = document.getElementById("headerUserName");
     if (nameEl) nameEl.textContent = user.name || "Account";
 
-    // --- Avatar initials ---
+    // Avatar initials
     const avatar = document.getElementById("avatarLetters");
     if (avatar) avatar.textContent = getInitials(user.name);
 
   } catch {
-    // Not authenticated
+    // User not logged in
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.add("hidden"));
 
@@ -133,8 +159,9 @@ async function updateHeaderAuthState() {
   }
 }
 
+
 /**
- * Handles logout click → backend logout → redirect
+ * Logout handler → calls backend → redirects to login
  */
 function wireLogoutButton() {
   document.addEventListener("click", async (e) => {
