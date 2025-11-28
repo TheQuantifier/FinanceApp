@@ -11,33 +11,29 @@ import { api } from "./api.js";
 
 
 // =====================================================
-// 🔥 GLOBAL FAVICON INJECTOR — APPLIES TO ALL PAGES
+// 🔥 GLOBAL FAVICON INJECTOR — ALWAYS WORKS
 // =====================================================
-
-(function ensureFavicon() {
-  const existing = document.querySelector("link[rel='icon']");
-  if (existing) return;
-
-  const link = document.createElement("link");
-  link.rel = "icon";
-  link.type = "image/png";
-  link.href = "images/favicon.png";     // Adjust path if needed
-  document.head.appendChild(link);
-})();
-
-
-// =====================================================
-// Main: load header/footer when DOM is ready
-// =====================================================
-
+//
+// Runs on DOMContentLoaded so paths resolve correctly.
+// Uses your folder structure: web/images/favicon.png
+//
 document.addEventListener("DOMContentLoaded", () => {
+  const existing = document.querySelector("link[rel='icon']");
+  if (!existing) {
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/png";
+    link.href = "images/favicon.png"; // correct for your project structure
+    document.head.appendChild(link);
+  }
+
   loadHeaderAndFooter();
 });
 
 
-/**
- * Fetch and inject header & footer, then init UI
- */
+// =====================================================
+// Load Header & Footer
+// =====================================================
 function loadHeaderAndFooter() {
   // --- Load Header ---
   fetch("components/header.html")
@@ -68,24 +64,22 @@ function loadHeaderAndFooter() {
 }
 
 
-/**
- * Highlights the current page in the nav menu
- */
+// =====================================================
+// Highlight active navigation link
+// =====================================================
 function setActiveNavLink() {
   const currentPage = window.location.pathname.split("/").pop();
   const navLinks = document.querySelectorAll("#header nav a");
 
   navLinks.forEach((link) => {
-    const linkPage = link.getAttribute("href");
-    if (linkPage === currentPage) link.classList.add("active");
-    else link.classList.remove("active");
+    link.classList.toggle("active", link.getAttribute("href") === currentPage);
   });
 }
 
 
-/**
- * Account dropdown control
- */
+// =====================================================
+// Account dropdown menu logic
+// =====================================================
 function initAccountMenu() {
   const icon = document.getElementById("account-icon");
   const menu = document.getElementById("account-menu");
@@ -96,7 +90,7 @@ function initAccountMenu() {
     icon.setAttribute("aria-expanded", isOpen);
   });
 
-  // Click outside closes
+  // Click outside closes menu
   document.addEventListener("click", (e) => {
     if (!icon.contains(e.target) && !menu.contains(e.target)) {
       menu.classList.remove("show");
@@ -104,7 +98,7 @@ function initAccountMenu() {
     }
   });
 
-  // ESC closes
+  // ESC key closes
   icon.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       menu.classList.remove("show");
@@ -115,9 +109,9 @@ function initAccountMenu() {
 }
 
 
-/**
- * Convert full name → initials ("John Hand" → "JH")
- */
+// =====================================================
+// Convert name → initials
+// =====================================================
 function getInitials(name) {
   if (!name) return "?";
   const parts = name.trim().split(" ");
@@ -126,18 +120,18 @@ function getInitials(name) {
 }
 
 
-/**
- * Update header state based on authentication
- */
+// =====================================================
+// Update header auth state after loading
+// =====================================================
 async function updateHeaderAuthState() {
   try {
     const { user } = await api.auth.me();
 
-    // Show logged-in elements
+    // Show logged-in UI
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.remove("hidden"));
 
-    // Hide logged-out elements
+    // Hide logged-out UI
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.add("hidden"));
 
@@ -160,9 +154,9 @@ async function updateHeaderAuthState() {
 }
 
 
-/**
- * Logout handler → calls backend → redirects to login
- */
+// =====================================================
+// Logout button logic
+// =====================================================
 function wireLogoutButton() {
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#logoutBtn");
