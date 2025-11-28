@@ -1,6 +1,7 @@
 // src/lib/gridfs.js
 const mongoose = require('mongoose');
 const { mongoDbName } = require('../config/env');
+const { ObjectId } = require('mongodb');
 
 // Create a GridFS bucket
 function getBucket() {
@@ -31,13 +32,13 @@ function uploadBufferToGridFS(filename, buffer, mimetype) {
   });
 }
 
-// Download a file from GridFS as buffer
+// Download a file from GridFS as a buffer
 function readFromGridFS(fileId) {
   return new Promise((resolve, reject) => {
     const bucket = getBucket();
 
     const chunks = [];
-    const stream = bucket.openDownloadStream(fileId);
+    const stream = bucket.openDownloadStream(new ObjectId(fileId));
 
     stream.on('data', (chunk) => chunks.push(chunk));
     stream.on('end', () => resolve(Buffer.concat(chunks)));
@@ -45,23 +46,34 @@ function readFromGridFS(fileId) {
   });
 }
 
-// Stream a file from GridFS directly to an HTTP response
+// Stream directly to HTTP response
 function streamFromGridFS(fileId, res) {
   const bucket = getBucket();
 
-  const downloadStream = bucket.openDownloadStream(fileId);
+  const downloadStream = bucket.openDownloadStream(new ObjectId(fileId));
 
   downloadStream.on('error', (err) => {
     console.error('GridFS Stream Error:', err);
     res.status(404).json({ message: 'File not found' });
   });
 
-  // Pipe raw file data to response
   downloadStream.pipe(res);
+}
+
+// ✅ Delete file from GridFS (required for DELETE route)
+async function deleteFromGridFS(fileId) {
+  const bucket = getBucket();
+  try {
+    await bucket.delete(new ObjectId(fileId));
+  } catch (err) {
+    console.error("GridFS delete error:", err);
+    throw err;
+  }
 }
 
 module.exports = {
   uploadBufferToGridFS,
   readFromGridFS,
-  streamFromGridFS
+  streamFromGridFS,
+  deleteFromGridFS,       // ← export new method
 };
