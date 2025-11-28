@@ -1,6 +1,6 @@
 <header>
   <div class="navbar">
-    
+
     <!-- Left: Logo -->
     <div class="logo-group">
       <h1 class="logo">Finance App</h1>
@@ -16,46 +16,44 @@
       <a href="about.html">About</a>
     </nav>
 
-    <!-- Right side: Authentication states -->
+    <!-- Right side -->
     <div class="account-controls">
 
-      <!-- ========== LOGGED OUT UI ========== -->
-      <div class="auth-logged-out">
+      <!-- LOGIN / REGISTER (shown if NOT logged in) -->
+      <div id="authLinks" class="auth-links">
         <a href="login.html" class="login-link">Login</a>
         <a href="register.html" class="register-link">Register</a>
       </div>
 
-      <!-- ========== LOGGED IN UI ========== -->
-      <div class="auth-logged-in hidden" id="loggedInBlock">
+      <!-- ACCOUNT DROPDOWN (shown if logged in) -->
+      <div id="accountArea" class="account-area hidden">
 
-        <!-- Profile button / avatar (initials auto-generated) -->
+        <!-- Avatar / Icon -->
         <div 
-          class="account-icon" 
-          id="account-icon" 
-          tabindex="0" 
-          aria-haspopup="true" 
-          aria-expanded="false">
-
-          <!-- Auto-generated initials avatar -->
+          id="account-icon"
+          class="account-icon"
+          tabindex="0"
+          aria-haspopup="true"
+          aria-expanded="false"
+        >
           <div id="avatarLetters" class="avatar-initials">?</div>
         </div>
 
-        <!-- Dropdown menu -->
-        <ul class="account-menu" id="account-menu" role="menu">
+        <!-- Dropdown -->
+        <ul id="account-menu" class="account-menu" role="menu">
           <li class="account-name">
             <span id="headerUserName">User</span>
           </li>
-          
+
           <li><a href="profile.html">Profile</a></li>
           <li><a href="settings.html">Settings</a></li>
           <li><a href="help.html">Help</a></li>
 
-          <!-- Logout controlled via JS -->
+          <!-- Logout (handled in JS) -->
           <li class="logout">
             <button id="logoutBtn" role="menuitem">Log Out</button>
           </li>
         </ul>
-
       </div>
 
     </div>
