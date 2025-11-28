@@ -2,6 +2,19 @@
 const Record = require('../models/Record');
 const asyncHandler = require('../middleware/async');
 
+exports.getOne = asyncHandler(async (req, res) => {
+  const record = await Record.findOne({
+    _id: req.params.id,
+    user: req.user.id,
+  });
+
+  if (!record) {
+    return res.status(404).json({ message: 'Record not found' });
+  }
+
+  res.json(record);
+});
+
 exports.getAll = asyncHandler(async (req, res) => {
   const records = await Record.find({ user: req.user.id }).sort({ date: -1 });
   res.json(records);
