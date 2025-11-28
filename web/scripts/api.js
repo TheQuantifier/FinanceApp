@@ -4,7 +4,7 @@
 // CONFIG
 // --------------------------------------
 
-const API_BASE = "https://your-render-service.onrender.com/api";
+const API_BASE = "https://financeapp-5u9g.onrender.com";
 // const API_BASE = "http://localhost:5000/api";  // Local testing
 
 
