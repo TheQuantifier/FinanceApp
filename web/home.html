@@ -15,12 +15,14 @@
   <link rel="stylesheet" href="styles/home.css" />
 </head>
 <body>
+  
   <!-- Header injected by default.js -->
   <div id="header"></div>
 
   <!-- ==================== MAIN ==================== -->
   <main class="main main--home">
-    <!-- Greeting / context -->
+    
+    <!-- Greeting -->
     <section class="welcome">
       <div class="welcome-left">
         <h1 id="welcomeTitle">Welcome back</h1>
@@ -37,7 +39,7 @@
 
     <!-- KPI cards -->
     <section class="kpis" aria-label="Summary metrics">
-      <article class="kpi card" aria-live="polite">
+      <article class="kpi card">
         <h2>Total Income</h2>
         <p class="kpi-value" id="kpiIncome">—</p>
         <span class="kpi-sub">This month</span>
@@ -61,13 +63,13 @@
       <div class="chart-card card">
         <div class="chart-header">
           <h2>Spending by Category</h2>
-          <div class="legend" id="chartLegend" aria-hidden="true"></div>
+          <div class="legend" id="chartLegend"></div>
         </div>
         <canvas id="categoriesChart"></canvas>
         <p class="chart-caption subtle">Bars scaled to the highest category.</p>
       </div>
 
-      <aside class="breakdown card" aria-label="Category breakdown">
+      <aside class="breakdown card">
         <h3>Category Breakdown</h3>
         <ul id="categoryList" class="cat-list"></ul>
       </aside>
@@ -84,22 +86,18 @@
         <table class="txn-table">
           <thead>
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Source</th>
-              <th scope="col">Category</th>
-              <th scope="col" class="num">Amount</th>
-              <th scope="col">Method</th>
-              <th scope="col">Notes</th>
+              <th>Date</th>
+              <th>Category</th>
+              <th class="num">Amount</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody id="txnTbody">
-            <tr><td colspan="6" class="subtle">Loading…</td></tr>
+            <tr><td colspan="4" class="subtle">Loading…</td></tr>
           </tbody>
         </table>
       </div>
     </section>
-
-   
 
   </main>
 
@@ -112,22 +110,28 @@
       <h2 id="modalTitle">Add New Transaction</h2>
 
       <form id="txnForm" class="txn-form">
+        
         <div class="form-row">
+          <label>
+            <span>Type</span>
+            <select id="txnType" required>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </label>
+
           <label>
             <span>Date</span>
             <input type="date" id="txnDate" required />
-          </label>
-          <label>
-            <span>Amount</span>
-            <input type="number" id="txnAmount" step="0.01" required />
           </label>
         </div>
 
         <div class="form-row">
           <label>
-            <span>Source</span>
-            <input type="text" id="txnSource" required />
+            <span>Amount</span>
+            <input type="number" id="txnAmount" step="0.01" required />
           </label>
+
           <label>
             <span>Category</span>
             <input type="text" id="txnCategory" required />
@@ -135,11 +139,7 @@
         </div>
 
         <div class="form-row">
-          <label>
-            <span>Payment Method</span>
-            <input type="text" id="txnMethod" />
-          </label>
-          <label>
+          <label style="width:100%">
             <span>Notes</span>
             <input type="text" id="txnNotes" />
           </label>
@@ -149,12 +149,10 @@
           <button type="submit" class="btn btn--primary">Save</button>
           <button type="button" class="btn" id="btnCancelModal">Cancel</button>
         </div>
+
       </form>
     </div>
   </div>
-
-
-
 
   <!-- Scripts -->
   <script src="scripts/default.js" type="module" defer></script>

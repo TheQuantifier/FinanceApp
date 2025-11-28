@@ -171,6 +171,9 @@ import { api } from "./api.js";
       "Data updated " + new Date(comp.last_updated).toLocaleString();
   }
 
+  // ============================================================
+  //  🔥 FIXED TO MATCH YOUR HTML + BACKEND
+  // ============================================================
   function renderExpensesTable(tbody, records, currency) {
     if (!tbody) return;
     tbody.innerHTML = "";
@@ -181,7 +184,7 @@ import { api } from "./api.js";
       .slice(0, 8);
 
     if (!expenses.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="subtle">No expenses yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="subtle">No expenses yet.</td></tr>`;
       return;
     }
 
@@ -189,11 +192,9 @@ import { api } from "./api.js";
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${fmtDate(txn.date)}</td>
-        <td>${txn.source || ""}</td>
         <td>${txn.category || ""}</td>
         <td class="num">${fmtMoney(txn.amount, currency)}</td>
-        <td>${txn.payment_method || ""}</td>
-        <td>${txn.notes || ""}</td>
+        <td>${txn.note || ""}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -203,12 +204,12 @@ import { api } from "./api.js";
   //  LOAD DATA FROM BACKEND
   // ============================================================
   async function loadFromAPI() {
-    const records = await api.records.getAll(); // ← REAL DATA
+    const records = await api.records.getAll();
     return records;
   }
 
   // ============================================================
-  //  UI INTERACTIONS (modal, submit form)
+  //  UI INTERACTIONS
   // ============================================================
   function wireActions() {
     const modal = $("#addTxnModal");
@@ -238,14 +239,11 @@ import { api } from "./api.js";
         date: $("#txnDate").value,
         category: $("#txnCategory").value,
         amount: parseFloat($("#txnAmount").value),
-        source: $("#txnSource").value,
-        payment_method: $("#txnMethod").value,
-        notes: $("#txnNotes").value,
+        note: $("#txnNotes")?.value || "",
       };
 
       try {
         await api.records.create(newTxn);
-
         alert("Transaction added!");
         window.location.reload();
       } catch (err) {
@@ -290,7 +288,7 @@ import { api } from "./api.js";
       console.error(err);
       $("#lastUpdated").textContent = "Could not load data.";
       $("#txnTbody").innerHTML =
-        `<tr><td colspan="6" class="subtle">Failed to load records.</td></tr>`;
+        `<tr><td colspan="4" class="subtle">Failed to load records.</td></tr>`;
     }
   }
 
