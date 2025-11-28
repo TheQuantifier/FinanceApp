@@ -1,44 +1,84 @@
 // src/app.js
-const express = require('express');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const morgan = require('morgan');
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const morgan = require("morgan");
 
-const { clientOrigin, nodeEnv } = require('./config/env');
-const apiRouter = require('./routes');
-const { errorHandler } = require('./middleware/error');
+const apiRouter = require("./routes");
+const { errorHandler } = require("./middleware/error");
 
 const app = express();
 
+// --------------------------------------------------
 // Logging
-if (nodeEnv !== 'test') {
-  app.use(morgan('dev'));
+// --------------------------------------------------
+if (process.env.NODE_ENV !== "test") {
+  app.use(morgan("dev"));
 }
 
-// JSON / form parsing
-app.use(express.json({ limit: '10mb' }));
+// --------------------------------------------------
+// JSON + Form Parsing
+// --------------------------------------------------
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+// --------------------------------------------------
 // Cookies
+// --------------------------------------------------
 app.use(cookieParser());
 
-// CORS – for frontend JS calls
+// --------------------------------------------------
+// CORS CONFIG — REQUIRED FOR RENDER + GITHUB PAGES
+// --------------------------------------------------
+
+// Allowed origins for frontends
+const allowedOrigins = [
+  "https://app.thequantifier.com", // Your frontend domain (GitHub Pages)
+  "http://localhost:5000",         // Local backend
+  "http://localhost:5500",         // Local static dev (Live Server)
+  "http://localhost:3000",         // Local frontend alternative
+];
+
+// Always send this header (needed for credentialed requests)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
+
+// Main CORS middleware
 app.use(
   cors({
-    origin: clientOrigin,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // Allow Postman, curl, server-side
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      // Do NOT throw error — just block
+      return callback(null, false);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+// Preflight routes must also send CORS headers
+app.options("*", cors());
+
+// --------------------------------------------------
+// Health Check
+// --------------------------------------------------
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
-// All API routes under /api
-app.use('/api', apiRouter);
+// --------------------------------------------------
+// API ROUTES
+// --------------------------------------------------
+app.use("/api", apiRouter);
 
-// Central error handler
+// --------------------------------------------------
+// GLOBAL ERROR HANDLER
+// --------------------------------------------------
 app.use(errorHandler);
 
 module.exports = app;

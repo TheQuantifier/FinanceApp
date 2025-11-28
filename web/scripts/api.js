@@ -4,7 +4,7 @@
 // CONFIG
 // --------------------------------------
 
-const API_BASE = "https://financeapp-5u9g.onrender.com";
+const API_BASE = "https://financeapp-5u9g.onrender.com/api";
 // const API_BASE = "http://localhost:5000/api";  // Local testing
 
 
@@ -42,7 +42,6 @@ async function request(path, options = {}) {
 
 export const auth = {
 
-    // Register new user
     async register(email, password, name) {
         return request("/auth/register", {
             method: "POST",
@@ -50,7 +49,6 @@ export const auth = {
         });
     },
 
-    // Login user
     async login(email, password) {
         return request("/auth/login", {
             method: "POST",
@@ -58,17 +56,14 @@ export const auth = {
         });
     },
 
-    // Logout
     async logout() {
         return request("/auth/logout", { method: "POST" });
     },
 
-    // Get current user
     async me() {
         return request("/auth/me");
     },
 
-    // ⭐ NEW — Update profile (full or partial)
     async updateProfile(updates) {
         return request("/auth/me", {
             method: "PUT",

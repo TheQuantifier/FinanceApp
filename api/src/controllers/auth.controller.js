@@ -1,18 +1,21 @@
 // src/controllers/auth.controller.js
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const asyncHandler = require('../middleware/async');
-const { jwtSecret, jwtExpiresIn } = require('../config/env');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const asyncHandler = require("../middleware/async");
+const { jwtSecret, jwtExpiresIn } = require("../config/env");
 
 function createToken(id) {
   return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
 }
 
+/**
+ * Set JWT cookie with correct cross-site settings (Render + GitHub Pages)
+ */
 function setTokenCookie(res, token) {
-  res.cookie('token', token, {
+  res.cookie("token", token, {
     httpOnly: true,
-    secure: false, // Set to true on Render (HTTPS)
-    sameSite: 'lax',
+    secure: true,          // REQUIRED on Render (HTTPS)
+    sameSite: "none",      // REQUIRED for cross-origin cookies
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
@@ -24,12 +27,12 @@ exports.register = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body;
 
   if (!email || !password || !name) {
-    return res.status(400).json({ message: 'Missing required fields' });
+    return res.status(400).json({ message: "Missing required fields" });
   }
 
   const existing = await User.findOne({ email });
   if (existing) {
-    return res.status(400).json({ message: 'Email already in use' });
+    return res.status(400).json({ message: "Email already in use" });
   }
 
   const user = await User.create({ email, password, name });
@@ -47,7 +50,7 @@ exports.login = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
   if (!user || !(await user.comparePassword(password))) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+    return res.status(401).json({ message: "Invalid credentials" });
   }
 
   const token = createToken(user._id);
@@ -60,12 +63,15 @@ exports.login = asyncHandler(async (req, res) => {
 // LOGOUT
 // =====================================================
 exports.logout = asyncHandler(async (_req, res) => {
-  res.cookie('token', '', {
+  // Must match cookie flags used on login
+  res.cookie("token", "", {
     httpOnly: true,
+    secure: true,
+    sameSite: "none",
     expires: new Date(0),
-    sameSite: 'lax',
   });
-  res.json({ message: 'Logged out' });
+
+  res.json({ message: "Logged out" });
 });
 
 // =====================================================
@@ -76,19 +82,18 @@ exports.me = asyncHandler(async (req, res) => {
 });
 
 // =====================================================
-// UPDATE CURRENT USER (PUT /auth/me)
+// UPDATE CURRENT USER
 // =====================================================
 exports.updateMe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const updates = {};
 
-  // Only apply fields that were provided
   if (req.body.name !== undefined) updates.name = req.body.name;
   if (req.body.preferredName !== undefined) updates.preferredName = req.body.preferredName;
   if (req.body.phone !== undefined) updates.phone = req.body.phone;
   if (req.body.bio !== undefined) updates.bio = req.body.bio;
 
-  // Email update must not conflict
+  // Email update (must be unique)
   if (req.body.email !== undefined) {
     const existing = await User.findOne({ email: req.body.email });
 
@@ -104,5 +109,5 @@ exports.updateMe = asyncHandler(async (req, res) => {
     { new: true, runValidators: true }
   );
 
-  return res.json({ user: updatedUser });
+  res.json({ user: updatedUser });
 });
