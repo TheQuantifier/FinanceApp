@@ -59,7 +59,7 @@ import { api } from "./api.js";
   // ----------------------------------------
 
   const trashIcon = `<img src="images/trash.jpg" alt="Delete" class="icon-trash" />`;
-  const downloadIcon = `<img src="images/download.jpeg" alt="Download" class="icon-download" />`;
+  const downloadIcon = `<img src="images/download.jpeg" alt="Download" class="icon-trash" />`;
 
   function renderRecentRows(rows) {
     recentTableBody.innerHTML = "";
