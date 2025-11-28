@@ -3,37 +3,18 @@
    Shared script for all pages.
    Loads header/footer, sets active nav link,
    manages account dropdown, updates auth state,
-   renders initials avatar for logged-in users,
-   AND now ensures favicon is always applied.
+   and renders initials avatar for logged-in users.
    =============================================== */
 
 import { api } from "./api.js";
 
-
-// =====================================================
-// 🔥 GLOBAL FAVICON INJECTOR — ALWAYS WORKS
-// =====================================================
-//
-// Runs on DOMContentLoaded so paths resolve correctly.
-// Uses your folder structure: web/images/favicon.png
-//
 document.addEventListener("DOMContentLoaded", () => {
-  const existing = document.querySelector("link[rel='icon']");
-  if (!existing) {
-    const link = document.createElement("link");
-    link.rel = "icon";
-    link.type = "image/png";
-    link.href = "images/favicon.png"; // correct for your project structure
-    document.head.appendChild(link);
-  }
-
   loadHeaderAndFooter();
 });
 
-
-// =====================================================
-// Load Header & Footer
-// =====================================================
+/**
+ * Fetch and inject header & footer, then init UI
+ */
 function loadHeaderAndFooter() {
   // --- Load Header ---
   fetch("components/header.html")
@@ -63,23 +44,23 @@ function loadHeaderAndFooter() {
     .catch((err) => console.error("Footer load failed:", err));
 }
 
-
-// =====================================================
-// Highlight active navigation link
-// =====================================================
+/**
+ * Highlights the current page in the navigation menu
+ */
 function setActiveNavLink() {
   const currentPage = window.location.pathname.split("/").pop();
   const navLinks = document.querySelectorAll("#header nav a");
 
   navLinks.forEach((link) => {
-    link.classList.toggle("active", link.getAttribute("href") === currentPage);
+    const linkPage = link.getAttribute("href");
+    if (linkPage === currentPage) link.classList.add("active");
+    else link.classList.remove("active");
   });
 }
 
-
-// =====================================================
-// Account dropdown menu logic
-// =====================================================
+/**
+ * Controls the dropdown menu in the header
+ */
 function initAccountMenu() {
   const icon = document.getElementById("account-icon");
   const menu = document.getElementById("account-menu");
@@ -108,10 +89,9 @@ function initAccountMenu() {
   });
 }
 
-
-// =====================================================
-// Convert name → initials
-// =====================================================
+/**
+ * Converts a full name into initials ("John Hand" → "JH")
+ */
 function getInitials(name) {
   if (!name) return "?";
   const parts = name.trim().split(" ");
@@ -119,32 +99,32 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-
-// =====================================================
-// Update header auth state after loading
-// =====================================================
+/**
+ * Updates header state based on authentication
+ * (shows avatar, username, etc.)
+ */
 async function updateHeaderAuthState() {
   try {
     const { user } = await api.auth.me();
 
-    // Show logged-in UI
+    // --- SHOW LOGGED-IN UI ---
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.remove("hidden"));
 
-    // Hide logged-out UI
+    // --- HIDE LOGGED-OUT UI ---
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.add("hidden"));
 
-    // Username
+    // --- Username in dropdown ---
     const nameEl = document.getElementById("headerUserName");
     if (nameEl) nameEl.textContent = user.name || "Account";
 
-    // Avatar initials
+    // --- Avatar initials ---
     const avatar = document.getElementById("avatarLetters");
     if (avatar) avatar.textContent = getInitials(user.name);
 
   } catch {
-    // User not logged in
+    // Not authenticated
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.add("hidden"));
 
@@ -153,10 +133,9 @@ async function updateHeaderAuthState() {
   }
 }
 
-
-// =====================================================
-// Logout button logic
-// =====================================================
+/**
+ * Handles logout click → backend logout → redirect
+ */
 function wireLogoutButton() {
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#logoutBtn");
