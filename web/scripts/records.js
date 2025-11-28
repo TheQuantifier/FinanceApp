@@ -1,10 +1,13 @@
 // scripts/records.js
-// Uses centralized API module for all backend requests.
+// Fully aligned with backend Record model and simplified Records page.
 
 import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // =================== Elements ===================
+
+  // ======================================================
+  // ELEMENTS
+  // ======================================================
   const expenseTbody = document.getElementById("recordsTbody");
   const incomeTbody = document.getElementById("recordsTbodyIncome");
 
@@ -14,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const expensePageInfo = document.getElementById("pageInfo");
   const incomePageInfo = document.getElementById("pageInfoIncome");
 
-  // Add modals
+  // Modals + Forms
   const addExpenseModal = document.getElementById("addExpenseModal");
   const addIncomeModal = document.getElementById("addIncomeModal");
   const expenseForm = document.getElementById("expenseForm");
@@ -26,33 +29,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelExpenseBtn = document.getElementById("cancelExpenseBtn");
   const cancelIncomeBtn = document.getElementById("cancelIncomeBtn");
 
-  // =================== Helpers ===================
-  function showModal(modal) {
-    modal.classList.remove("hidden");
-  }
 
-  function hideModal(modal) {
-    modal.classList.add("hidden");
+  // ======================================================
+  // HELPERS
+  // ======================================================
+  function showModal(m) { m.classList.remove("hidden"); }
+  function hideModal(m) { m.classList.add("hidden"); }
+
+  function fmtDate(d) {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
   }
 
   function createRow(record) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${record.date || "—"}</td>
-      <td>${record.source || "—"}</td>
+      <td>${fmtDate(record.date)}</td>
       <td>${record.category || "—"}</td>
       <td class="num">${Number(record.amount).toFixed(2)}</td>
-      <td>${record.method || "—"}</td>
-      <td>${record.notes || ""}</td>
+      <td>${record.note || "—"}</td>
     `;
     return tr;
   }
 
-  // =================== Load Data ===================
+
+  // ======================================================
+  // LOAD RECORDS
+  // ======================================================
   async function loadRecords() {
     try {
-      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="4" class="subtle">Loading…</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="4" class="subtle">Loading…</td></tr>`;
 
       const records = await api.records.getAll();
 
@@ -64,18 +75,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error(err);
-      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading expenses.</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading income.</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="4" class="subtle">Error loading expenses.</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="4" class="subtle">Error loading income.</td></tr>`;
     }
   }
 
-  // =================== Render Tables ===================
+
+  // ======================================================
+  // TABLE RENDERING + FILTERS
+  // ======================================================
   function renderTable(records, tbody, form, pageInfo) {
-    if (!form) return;
+    if (!tbody || !form) return;
 
     const q = form.querySelector("input[type=search]").value.toLowerCase();
     const category = form.querySelector("select[id^=category]").value;
-    const method = form.querySelector("select[id^=method]").value;
     const minDate = form.querySelector("input[id^=minDate]").value;
     const maxDate = form.querySelector("input[id^=maxDate]").value;
     const minAmt = parseFloat(form.querySelector("input[id^=minAmt]").value) || 0;
@@ -86,29 +99,29 @@ document.addEventListener("DOMContentLoaded", () => {
     let filtered = records.filter(r => {
       const matchQ =
         !q ||
-        (r.source && r.source.toLowerCase().includes(q)) ||
         (r.category && r.category.toLowerCase().includes(q)) ||
-        (r.notes && r.notes.toLowerCase().includes(q));
+        (r.note && r.note.toLowerCase().includes(q));
 
       const matchCat = !category || r.category === category;
-      const matchMethod = !method || r.method === method;
       const matchDate =
         (!minDate || r.date >= minDate) &&
         (!maxDate || r.date <= maxDate);
 
-      const matchAmt = r.amount >= minAmt && r.amount <= maxAmt;
+      const matchAmt =
+        r.amount >= minAmt && r.amount <= maxAmt;
 
-      return matchQ && matchCat && matchMethod && matchDate && matchAmt;
+      return matchQ && matchCat && matchDate && matchAmt;
     });
 
+    // Sorting
     filtered.sort((a, b) => {
       switch (sort) {
         case "date_asc": return (a.date || "").localeCompare(b.date || "");
         case "date_desc": return (b.date || "").localeCompare(a.date || "");
         case "amount_asc": return a.amount - b.amount;
         case "amount_desc": return b.amount - a.amount;
-        case "source_asc": return (a.source || "").localeCompare(b.source || "");
-        case "source_desc": return (b.source || "").localeCompare(a.source || "");
+        case "category_asc": return (a.category || "").localeCompare(b.category || "");
+        case "category_desc": return (b.category || "").localeCompare(a.category || "");
         default: return 0;
       }
     });
@@ -117,8 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = "";
 
     if (display.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="subtle">No matching records.</td></tr>`;
-      if (pageInfo) pageInfo.textContent = "Page 1 of 1";
+      tbody.innerHTML = `<tr><td colspan="4" class="subtle">No matching records.</td></tr>`;
+      if (pageInfo) pageInfo.textContent = "0 records";
       return;
     }
 
@@ -129,24 +142,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // =================== Add Expense / Income ===================
+
+  // ======================================================
+  // ADD EXPENSE
+  // ======================================================
   btnAddExpense?.addEventListener("click", () => showModal(addExpenseModal));
-  btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
-
   cancelExpenseBtn?.addEventListener("click", () => hideModal(addExpenseModal));
-  cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
 
-  // ---- Create EXPENSE ----
   expenseForm?.addEventListener("submit", async e => {
     e.preventDefault();
 
     const payload = {
       type: "expense",
       date: document.getElementById("expenseDate").value,
-      source: document.getElementById("expenseSource").value,
-      category: document.getElementById("expenseCategory").value,
       amount: parseFloat(document.getElementById("expenseAmount").value),
-      method: document.getElementById("expenseMethod").value,
+      category: document.getElementById("expenseCategory").value,
       note: document.getElementById("expenseNotes").value,
     };
 
@@ -160,17 +170,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ---- Create INCOME ----
+
+  // ======================================================
+  // ADD INCOME
+  // ======================================================
+  btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
+  cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
+
   incomeForm?.addEventListener("submit", async e => {
     e.preventDefault();
 
     const payload = {
       type: "income",
       date: document.getElementById("incomeDate").value,
-      source: document.getElementById("incomeSource").value,
-      category: document.getElementById("incomeCategory").value,
       amount: parseFloat(document.getElementById("incomeAmount").value),
-      method: document.getElementById("incomeMethod").value,
+      category: document.getElementById("incomeCategory").value,
       note: document.getElementById("incomeNotes").value,
     };
 
@@ -184,7 +198,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // =================== Filter Events ===================
+
+  // ======================================================
+  // FILTER FORMS
+  // ======================================================
   filtersForm?.addEventListener("submit", e => {
     e.preventDefault();
     loadRecords();
@@ -205,6 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRecords();
   });
 
-  // =================== Init ===================
+
+  // ======================================================
+  // INITIAL LOAD
+  // ======================================================
   loadRecords();
 });

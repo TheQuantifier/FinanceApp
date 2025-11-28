@@ -14,55 +14,79 @@
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/records.css" />
 </head>
+
 <body>
-  <!-- Header injected by default.js -->
+  <!-- Header -->
   <div id="header"></div>
 
   <main class="main main--records">
-    <!-- ==================== EXPENSES ==================== -->
+
+    <!-- ========================================================
+         EXPENSES
+    ========================================================= -->
     <section class="records-hero">
       <div class="title-wrap">
         <h1>Expenses</h1>
         <p class="subtle">Search, filter, sort, and export your expense transactions.</p>
       </div>
 
-      <div class="actions" role="group" aria-label="Expense quick actions">
+      <div class="actions" role="group">
         <button class="btn" id="btnAddExpense">Add Expense</button>
-        <button class="btn" id="btnUploadExpense">Upload Receipt</button>
         <button class="btn btn--primary" id="btnExportExpenses">Export CSV</button>
       </div>
     </section>
 
-    <section class="filters card" aria-label="Expense filters">
+    <!-- Expense Filters -->
+    <section class="filters card">
       <form id="filtersForm">
         <div class="grid">
-          <label><span>Search</span><input type="search" id="q" placeholder="Source, notes, category…" /></label>
-          <label><span>Category</span><select id="category"><option value="">All</option></select></label>
-          <label><span>Method</span>
-            <select id="method">
+
+          <label>
+            <span>Search</span>
+            <input type="search" id="q" placeholder="Category or note…" />
+          </label>
+
+          <label>
+            <span>Category</span>
+            <select id="category">
               <option value="">All</option>
-              <option>Cash</option>
-              <option>Credit Card</option>
-              <option>Debit Card</option>
-              <option>Direct Deposit</option>
-              <option>Other</option>
             </select>
           </label>
-          <label><span>Min Date</span><input type="date" id="minDate" /></label>
-          <label><span>Max Date</span><input type="date" id="maxDate" /></label>
-          <label><span>Min Amount</span><input type="number" step="0.01" id="minAmt" placeholder="0.00" /></label>
-          <label><span>Max Amount</span><input type="number" step="0.01" id="maxAmt" placeholder="9999.99" /></label>
-          <label><span>Sort</span>
+
+          <label>
+            <span>Min Date</span>
+            <input type="date" id="minDate" />
+          </label>
+
+          <label>
+            <span>Max Date</span>
+            <input type="date" id="maxDate" />
+          </label>
+
+          <label>
+            <span>Min Amount</span>
+            <input type="number" step="0.01" id="minAmt" placeholder="0.00" />
+          </label>
+
+          <label>
+            <span>Max Amount</span>
+            <input type="number" step="0.01" id="maxAmt" placeholder="9999.99" />
+          </label>
+
+          <label>
+            <span>Sort</span>
             <select id="sort">
               <option value="date_desc">Date ↓ (newest)</option>
               <option value="date_asc">Date ↑ (oldest)</option>
               <option value="amount_desc">Amount ↓</option>
               <option value="amount_asc">Amount ↑</option>
-              <option value="source_asc">Source A–Z</option>
-              <option value="source_desc">Source Z–A</option>
+              <option value="category_asc">Category A–Z</option>
+              <option value="category_desc">Category Z–A</option>
             </select>
           </label>
-          <label><span>Rows per page</span>
+
+          <label>
+            <span>Rows per page</span>
             <select id="pageSize">
               <option>10</option>
               <option selected>25</option>
@@ -70,6 +94,7 @@
               <option>100</option>
             </select>
           </label>
+
         </div>
 
         <div class="filter-buttons">
@@ -79,77 +104,100 @@
       </form>
     </section>
 
+    <!-- Expense Table -->
     <section class="records-table">
-      <div class="table-wrap card" role="region" aria-label="Expenses table" tabindex="0">
-        <table class="txn-table" aria-describedby="tableCaptionExpenses">
-          <caption id="tableCaptionExpenses" class="sr-only">Expenses matching current filters.</caption>
+      <div class="table-wrap card" tabindex="0">
+        <table class="txn-table">
           <thead>
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Source</th>
-              <th scope="col">Category</th>
-              <th scope="col" class="num">Amount</th>
-              <th scope="col">Method</th>
-              <th scope="col">Notes</th>
+              <th>Date</th>
+              <th>Category</th>
+              <th class="num">Amount</th>
+              <th>Note</th>
             </tr>
           </thead>
-          <tbody id="recordsTbody"><tr><td colspan="6" class="subtle">Loading…</td></tr></tbody>
+          <tbody id="recordsTbody">
+            <tr><td colspan="4" class="subtle">Loading…</td></tr>
+          </tbody>
         </table>
       </div>
 
-      <nav class="pager" aria-label="Expenses pagination">
-        <button class="btn" id="prevPage" aria-label="Previous page">← Prev</button>
-        <span id="pageInfo" class="subtle" aria-live="polite">Page 1 of 1</span>
-        <button class="btn" id="nextPage" aria-label="Next page">Next →</button>
+      <nav class="pager">
+        <button class="btn" id="prevPage" disabled>← Prev</button>
+        <span id="pageInfo" class="subtle">Page 1 of 1</span>
+        <button class="btn" id="nextPage" disabled>Next →</button>
       </nav>
     </section>
 
-    <!-- ==================== INCOME ==================== -->
+    <!-- Divider -->
     <hr class="section-divider" />
 
+    <!-- ========================================================
+         INCOME
+    ========================================================= -->
     <section class="records-hero">
       <div class="title-wrap">
         <h1>Income</h1>
         <p class="subtle">Search, filter, sort, and export your income transactions.</p>
       </div>
 
-      <div class="actions" role="group" aria-label="Income quick actions">
+      <div class="actions" role="group">
         <button class="btn" id="btnAddIncome">Add Income</button>
-        <button class="btn" id="btnUploadIncome">Upload Receipt</button>
         <button class="btn btn--primary" id="btnExportIncome">Export CSV</button>
       </div>
     </section>
 
-    <section class="filters card" aria-label="Income filters">
+    <!-- Income Filters -->
+    <section class="filters card">
       <form id="filtersFormIncome">
         <div class="grid">
-          <label><span>Search</span><input type="search" id="qIncome" placeholder="Source, notes, category…" /></label>
-          <label><span>Category</span><select id="categoryIncome"><option value="">All</option></select></label>
-          <label><span>Method</span>
-            <select id="methodIncome">
+
+          <label>
+            <span>Search</span>
+            <input type="search" id="qIncome" placeholder="Category or note…" />
+          </label>
+
+          <label>
+            <span>Category</span>
+            <select id="categoryIncome">
               <option value="">All</option>
-              <option>Check</option>
-              <option>Cash</option>
-              <option>PayPal</option>
-              <option>Direct Deposit</option>
-              <option>Other</option>
             </select>
           </label>
-          <label><span>Min Date</span><input type="date" id="minDateIncome" /></label>
-          <label><span>Max Date</span><input type="date" id="maxDateIncome" /></label>
-          <label><span>Min Amount</span><input type="number" step="0.01" id="minAmtIncome" placeholder="0.00" /></label>
-          <label><span>Max Amount</span><input type="number" step="0.01" id="maxAmtIncome" placeholder="99999.99" /></label>
-          <label><span>Sort</span>
+
+          <label>
+            <span>Min Date</span>
+            <input type="date" id="minDateIncome" />
+          </label>
+
+          <label>
+            <span>Max Date</span>
+            <input type="date" id="maxDateIncome" />
+          </label>
+
+          <label>
+            <span>Min Amount</span>
+            <input type="number" step="0.01" id="minAmtIncome" placeholder="0.00" />
+          </label>
+
+          <label>
+            <span>Max Amount</span>
+            <input type="number" step="0.01" id="maxAmtIncome" placeholder="99999.99" />
+          </label>
+
+          <label>
+            <span>Sort</span>
             <select id="sortIncome">
               <option value="date_desc">Date ↓ (newest)</option>
               <option value="date_asc">Date ↑ (oldest)</option>
               <option value="amount_desc">Amount ↓</option>
               <option value="amount_asc">Amount ↑</option>
-              <option value="source_asc">Source A–Z</option>
-              <option value="source_desc">Source Z–A</option>
+              <option value="category_asc">Category A–Z</option>
+              <option value="category_desc">Category Z–A</option>
             </select>
           </label>
-          <label><span>Rows per page</span>
+
+          <label>
+            <span>Rows per page</span>
             <select id="pageSizeIncome">
               <option>10</option>
               <option selected>25</option>
@@ -157,6 +205,7 @@
               <option>100</option>
             </select>
           </label>
+
         </div>
 
         <div class="filter-buttons">
@@ -166,49 +215,54 @@
       </form>
     </section>
 
+    <!-- Income Table -->
     <section class="records-table">
-      <div class="table-wrap card" role="region" aria-label="Income table" tabindex="0">
-        <table class="txn-table" aria-describedby="tableCaptionIncome">
-          <caption id="tableCaptionIncome" class="sr-only">Income matching current filters.</caption>
+      <div class="table-wrap card" tabindex="0">
+        <table class="txn-table">
           <thead>
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Source</th>
-              <th scope="col">Category</th>
-              <th scope="col" class="num">Amount</th>
-              <th scope="col">Method</th>
-              <th scope="col">Notes</th>
+              <th>Date</th>
+              <th>Category</th>
+              <th class="num">Amount</th>
+              <th>Note</th>
             </tr>
           </thead>
-          <tbody id="recordsTbodyIncome"><tr><td colspan="6" class="subtle">Loading…</td></tr></tbody>
+          <tbody id="recordsTbodyIncome">
+            <tr><td colspan="4" class="subtle">Loading…</td></tr>
+          </tbody>
         </table>
       </div>
 
-      <nav class="pager" aria-label="Income pagination">
-        <button class="btn" id="prevPageIncome" aria-label="Previous page">← Prev</button>
-        <span id="pageInfoIncome" class="subtle" aria-live="polite">Page 1 of 1</span>
-        <button class="btn" id="nextPageIncome" aria-label="Next page">Next →</button>
+      <nav class="pager">
+        <button class="btn" id="prevPageIncome" disabled>← Prev</button>
+        <span id="pageInfoIncome" class="subtle">Page 1 of 1</span>
+        <button class="btn" id="nextPageIncome" disabled>Next →</button>
       </nav>
     </section>
 
-    <!-- ==================== MODALS ==================== -->
-    <!-- Add Expense Modal -->
-    <div id="addExpenseModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+    <!-- ========================================================
+         MODALS
+    ========================================================= -->
+
+    <!-- Add Expense -->
+    <div id="addExpenseModal" class="modal hidden">
       <div class="modal-content card">
-        <h2 id="expenseModalTitle">Add New Expense</h2>
+        <h2>Add New Expense</h2>
+
         <form id="expenseForm" class="txn-form">
           <div class="form-row">
             <label><span>Date</span><input type="date" id="expenseDate" required /></label>
             <label><span>Amount</span><input type="number" id="expenseAmount" step="0.01" required /></label>
           </div>
+
           <div class="form-row">
-            <label><span>Source</span><input type="text" id="expenseSource" required /></label>
             <label><span>Category</span><input type="text" id="expenseCategory" required /></label>
           </div>
+
           <div class="form-row">
-            <label><span>Payment Method</span><input type="text" id="expenseMethod" /></label>
             <label><span>Notes</span><input type="text" id="expenseNotes" /></label>
           </div>
+
           <div class="modal-actions">
             <button type="submit" class="btn btn--primary">Save Expense</button>
             <button type="button" class="btn" id="cancelExpenseBtn">Cancel</button>
@@ -217,23 +271,25 @@
       </div>
     </div>
 
-    <!-- Add Income Modal -->
-    <div id="addIncomeModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="incomeModalTitle">
+    <!-- Add Income -->
+    <div id="addIncomeModal" class="modal hidden">
       <div class="modal-content card">
-        <h2 id="incomeModalTitle">Add New Income</h2>
+        <h2>Add New Income</h2>
+
         <form id="incomeForm" class="txn-form">
           <div class="form-row">
             <label><span>Date</span><input type="date" id="incomeDate" required /></label>
             <label><span>Amount</span><input type="number" id="incomeAmount" step="0.01" required /></label>
           </div>
+
           <div class="form-row">
-            <label><span>Source</span><input type="text" id="incomeSource" required /></label>
             <label><span>Category</span><input type="text" id="incomeCategory" required /></label>
           </div>
+
           <div class="form-row">
-            <label><span>Payment Method</span><input type="text" id="incomeMethod" /></label>
             <label><span>Notes</span><input type="text" id="incomeNotes" /></label>
           </div>
+
           <div class="modal-actions">
             <button type="submit" class="btn btn--primary">Save Income</button>
             <button type="button" class="btn" id="cancelIncomeBtn">Cancel</button>
@@ -244,11 +300,12 @@
 
   </main>
 
-  <!-- Footer injected by default.js -->
+  <!-- Footer -->
   <div id="footer"></div>
 
   <!-- Scripts -->
   <script src="scripts/default.js" type="module" defer></script>
   <script src="scripts/records.js" type="module" defer></script>
+
 </body>
 </html>
