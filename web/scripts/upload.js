@@ -58,7 +58,7 @@ import { api } from "./api.js";
   // Recent Uploads Table
   // ----------------------------------------
 
-  const trashIcon = `<img src="images/trash.jpg" alt="Delete" class="icon-trash" />`;
+  const trashIcon = `<img src="images/trash.png" alt="Delete" class="icon-trash" />`;
   const downloadIcon = `<img src="images/download.png" alt="Download" class="icon-trash" />`;
 
   function renderRecentRows(rows) {
