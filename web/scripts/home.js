@@ -172,7 +172,7 @@ import { api } from "./api.js";
   }
 
   // ============================================================
-  //  🔥 FIXED TO MATCH YOUR HTML + BACKEND
+  //  EXPENSE TABLE
   // ============================================================
   function renderExpensesTable(tbody, records, currency) {
     if (!tbody) return;
@@ -201,11 +201,44 @@ import { api } from "./api.js";
   }
 
   // ============================================================
-  //  LOAD DATA FROM BACKEND
+  //  CSV EXPORT
+  // ============================================================
+  function exportRecordsToCSV(records) {
+    if (!records || !records.length) {
+      alert("No records available to export.");
+      return;
+    }
+
+    const headers = ["Date", "Type", "Category", "Amount", "Notes"];
+    const rows = [headers.join(",")];
+
+    records.forEach((r) => {
+      const date = r.date ? new Date(r.date).toISOString().split("T")[0] : "";
+      const type = r.type || "";
+      const category = (r.category || "").replace(/,/g, ";");
+      const amount = r.amount ?? "";
+      const notes = (r.note || "").replace(/,/g, ";");
+
+      rows.push([date, type, category, amount, notes].join(","));
+    });
+
+    const csv = rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `finance_records_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  //  LOAD DATA FROM API
   // ============================================================
   async function loadFromAPI() {
-    const records = await api.records.getAll();
-    return records;
+    return await api.records.getAll();
   }
 
   // ============================================================
@@ -216,12 +249,21 @@ import { api } from "./api.js";
     const form = $("#txnForm");
     const btnCancel = $("#btnCancelModal");
 
-    $("#btnUpload")?.addEventListener("click", () =>
-      alert("Open upload flow…")
-    );
-    $("#btnExport")?.addEventListener("click", () =>
-      alert("Exporting CSV…")
-    );
+    // Upload Receipt button
+    $("#btnUpload")?.addEventListener("click", () => {
+      window.location.href = "upload.html";
+    });
+
+    // CSV Export
+    $("#btnExport")?.addEventListener("click", async () => {
+      try {
+        const records = await api.records.getAll();
+        exportRecordsToCSV(records);
+      } catch (err) {
+        console.error("CSV Export error:", err);
+        alert("Failed to export CSV: " + err.message);
+      }
+    });
 
     $("#btnAddTxn")?.addEventListener("click", () => {
       modal.classList.remove("hidden");
