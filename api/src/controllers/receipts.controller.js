@@ -13,7 +13,7 @@ const { runOcrBuffer } = require('../services/ocr.service');
 
 // ==========================================================
 // POST /api/receipts/upload
-// Upload -> GridFS -> OCR -> Save metadata
+// Upload -> GridFS (user bucket) -> OCR -> Save metadata
 // ==========================================================
 exports.upload = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -21,9 +21,11 @@ exports.upload = asyncHandler(async (req, res) => {
   }
 
   const buffer = req.file.buffer;
+  const userId = req.user.id;
 
-  // 1. Upload to GridFS
+  // 1. Upload to GridFS (per-user bucket)
   const fileId = await uploadBufferToGridFS(
+    userId,                // NEW
     req.file.originalname,
     buffer,
     req.file.mimetype
@@ -40,7 +42,7 @@ exports.upload = asyncHandler(async (req, res) => {
 
   // 3. Store metadata
   const receipt = await Receipt.create({
-    user: req.user.id,
+    user: userId,
     originalFilename: req.file.originalname,
     storedFileId: fileId,
     ocrText
@@ -83,7 +85,7 @@ exports.getOne = asyncHandler(async (req, res) => {
 
 // ==========================================================
 // GET /api/receipts/:id/download
-// Stream file from GridFS -> client
+// Stream file from user's GridFS bucket -> client
 // ==========================================================
 exports.download = asyncHandler(async (req, res) => {
   const receipt = await Receipt.findOne({
@@ -100,13 +102,17 @@ exports.download = asyncHandler(async (req, res) => {
     "Content-Type": "application/octet-stream"
   });
 
-  streamFromGridFS(receipt.storedFileId, res);
+  streamFromGridFS(
+    req.user.id,           // NEW
+    receipt.storedFileId,
+    res
+  );
 });
 
 
 // ==========================================================
 // DELETE /api/receipts/:id
-// Delete metadata AND GridFS file
+// Delete metadata AND user-specific GridFS file
 // ==========================================================
 exports.remove = asyncHandler(async (req, res) => {
   const receipt = await Receipt.findOne({
@@ -118,10 +124,13 @@ exports.remove = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Receipt not found" });
   }
 
-  // 1. Delete file from GridFS
-  await deleteFromGridFS(receipt.storedFileId);
+  // 1. Delete file from this user's bucket
+  await deleteFromGridFS(
+    req.user.id,           // NEW
+    receipt.storedFileId
+  );
 
-  // 2. Delete metadata record
+  // 2. Delete metadata
   await Receipt.deleteOne({ _id: receipt._id });
 
   res.json({ message: "Receipt deleted successfully" });
