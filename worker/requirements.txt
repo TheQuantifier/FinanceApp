@@ -1,3 +1,11 @@
+# OCR worker dependencies
 pytesseract==0.3.10
 pillow==10.2.0
 pymupdf==1.23.26
+
+# Ensure libjpeg + zlib compatibility
+# (Render containers sometimes need these pinned indirectly)
+pillow-heif==0.16.0
+
+# Guarantee UTF-8 PDF extraction stability
+python-dateutil==2.8.2

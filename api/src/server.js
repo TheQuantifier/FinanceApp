@@ -7,19 +7,23 @@ const { port } = require('./config/env');
 const server = http.createServer(app);
 
 const start = async () => {
-  await connectMongo();
+  try {
+    await connectMongo();
 
-  server.listen(port, () => {
-    console.log(`🚀 API server listening on port ${port}`);
-  });
+    server.listen(port, () => {
+      console.log(`🚀 API server listening on port ${port}`);
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+  }
 };
 
-start().catch((err) => {
-  console.error('❌ Failed to start server:', err);
-  process.exit(1);
-});
+start();
 
-// Optional safety nets
+// --------------------------------------------------
+// Global Safety Nets
+// --------------------------------------------------
 process.on('unhandledRejection', (err) => {
   console.error('UNHANDLED REJECTION:', err);
   server.close(() => process.exit(1));

@@ -2,6 +2,9 @@
 const Record = require('../models/Record');
 const asyncHandler = require('../middleware/async');
 
+// ==========================================================
+// GET /api/records/:id
+// ==========================================================
 exports.getOne = asyncHandler(async (req, res) => {
   const record = await Record.findOne({
     _id: req.params.id,
@@ -15,11 +18,20 @@ exports.getOne = asyncHandler(async (req, res) => {
   res.json(record);
 });
 
+// ==========================================================
+// GET /api/records
+// ==========================================================
 exports.getAll = asyncHandler(async (req, res) => {
-  const records = await Record.find({ user: req.user.id }).sort({ date: -1 });
+  const records = await Record.find({ user: req.user.id })
+    .sort({ date: -1 })
+    .lean();
+
   res.json(records);
 });
 
+// ==========================================================
+// POST /api/records
+// ==========================================================
 exports.create = asyncHandler(async (req, res) => {
   const { type, amount, category, date, note } = req.body;
 
@@ -39,6 +51,9 @@ exports.create = asyncHandler(async (req, res) => {
   res.status(201).json(record);
 });
 
+// ==========================================================
+// DELETE /api/records/:id
+// ==========================================================
 exports.remove = asyncHandler(async (req, res) => {
   const record = await Record.findOneAndDelete({
     _id: req.params.id,

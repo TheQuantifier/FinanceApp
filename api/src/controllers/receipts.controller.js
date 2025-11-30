@@ -5,11 +5,10 @@ const asyncHandler = require('../middleware/async');
 const {
   uploadBufferToGridFS,
   streamFromGridFS,
-  deleteFromGridFS
+  deleteFromGridFS,
 } = require('../lib/gridfs');
 
 const { runOcrBuffer } = require('../services/ocr.service');
-
 
 // ==========================================================
 // POST /api/receipts/upload
@@ -30,12 +29,12 @@ exports.upload = asyncHandler(async (req, res) => {
   );
 
   // 2. OCR
-  let ocrText = "";
+  let ocrText = '';
   try {
     const result = await runOcrBuffer(buffer);
-    ocrText = result.text || "";
+    ocrText = result.text || '';
   } catch (err) {
-    console.error("OCR failed:", err);
+    console.error('OCR failed:', err);
   }
 
   // 3. Store metadata
@@ -43,12 +42,11 @@ exports.upload = asyncHandler(async (req, res) => {
     user: req.user.id,
     originalFilename: req.file.originalname,
     storedFileId: fileId,
-    ocrText
+    ocrText,
   });
 
   res.status(201).json(receipt);
 });
-
 
 // ==========================================================
 // GET /api/receipts
@@ -62,7 +60,6 @@ exports.getAll = asyncHandler(async (req, res) => {
   res.json(receipts);
 });
 
-
 // ==========================================================
 // GET /api/receipts/:id
 // Single receipt for user
@@ -70,16 +67,15 @@ exports.getAll = asyncHandler(async (req, res) => {
 exports.getOne = asyncHandler(async (req, res) => {
   const receipt = await Receipt.findOne({
     _id: req.params.id,
-    user: req.user.id
+    user: req.user.id,
   }).lean();
 
   if (!receipt) {
-    return res.status(404).json({ message: "Receipt not found" });
+    return res.status(404).json({ message: 'Receipt not found' });
   }
 
   res.json(receipt);
 });
-
 
 // ==========================================================
 // GET /api/receipts/:id/download
@@ -88,21 +84,20 @@ exports.getOne = asyncHandler(async (req, res) => {
 exports.download = asyncHandler(async (req, res) => {
   const receipt = await Receipt.findOne({
     _id: req.params.id,
-    user: req.user.id
+    user: req.user.id,
   });
 
   if (!receipt) {
-    return res.status(404).json({ message: "Receipt not found" });
+    return res.status(404).json({ message: 'Receipt not found' });
   }
 
   res.set({
-    "Content-Disposition": `attachment; filename="${receipt.originalFilename}"`,
-    "Content-Type": "application/octet-stream"
+    'Content-Disposition': `attachment; filename="${receipt.originalFilename}"`,
+    'Content-Type': 'application/octet-stream',
   });
 
   streamFromGridFS(receipt.storedFileId, res);
 });
-
 
 // ==========================================================
 // DELETE /api/receipts/:id
@@ -111,11 +106,11 @@ exports.download = asyncHandler(async (req, res) => {
 exports.remove = asyncHandler(async (req, res) => {
   const receipt = await Receipt.findOne({
     _id: req.params.id,
-    user: req.user.id
+    user: req.user.id,
   });
 
   if (!receipt) {
-    return res.status(404).json({ message: "Receipt not found" });
+    return res.status(404).json({ message: 'Receipt not found' });
   }
 
   // 1. Delete file from GridFS
@@ -124,5 +119,5 @@ exports.remove = asyncHandler(async (req, res) => {
   // 2. Delete metadata record
   await Receipt.deleteOne({ _id: receipt._id });
 
-  res.json({ message: "Receipt deleted successfully" });
+  res.json({ message: 'Receipt deleted successfully' });
 });

@@ -9,11 +9,20 @@ const receiptSchema = new mongoose.Schema(
       required: true,
     },
 
-    originalFilename: { type: String, required: true },
+    originalFilename: {
+      type: String,
+      required: true,
+    },
 
-    storedFileId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    storedFileId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
 
-    ocrText: { type: String, default: '' }
+    ocrText: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

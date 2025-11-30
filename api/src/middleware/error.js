@@ -10,12 +10,17 @@ function errorHandler(err, req, res, next) {
     message: err.message || 'Internal server error',
   };
 
-  // Only show stack traces in development
+  // Include stack only in non-production
   if (nodeEnv !== 'production') {
     response.stack = err.stack;
   }
 
-  res.status(status).json(response);
+  // Prevent sending headers twice
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return res.status(status).json(response);
 }
 
 module.exports = { errorHandler };
