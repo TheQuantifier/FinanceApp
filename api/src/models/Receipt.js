@@ -19,6 +19,18 @@ const receiptSchema = new mongoose.Schema(
       required: true,
     },
 
+    // NEW: file MIME type, e.g. "application/pdf", "image/png"
+    fileType: {
+      type: String,
+      default: "",
+    },
+
+    // NEW: size of original uploaded file in bytes
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+
     ocrText: {
       type: String,
       default: '',

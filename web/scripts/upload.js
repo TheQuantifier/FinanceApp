@@ -82,8 +82,13 @@ import { api } from "./api.js";
 
       tr.innerHTML = `
         <td>${filename}</td>
-        <td>${r.mimetype || "—"}</td>
-        <td class="num">${bytesToSize(r.sizeBytes || 0)}</td>
+        
+        <!-- ⭐ CORRECT FIELD (was r.mimetype) -->
+        <td>${r.fileType || "—"}</td>
+
+        <!-- ⭐ CORRECT FIELD (was r.sizeBytes) -->
+        <td class="num">${bytesToSize(r.fileSize || 0)}</td>
+
         <td>${created}</td>
         <td>${r.ocrText ? "parsed" : "raw"}</td>
 
@@ -169,7 +174,7 @@ import { api } from "./api.js";
       item.className = "file-item";
 
       // Thumbnail
-      const thumb = document.createElement("div");
+      const thumb = document.create.createElement("div");
       thumb.className = "file-thumb";
 
       if ((file.type || "").startsWith("image/")) {

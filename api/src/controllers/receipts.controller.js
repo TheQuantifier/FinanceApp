@@ -42,6 +42,9 @@ exports.upload = asyncHandler(async (req, res) => {
     user: req.user.id,
     originalFilename: req.file.originalname,
     storedFileId: fileId,
+    fileType: req.file.mimetype,   // ex: "application/pdf"
+    fileSize: req.file.size,       // ex: 84211 bytes
+
     ocrText,
   });
 
