@@ -31,25 +31,15 @@ app.use(cookieParser());
 // CORS CONFIG — REQUIRED FOR RENDER + GITHUB PAGES
 // --------------------------------------------------
 
-// IMPORTANT — all allowed frontend origins
+// Allowed origins for frontends
 const allowedOrigins = [
-  // Custom domain
-  "https://app.thequantifier.com",
-  "https://app.thequantifier.com/",
-
-  // GitHub Pages (User & Project Pages)
-  "https://thequantifier.github.io",
-  "https://thequantifier.github.io/",
-  "https://thequantifier.github.io/FinanceApp",
-  "https://thequantifier.github.io/FinanceApp/",
-
-  // Local development
-  "http://localhost:5000",
-  "http://localhost:5500",
-  "http://localhost:3000",
+  "https://app.thequantifier.com", // Your frontend domain (GitHub Pages)
+  "http://localhost:5000",         // Local backend
+  "http://localhost:5500",         // Local static dev (Live Server)
+  "http://localhost:3000",         // Local frontend alternative
 ];
 
-// Always allow credentials
+// Always send this header (needed for credentialed requests)
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   next();
@@ -59,18 +49,11 @@ app.use((req, res, next) => {
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow server-side tools (Postman, curl)
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true); // Allow Postman, curl, server-side
+      if (allowedOrigins.includes(origin)) return callback(null, true);
 
-      // Normalize trailing slash
-      const cleanedOrigin = origin.replace(/\/$/, "");
-
-      if (allowedOrigins.includes(cleanedOrigin)) {
-        return callback(null, true);
-      }
-
-      console.warn("❌ Blocked CORS origin:", origin);
-      return callback(new Error("Not allowed by CORS"));
+      // Do NOT throw error — just block
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -78,17 +61,8 @@ app.use(
   })
 );
 
-// Explicit preflight handling — fixes EPIPE & CORS failures
-app.options("*", (req, res) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-  return res.sendStatus(204);
-});
+// Preflight routes must also send CORS headers
+app.options("*", cors());
 
 // --------------------------------------------------
 // Health Check
