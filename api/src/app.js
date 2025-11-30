@@ -33,16 +33,17 @@ app.use(cookieParser());
 
 // IMPORTANT — all allowed frontend origins
 const allowedOrigins = [
+  // Custom domain
   "https://app.thequantifier.com",
   "https://app.thequantifier.com/",
 
-  // GitHub Pages (User and Project Pages)
+  // GitHub Pages (User & Project Pages)
   "https://thequantifier.github.io",
-  "https://thequantifier.github.io/",            // normalize slash
+  "https://thequantifier.github.io/",
   "https://thequantifier.github.io/FinanceApp",
-  "https://thequantifier.github.io/FinanceApp/", // normalize slash
+  "https://thequantifier.github.io/FinanceApp/",
 
-  // Local development options
+  // Local development
   "http://localhost:5000",
   "http://localhost:5500",
   "http://localhost:3000",
@@ -54,10 +55,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Main CORS middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow server-side tools like Postman, curl (no browser origin)
+      // Allow server-side tools (Postman, curl)
       if (!origin) return callback(null, true);
 
       // Normalize trailing slash
@@ -68,7 +70,7 @@ app.use(
       }
 
       console.warn("❌ Blocked CORS origin:", origin);
-      return callback(new Error("Not allowed by CORS"), false);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -76,8 +78,17 @@ app.use(
   })
 );
 
-// Preflight routes must still include CORS headers
-app.options("*", cors());
+// Explicit preflight handling — fixes EPIPE & CORS failures
+app.options("*", (req, res) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  return res.sendStatus(204);
+});
 
 // --------------------------------------------------
 // Health Check
