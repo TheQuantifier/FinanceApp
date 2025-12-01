@@ -1,87 +1,143 @@
+// scripts/profile.js
 import { api } from "./api.js";
 
-// -------------------------------
-// Load Profile on Page Load
-// -------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  loadUserProfile();
-});
+(function () {
+  // -------------------------------
+  // ELEMENTS
+  // -------------------------------
+  const heroEditBtn = document.getElementById("editProfileBtn");
+  const detailsEditBtn = document.getElementById("toggleEditBtn");
+  const cancelBtn = document.getElementById("cancelEditBtn");
+  const form = document.getElementById("editForm");
+  const view = document.getElementById("detailsView");
 
-// -------------------------------
-// Load User Profile From Backend
-// -------------------------------
-async function loadUserProfile() {
-  try {
-    const { user } = await api.auth.me();
-
-    // -------------------------------
-    // SUMMARY CARD
-    // -------------------------------
-    document.getElementById("fullName").innerText = user.fullName || "—";
-    document.getElementById("username").innerText = "@" + (user.username || "—");
-    document.getElementById("email").innerText = user.email || "—";
-    document.getElementById("phoneNumber").innerText = user.phoneNumber || "—";
-    document.getElementById("location").innerText = user.location || "—";
-    document.getElementById("role").innerText = user.role || "—";
-    document.getElementById("createdAt").innerText = user.createdAt
-      ? new Date(user.createdAt).toLocaleDateString()
-      : "—";
-
-    // -------------------------------
-    // DETAILS VIEW
-    // -------------------------------
-    document.getElementById("detail_fullName").innerText = user.fullName || "—";
-    document.getElementById("detail_role").innerText = user.role || "—";
-    document.getElementById("detail_email").innerText = user.email || "—";
-    document.getElementById("detail_phoneNumber").innerText = user.phoneNumber || "—";
-    document.getElementById("detail_location").innerText = user.location || "—";
-    document.getElementById("detail_username").innerText = user.username || "—";
-    document.getElementById("detail_bio").innerText = user.bio || "—";
-
-    // -------------------------------
-    // FORM FIELDS
-    // -------------------------------
-    document.getElementById("input_fullName").value = user.fullName || "";
-    document.getElementById("input_role").value = user.role || "";
-    document.getElementById("input_email").value = user.email || "";
-    document.getElementById("input_phoneNumber").value = user.phoneNumber || "";
-    document.getElementById("input_location").value = user.location || "";
-    document.getElementById("input_username").value = user.username || "";
-    document.getElementById("input_bio").value = user.bio || "";
-
-  } catch (err) {
-    console.error("Error loading user:", err);
-    alert("You must be logged in.");
-    window.location.href = "login.html";
-  }
-}
-
-// -------------------------------
-// Save Profile
-// -------------------------------
-async function saveProfile() {
-  const updates = {
-    fullName: document.getElementById("input_fullName").value.trim(),
-    role: document.getElementById("input_role").value.trim(),
-    email: document.getElementById("input_email").value.trim(),
-    phoneNumber: document.getElementById("input_phoneNumber").value.trim(),
-    location: document.getElementById("input_location").value.trim(),
-    username: document.getElementById("input_username").value.trim(),
-    bio: document.getElementById("input_bio").value.trim(),
+  // Read-only UI fields
+  const f = {
+    fullName: document.getElementById("detail_fullName"),
+    role: document.getElementById("detail_role"),
+    email: document.getElementById("detail_email"),
+    phoneNumber: document.getElementById("detail_phoneNumber"),
+    location: document.getElementById("detail_location"),
+    username: document.getElementById("detail_username"),
+    bio: document.getElementById("detail_bio"),
   };
 
-  try {
-    const { user } = await api.auth.updateProfile(updates);
+  // Form fields
+  const input = {
+    fullName: document.getElementById("input_fullName"),
+    role: document.getElementById("input_role"),
+    email: document.getElementById("input_email"),
+    phoneNumber: document.getElementById("input_phoneNumber"),
+    location: document.getElementById("input_location"),
+    username: document.getElementById("input_username"),
+    bio: document.getElementById("input_bio"),
+  };
 
-    // Re-render UI
-    loadUserProfile();
-
-    alert("Profile updated successfully!");
-
-  } catch (err) {
-    console.error("Update failed:", err);
-    alert("Update failed: " + err.message);
+  // -------------------------------
+  // SHOW / HIDE FORM
+  // -------------------------------
+  function showForm() {
+    form.hidden = false;
+    view.hidden = true;
+    detailsEditBtn?.setAttribute("aria-expanded", "true");
   }
-}
 
-window.saveProfile = saveProfile;
+  function hideForm() {
+    form.hidden = true;
+    view.hidden = false;
+    detailsEditBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  heroEditBtn?.addEventListener("click", showForm);
+  detailsEditBtn?.addEventListener("click", () => {
+    form.hidden ? showForm() : hideForm();
+  });
+  cancelBtn?.addEventListener("click", hideForm);
+
+  // -------------------------------
+  // LOAD USER PROFILE
+  // -------------------------------
+  async function loadUserProfile() {
+    try {
+      const { user } = await api.auth.me();
+
+      // SUMMARY CARD
+      document.getElementById("fullName").textContent = user.fullName || "—";
+      document.getElementById("username").textContent = "@" + (user.username || "—");
+      document.getElementById("email").textContent = user.email || "—";
+      document.getElementById("phoneNumber").textContent = user.phoneNumber || "—";
+      document.getElementById("location").textContent = user.location || "—";
+      document.getElementById("role").textContent = user.role || "—";
+      document.getElementById("createdAt").textContent = user.createdAt
+        ? new Date(user.createdAt).toLocaleDateString()
+        : "—";
+
+      // DETAILS VIEW
+      f.fullName.textContent = user.fullName || "—";
+      f.role.textContent = user.role || "—";
+      f.email.textContent = user.email || "—";
+      f.phoneNumber.textContent = user.phoneNumber || "—";
+      f.location.textContent = user.location || "—";
+      f.username.textContent = user.username || "—";
+      f.bio.textContent = user.bio || "—";
+
+      // FORM FIELDS
+      input.fullName.value = user.fullName || "";
+      input.role.value = user.role || "";
+      input.email.value = user.email || "";
+      input.phoneNumber.value = user.phoneNumber || "";
+      input.location.value = user.location || "";
+      input.username.value = user.username || "";
+      input.bio.value = user.bio || "";
+
+    } catch (err) {
+      console.error("Failed to load profile:", err);
+      alert("You must be logged in.");
+      window.location.href = "login.html";
+    }
+  }
+
+  // -------------------------------
+  // SAVE PROFILE
+  // -------------------------------
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const updates = {
+      fullName: input.fullName.value.trim(),
+      role: input.role.value.trim(),
+      email: input.email.value.trim(),
+      phoneNumber: input.phoneNumber.value.trim(),
+      location: input.location.value.trim(),
+      username: input.username.value.trim(),
+      bio: input.bio.value.trim(),
+    };
+
+    try {
+      await api.auth.updateProfile(updates);
+      await loadUserProfile();
+      hideForm();
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error("Update failed:", err);
+      alert("Update failed: " + err.message);
+    }
+  });
+
+  // -------------------------------
+  // COPY PROFILE LINK
+  // -------------------------------
+  document.getElementById("copyProfileLinkBtn")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      alert("Profile link copied!");
+    } catch {
+      alert("Could not copy link.");
+    }
+  });
+
+  // -------------------------------
+  // INIT
+  // -------------------------------
+  loadUserProfile();
+})();
