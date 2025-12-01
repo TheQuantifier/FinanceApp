@@ -1,0 +1,61 @@
+/* ===== SETTINGS PAGE STYLES ===== */
+
+.settings-container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.settings-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.settings-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.08);
+}
+
+.settings-card h2 {
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.settings-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.settings-row label {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.settings-row input,
+.settings-row select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.settings-save-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 16px;
+    background-color: #4e73df;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.settings-save-btn:hover {
+    background-color: #395dca;
+}
