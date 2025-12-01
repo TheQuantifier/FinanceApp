@@ -7,7 +7,7 @@ import { api } from "./api.js";
   const form = document.getElementById("editForm");
   const view = document.getElementById("detailsView");
 
-  // VIEW FIELDS (exact names)
+  // VIEW FIELDS (exact IDs in the HTML)
   const fields = {
     username: document.getElementById("username"),
     email: document.getElementById("email"),
@@ -19,7 +19,7 @@ import { api } from "./api.js";
     bio: document.getElementById("bio"),
   };
 
-  // INPUT FIELDS (matching backend names)
+  // INPUT FIELDS (matching backend field names)
   const input = {
     username: document.getElementById("input_username"),
     email: document.getElementById("input_email"),
@@ -45,12 +45,12 @@ import { api } from "./api.js";
   editBtn.addEventListener("click", showForm);
   cancelBtn.addEventListener("click", hideForm);
 
-  // LOAD USER
+  // LOAD USER PROFILE
   async function loadUser() {
     try {
       const { user } = await api.auth.me();
 
-      // Fill VIEW
+      // VIEW MODE FIELDS
       fields.username.textContent = safe(user.username);
       fields.email.textContent = safe(user.email);
       fields.location.textContent = safe(user.location);
@@ -62,7 +62,7 @@ import { api } from "./api.js";
       fields.phoneNumber.textContent = safe(user.phoneNumber);
       fields.bio.textContent = safe(user.bio);
 
-      // Fill FORM
+      // FORM FIELDS
       input.username.value = user.username || "";
       input.email.value = user.email || "";
       input.location.value = user.location || "";
@@ -94,14 +94,14 @@ import { api } from "./api.js";
     try {
       const { user } = await api.auth.updateProfile(payload);
 
-      // Update view
-      fields.username.textContent = user.username;
-      fields.email.textContent = user.email;
-      fields.location.textContent = user.location;
-      fields.fullName.textContent = user.fullName;
-      fields.role.textContent = user.role;
-      fields.phoneNumber.textContent = user.phoneNumber;
-      fields.bio.textContent = user.bio;
+      // UPDATE VIEW MODE
+      fields.username.textContent = safe(user.username);
+      fields.email.textContent = safe(user.email);
+      fields.location.textContent = safe(user.location);
+      fields.fullName.textContent = safe(user.fullName);
+      fields.role.textContent = safe(user.role);
+      fields.phoneNumber.textContent = safe(user.phoneNumber);
+      fields.bio.textContent = safe(user.bio);
 
       hideForm();
 

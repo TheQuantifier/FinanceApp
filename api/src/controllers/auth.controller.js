@@ -21,7 +21,7 @@ function setTokenCookie(res, token) {
 }
 
 // =====================================================
-// REGISTER
+// REGISTER (unchanged for input, enhanced internally)
 // =====================================================
 exports.register = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body;
@@ -35,20 +35,47 @@ exports.register = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email already in use' });
   }
 
-  const user = await User.create({ email, password, name });
-  const token = createToken(user._id);
+  // Auto-generate new fields
+  const usernameBase = email.split('@')[0].toLowerCase();
 
+  const user = await User.create({
+    email,
+    password,
+    name,                   // OLD FIELD (still used)
+    
+    // New required fields
+    username: usernameBase,
+    fullName: name,         // map to fullName
+    location: "",
+    role: "user",
+    phoneNumber: "",
+    bio: "",
+  });
+
+  const token = createToken(user._id);
   setTokenCookie(res, token);
+
   res.status(201).json({ user });
 });
 
 // =====================================================
-// LOGIN
+// LOGIN (email OR username allowed)
 // =====================================================
 exports.login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  const user = await User.findOne({ email });
+  if (!identifier || !password) {
+    return res.status(400).json({ message: 'Missing identifier or password' });
+  }
+
+  // identifier may be email OR username
+  const user = await User.findOne({
+    $or: [
+      { email: identifier.toLowerCase() },
+      { username: identifier.toLowerCase() }
+    ]
+  });
+
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
@@ -87,21 +114,32 @@ exports.updateMe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const updates = {};
 
-  // Only set fields that exist in the request
-  if (req.body.name !== undefined) updates.name = req.body.name;
-  if (req.body.preferredName !== undefined) updates.preferredName = req.body.preferredName;
-  if (req.body.phone !== undefined) updates.phone = req.body.phone;
+  // 🟦 Update your new fields
+  if (req.body.fullName !== undefined) updates.fullName = req.body.fullName;
+  if (req.body.location !== undefined) updates.location = req.body.location;
+  if (req.body.role !== undefined) updates.role = req.body.role;
+  if (req.body.phoneNumber !== undefined) updates.phoneNumber = req.body.phoneNumber;
   if (req.body.bio !== undefined) updates.bio = req.body.bio;
 
-  // Unique email check
+  // 🟦 Update legacy fields (still supported)
+  if (req.body.name !== undefined) updates.name = req.body.name;
+
+  // 🟦 Unique email check
   if (req.body.email !== undefined) {
     const existing = await User.findOne({ email: req.body.email });
-
     if (existing && existing._id.toString() !== userId.toString()) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-
     updates.email = req.body.email;
+  }
+
+  // 🟦 Unique username check
+  if (req.body.username !== undefined) {
+    const existingUser = await User.findOne({ username: req.body.username.toLowerCase() });
+    if (existingUser && existingUser._id.toString() !== userId.toString()) {
+      return res.status(400).json({ message: 'Username already in use' });
+    }
+    updates.username = req.body.username.toLowerCase();
   }
 
   const updatedUser = await User.findByIdAndUpdate(

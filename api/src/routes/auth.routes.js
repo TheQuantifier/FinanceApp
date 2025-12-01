@@ -9,10 +9,13 @@ const auth = require('../middleware/auth');
 // PUBLIC ROUTES
 // --------------------------------------------------
 router.post('/register', controller.register);
+
+// Login now expects: { identifier, password }
+// Controller supports username OR email
 router.post('/login', controller.login);
 
 // --------------------------------------------------
-// PROTECTED LOGOUT (prevents CSRF via cookie deletion)
+// PROTECTED LOGOUT (requires auth)
 // --------------------------------------------------
 router.post('/logout', auth, controller.logout);
 

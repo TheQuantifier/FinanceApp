@@ -4,6 +4,17 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
+    // ------------------------
+    // Required Auth Fields
+    // ------------------------
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
     email: {
       type: String,
       required: true,
@@ -18,21 +29,28 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
     },
 
-    // Required display name
-    name: {
+    // ------------------------
+    // Profile Fields
+    // ------------------------
+    fullName: {
       type: String,
       required: true,
       trim: true,
     },
 
-    // Optional editable profile fields
-    preferredName: {
+    location: {
       type: String,
-      trim: true,
       default: '',
+      trim: true,
     },
 
-    phone: {
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+
+    phoneNumber: {
       type: String,
       trim: true,
       default: '',
@@ -44,7 +62,7 @@ const userSchema = new mongoose.Schema(
       default: '',
     },
   },
-  { timestamps: true }
+  { timestamps: true } // auto creates createdAt + updatedAt
 );
 
 // --------------------------------------------------

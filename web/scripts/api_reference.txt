@@ -5,13 +5,13 @@
 
 BASE URL:
 The API module automatically points to:
-    https://your-render-service.onrender.com/api
+    https://financeapp-5u9g.onrender.com/api
 
 For local testing:
     http://localhost:5000/api
 
 All functions return Promises and should be called with:
-    await api.auth.login(...)
+    const user = await api.auth.login(...);
 or
     api.records.getAll().then(...)
 ============================================================
@@ -27,6 +27,8 @@ or
 DESCRIPTION:
     Creates a new user account and logs them in automatically.
     Saves the JWT cookie in the browser.
+    Backend auto-generates:
+        username, fullName, location, role, phoneNumber, bio.
 
 ARGUMENTS:
     email (string)
@@ -34,34 +36,38 @@ ARGUMENTS:
     name (string)
 
 RETURNS:
-    { user: { _id, email, name, createdAt, ... } }
+    { user }
 
 EXAMPLE:
     await api.auth.register("john@example.com", "mypassword", "John");
 
 
 ------------------------------------------------------------
- auth.login(email, password)
+ auth.login(identifier, password)
 ------------------------------------------------------------
 DESCRIPTION:
-    Logs in a user and stores their JWT cookie.
+    Logs in a user using EITHER:
+        - email + password, OR
+        - username + password
+    Stores the JWT cookie.
 
 ARGUMENTS:
-    email (string)
-    password (string)
+    identifier (string)  // email OR username
+    password   (string)
 
 RETURNS:
     { user }
 
 EXAMPLE:
     await api.auth.login("john@example.com", "mypassword");
+    await api.auth.login("johnhand", "mypassword");
 
 
 ------------------------------------------------------------
  auth.logout()
 ------------------------------------------------------------
 DESCRIPTION:
-    Logs the user out by clearing their cookie.
+    Logs the user out by clearing their JWT cookie.
 
 ARGUMENTS:
     none
@@ -77,7 +83,7 @@ EXAMPLE:
  auth.me()
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves the currently authenticated user based on their JWT cookie.
+    Retrieves the currently authenticated user.
 
 ARGUMENTS:
     none
@@ -93,9 +99,10 @@ EXAMPLE:
  auth.updateProfile(updates)
 ------------------------------------------------------------
 DESCRIPTION:
-    Updates the logged-in user's profile fields.
-    Uses PUT /auth/me on the backend.
-    Can update: name, preferredName, email, phone, bio.
+    Updates any subset of user profile fields.
+    Supports both old and new profile fields:
+        fullName, location, role, phoneNumber, bio,
+        name, email, username.
 
 ARGUMENTS:
     updates (object)
@@ -105,8 +112,8 @@ RETURNS:
 
 EXAMPLE:
     await api.auth.updateProfile({
-        name: "John Hand",
-        phone: "555-1234"
+        fullName: "John Alexander Hand",
+        phoneNumber: "555-1234"
     });
 
 
@@ -118,7 +125,7 @@ EXAMPLE:
  records.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-    Returns all financial records belonging to the logged-in user.
+    Returns all financial records of the logged-in user.
 
 ARGUMENTS:
     none
@@ -129,7 +136,7 @@ RETURNS:
       {
         _id,
         user,
-        type ("income"|"expense"),
+        type,
         amount,
         category,
         date,
@@ -147,7 +154,7 @@ EXAMPLE:
  records.getOne(recordId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves one financial record by ID.
+    Retrieves one financial record.
 
 ARGUMENTS:
     recordId (string)
@@ -163,13 +170,13 @@ EXAMPLE:
  records.create({ type, amount, category, date, note })
 ------------------------------------------------------------
 DESCRIPTION:
-    Creates a new financial record for the logged-in user.
+    Creates a new financial record.
 
 ARGUMENTS:
     type      (string: "income" | "expense")
     amount    (number)
     category  (string)
-    date      (string or Date)
+    date      (string)
     note      (string, optional)
 
 RETURNS:
@@ -189,7 +196,7 @@ EXAMPLE:
  records.remove(recordId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Deletes a financial record by ID.
+    Deletes a financial record.
 
 ARGUMENTS:
     recordId (string)
@@ -211,11 +218,10 @@ EXAMPLE:
 DESCRIPTION:
     Uploads a file (PDF/JPG/PNG).
     Stored in MongoDB GridFS.
-    OCR is run on the server.
-    Returns the receipt metadata + OCR text.
+    OCR text is extracted server-side.
 
 ARGUMENTS:
-    file (File from <input type="file">)
+    file (File)
 
 RETURNS:
     {
@@ -237,7 +243,7 @@ EXAMPLE:
  receipts.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-    Fetches all receipts for the logged-in user.
+    Retrieves all receipts for the logged-in user.
 
 ARGUMENTS:
     none
@@ -269,7 +275,7 @@ EXAMPLE:
  receipts.download(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Downloads the original file from GridFS as a Blob.
+    Downloads the original file as a Blob.
 
 ARGUMENTS:
     receiptId (string)
@@ -285,7 +291,7 @@ EXAMPLE:
  receipts.downloadToFile(receiptId, filename)
 ------------------------------------------------------------
 DESCRIPTION:
-    Downloads and automatically saves the file to disk.
+    Downloads the file and auto-saves it to disk.
 
 ARGUMENTS:
     receiptId (string)
@@ -302,7 +308,7 @@ EXAMPLE:
  receipts.remove(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Deletes a receipt record (and GridFS file if supported).
+    Deletes a receipt record.
 
 ARGUMENTS:
     receiptId (string)
@@ -310,21 +316,8 @@ ARGUMENTS:
 RETURNS:
     { message: "Receipt deleted" }
 
-
-------------------------------------------------------------
- receipts.preview(receiptId)
-------------------------------------------------------------
-DESCRIPTION:
-    Returns the file as a Blob for embedding in IMG, <embed>, or iframe.
-
-ARGUMENTS:
-    receiptId (string)
-
-RETURNS:
-    Blob
-
 EXAMPLE:
-    const pdfBlob = await api.receipts.preview(id);
+    await api.receipts.remove("675ca881ab9c45f123abc911");
 
 
 ============================================================

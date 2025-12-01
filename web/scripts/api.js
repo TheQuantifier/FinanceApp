@@ -40,6 +40,7 @@ async function request(path, options = {}) {
 // AUTH MODULE
 // --------------------------------------
 export const auth = {
+  // Registration stays exactly the same (only email, password, name)
   async register(email, password, name) {
     return request("/auth/register", {
       method: "POST",
@@ -47,10 +48,11 @@ export const auth = {
     });
   },
 
-  async login(email, password) {
+  // Login now uses "identifier" instead of "email"
+  async login(identifier, password) {
     return request("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     });
   },
 
@@ -62,6 +64,11 @@ export const auth = {
     return request("/auth/me");
   },
 
+  /**
+   * Update profile — supports new fields:
+   * fullName, location, role, phoneNumber, bio,
+   * and also older fields: name, email.
+   */
   async updateProfile(updates) {
     return request("/auth/me", {
       method: "PUT",
@@ -136,7 +143,7 @@ export const receipts = {
     const res = await fetch(`${API_BASE}/receipts/${id}/download`, {
       method: "GET",
       credentials: "include",
-      headers: {}   // ensures Chrome preflight matches config
+      headers: {}
     });
 
     if (!res.ok) throw new Error("Download failed");
