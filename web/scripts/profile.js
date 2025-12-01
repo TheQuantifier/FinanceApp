@@ -15,26 +15,39 @@ async function loadUserProfile() {
     const { user } = await api.auth.me();
 
     // -------------------------------
-    // Populate SUMMARY section
+    // SUMMARY CARD
     // -------------------------------
-    document.getElementById("summary-username").innerText = user.username || "—";
-    document.getElementById("summary-email").innerText = user.email || "—";
-    document.getElementById("summary-role").innerText = user.role || "—";
-    document.getElementById("summary-location").innerText = user.location || "—";
+    document.getElementById("fullName").innerText = user.fullName || "—";
+    document.getElementById("username").innerText = "@" + (user.username || "—");
+    document.getElementById("email").innerText = user.email || "—";
+    document.getElementById("phoneNumber").innerText = user.phoneNumber || "—";
+    document.getElementById("location").innerText = user.location || "—";
+    document.getElementById("role").innerText = user.role || "—";
+    document.getElementById("createdAt").innerText = user.createdAt
+      ? new Date(user.createdAt).toLocaleDateString()
+      : "—";
 
     // -------------------------------
-    // Populate FORM fields
+    // DETAILS VIEW
     // -------------------------------
-    document.getElementById("username").value = user.username || "";
-    document.getElementById("email").value = user.email || "";
-    document.getElementById("location").value = user.location || "";
-    document.getElementById("createdAt").value = user.createdAt
-      ? new Date(user.createdAt).toLocaleDateString()
-      : "";
-    document.getElementById("fullName").value = user.fullName || "";
-    document.getElementById("role").value = user.role || "";
-    document.getElementById("phoneNumber").value = user.phoneNumber || "";
-    document.getElementById("bio").value = user.bio || "";
+    document.getElementById("detail_fullName").innerText = user.fullName || "—";
+    document.getElementById("detail_role").innerText = user.role || "—";
+    document.getElementById("detail_email").innerText = user.email || "—";
+    document.getElementById("detail_phoneNumber").innerText = user.phoneNumber || "—";
+    document.getElementById("detail_location").innerText = user.location || "—";
+    document.getElementById("detail_username").innerText = user.username || "—";
+    document.getElementById("detail_bio").innerText = user.bio || "—";
+
+    // -------------------------------
+    // FORM FIELDS
+    // -------------------------------
+    document.getElementById("input_fullName").value = user.fullName || "";
+    document.getElementById("input_role").value = user.role || "";
+    document.getElementById("input_email").value = user.email || "";
+    document.getElementById("input_phoneNumber").value = user.phoneNumber || "";
+    document.getElementById("input_location").value = user.location || "";
+    document.getElementById("input_username").value = user.username || "";
+    document.getElementById("input_bio").value = user.bio || "";
 
   } catch (err) {
     console.error("Error loading user:", err);
@@ -44,29 +57,26 @@ async function loadUserProfile() {
 }
 
 // -------------------------------
-// Save / Update Profile
+// Save Profile
 // -------------------------------
 async function saveProfile() {
   const updates = {
-    username: document.getElementById("username").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    location: document.getElementById("location").value.trim(),
-    fullName: document.getElementById("fullName").value.trim(),
-    role: document.getElementById("role").value.trim(),
-    phoneNumber: document.getElementById("phoneNumber").value.trim(),
-    bio: document.getElementById("bio").value.trim(),
+    fullName: document.getElementById("input_fullName").value.trim(),
+    role: document.getElementById("input_role").value.trim(),
+    email: document.getElementById("input_email").value.trim(),
+    phoneNumber: document.getElementById("input_phoneNumber").value.trim(),
+    location: document.getElementById("input_location").value.trim(),
+    username: document.getElementById("input_username").value.trim(),
+    bio: document.getElementById("input_bio").value.trim(),
   };
 
   try {
     const { user } = await api.auth.updateProfile(updates);
 
-    // Update summary instantly
-    document.getElementById("summary-username").innerText = user.username;
-    document.getElementById("summary-email").innerText = user.email;
-    document.getElementById("summary-role").innerText = user.role;
-    document.getElementById("summary-location").innerText = user.location;
+    // Re-render UI
+    loadUserProfile();
 
-    alert("Profile updated successfully.");
+    alert("Profile updated successfully!");
 
   } catch (err) {
     console.error("Update failed:", err);
@@ -74,5 +84,4 @@ async function saveProfile() {
   }
 }
 
-// Make saveProfile() available to HTML button
 window.saveProfile = saveProfile;
