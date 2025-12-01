@@ -1,14 +1,14 @@
 import { api } from "./api.js";
 
 // -------------------------------
-// DOM Elements
+// DOM ELEMENTS
 // -------------------------------
 const editBtn = document.getElementById("editProfileBtn");
-const cancelBtn = document.getElementById("cancelEditBtn");
 const form = document.getElementById("editForm");
+const cancelBtn = document.getElementById("cancelEditBtn");
 
-// Summary fields
-const summaryFields = {
+// Read-only summary fields (merged)
+const f = {
   fullName: document.getElementById("fullName"),
   username: document.getElementById("username"),
   email: document.getElementById("email"),
@@ -16,11 +16,11 @@ const summaryFields = {
   location: document.getElementById("location"),
   role: document.getElementById("role"),
   createdAt: document.getElementById("createdAt"),
-  bio: document.getElementById("bio"),
+  bio: document.getElementById("bio"), // fixed to match HTML
 };
 
 // Form inputs
-const inputFields = {
+const input = {
   fullName: document.getElementById("input_fullName"),
   username: document.getElementById("input_username"),
   email: document.getElementById("input_email"),
@@ -30,66 +30,88 @@ const inputFields = {
   bio: document.getElementById("input_bio"),
 };
 
+// Stats inside security card
+const stats = {
+  lastLogin: document.getElementById("stat_lastLogin"),
+  twoFA: document.getElementById("stat_2FA"),
+  uploads: document.getElementById("stat_uploads"),
+};
+
 // -------------------------------
-// Show / Hide Edit Form
+// SHOW / HIDE FORM
 // -------------------------------
 function showForm() {
   form.hidden = false;
+  editBtn.disabled = true;
 }
 
 function hideForm() {
   form.hidden = true;
+  editBtn.disabled = false;
 }
 
 // -------------------------------
-// Load User Profile
+// LOAD USER PROFILE
 // -------------------------------
 async function loadUserProfile() {
   try {
     const { user } = await api.auth.me();
 
-    // Update summary card
-    summaryFields.fullName.textContent = user.fullName || "—";
-    summaryFields.username.textContent = "@" + (user.username || "—");
-    summaryFields.email.textContent = user.email || "—";
-    summaryFields.phoneNumber.textContent = user.phoneNumber || "—";
-    summaryFields.location.textContent = user.location || "—";
-    summaryFields.role.textContent = user.role || "—";
-    summaryFields.createdAt.textContent = user.createdAt
+    // -------------------------------
+    // SUMMARY / READ-ONLY
+    // -------------------------------
+    f.fullName.innerText = user.fullName || "—";
+    f.username.innerText = "@" + (user.username || "—");
+    f.email.innerText = user.email || "—";
+    f.phoneNumber.innerText = user.phoneNumber || "—";
+    f.location.innerText = user.location || "—";
+    f.role.innerText = user.role || "—";
+    f.createdAt.innerText = user.createdAt
       ? new Date(user.createdAt).toLocaleDateString()
       : "—";
-    summaryFields.bio.textContent = user.bio || "—";
+    f.bio.innerText = user.bio || "—";
 
-    // Populate form fields
-    inputFields.fullName.value = user.fullName || "";
-    inputFields.username.value = user.username || "";
-    inputFields.email.value = user.email || "";
-    inputFields.phoneNumber.value = user.phoneNumber || "";
-    inputFields.location.value = user.location || "";
-    inputFields.role.value = user.role || "";
-    inputFields.bio.value = user.bio || "";
+    // -------------------------------
+    // STATS INSIDE SECURITY CARD
+    // -------------------------------
+    stats.lastLogin.innerText = user.lastLogin
+      ? new Date(user.lastLogin).toLocaleString()
+      : "—";
+    stats.twoFA.innerText = user.twoFA ? "Enabled" : "Disabled";
+    stats.uploads.innerText = user.recordsUploaded ?? "—";
+
+    // -------------------------------
+    // FORM INPUTS
+    // -------------------------------
+    input.fullName.value = user.fullName || "";
+    input.username.value = user.username || "";
+    input.email.value = user.email || "";
+    input.phoneNumber.value = user.phoneNumber || "";
+    input.location.value = user.location || "";
+    input.role.value = user.role || "";
+    input.bio.value = user.bio || "";
 
   } catch (err) {
-    console.error("Error loading user:", err);
+    console.error("Error loading user profile:", err);
     alert("You must be logged in.");
     window.location.href = "login.html";
   }
 }
 
 // -------------------------------
-// Save Profile
+// SAVE PROFILE
 // -------------------------------
 async function saveProfile(e) {
   e.preventDefault();
 
   const updates = {
-    fullName: inputFields.fullName.value.trim(),
-    username: inputFields.username.value.trim(),
-    email: inputFields.email.value.trim(),
-    phoneNumber: inputFields.phoneNumber.value.trim(),
-    location: inputFields.location.value.trim(),
-    role: inputFields.role.value.trim(),
-    bio: inputFields.bio.value.trim(),
+    fullName: input.fullName.value.trim(),
+    username: input.username.value.trim(),
+    email: input.email.value.trim(),
+    phoneNumber: input.phoneNumber.value.trim(),
+    location: input.location.value.trim(),
+    role: input.role.value.trim(),
+    bio: input.bio.value.trim(),
   };
 
   try {
@@ -98,19 +120,31 @@ async function saveProfile(e) {
     loadUserProfile();
     alert("Profile updated successfully!");
   } catch (err) {
-    console.error("Update failed:", err);
+    console.error("Profile update failed:", err);
     alert("Update failed: " + err.message);
   }
 }
 
 // -------------------------------
-// Event Listeners
+// COPY PROFILE LINK
+// -------------------------------
+document.getElementById("copyProfileLinkBtn")?.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(location.href);
+    alert("Profile link copied!");
+  } catch {
+    alert("Could not copy link.");
+  }
+});
+
+// -------------------------------
+// EVENT LISTENERS
 // -------------------------------
 editBtn.addEventListener("click", showForm);
 cancelBtn.addEventListener("click", hideForm);
 form.addEventListener("submit", saveProfile);
 
 // -------------------------------
-// Initial Load
+// INIT
 // -------------------------------
 document.addEventListener("DOMContentLoaded", loadUserProfile);
