@@ -16,47 +16,46 @@
 
     <!-- HERO -->
     <section class="profile-hero">
-      <h1>Profile</h1>
-      <p class="subtle">Manage your personal information</p>
-      <button id="editProfileBtn" class="btn btn--primary">Edit</button>
+      <div class="title-wrap">
+        <h1>Profile</h1>
+        <p class="subtle">View and update your personal info</p>
+      </div>
+
+      <div class="actions" role="group">
+        <button id="editProfileBtn" class="btn btn--primary" type="button">Edit Profile</button>
+      </div>
     </section>
 
     <div class="profile-grid">
 
-      <!-- LEFT: PROFILE CARD -->
-      <section class="card profile-card">
-        <h2 class="sr-only">Profile Information</h2>
+      <!-- LEFT: SUMMARY CARD (RESTORED STYLE) -->
+      <section class="card profile-card" aria-labelledby="profile-summary-title">
+        <h2 id="profile-summary-title" class="sr-only">Profile summary</h2>
 
-        <!-- VIEW MODE -->
-        <div id="detailsView">
-          <div class="row"><span class="label">Username</span><span id="username">—</span></div>
-          <div class="row"><span class="label">Email</span><span id="email">—</span></div>
-          <div class="row"><span class="label">Location</span><span id="location">—</span></div>
-          <div class="row"><span class="label">Member Since</span><span id="createdAt">—</span></div>
-          <div class="row"><span class="label">Full Name</span><span id="fullName">—</span></div>
-          <div class="row"><span class="label">Role</span><span id="role">—</span></div>
-          <div class="row"><span class="label">Phone Number</span><span id="phoneNumber">—</span></div>
-          <div class="row"><span class="label">Bio</span><span id="bio">—</span></div>
+        <!-- AVATAR + NAME -->
+        <div class="avatar-block">
+          <div class="avatar" aria-hidden="true"></div>
+
+          <div class="identity">
+            <h3 class="name" id="fullName">—</h3>
+            <p class="subtle" id="username">@—</p>
+          </div>
         </div>
 
-        <!-- EDIT MODE -->
-        <form id="editForm" hidden>
-          <label><span class="label">Username</span><input type="text" id="input_username"></label>
-          <label><span class="label">Email</span><input type="email" id="input_email"></label>
-          <label><span class="label">Location</span><input type="text" id="input_location"></label>
-          <label><span class="label">Full Name</span><input type="text" id="input_fullName"></label>
-          <label><span class="label">Role</span><input type="text" id="input_role"></label>
-          <label><span class="label">Phone Number</span><input type="tel" id="input_phoneNumber"></label>
-          <label class="span-2">
-            <span class="label">Bio</span>
-            <textarea id="input_bio" rows="3"></textarea>
-          </label>
+        <!-- USER META (based ONLY on your chosen fields) -->
+        <dl class="meta">
+          <div><dt>Email</dt><dd id="email">—</dd></div>
+          <div><dt>Phone</dt><dd id="phoneNumber">—</dd></div>
+          <div><dt>Location</dt><dd id="location">—</dd></div>
+          <div><dt>Role</dt><dd id="role">—</dd></div>
+          <div><dt>Member Since</dt><dd id="createdAt">—</dd></div>
+        </dl>
 
-          <div class="form-actions">
-            <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
-            <button type="submit" class="btn btn--primary">Save</button>
-          </div>
-        </form>
+        <!-- ACTION BUTTONS -->
+        <div class="actions">
+          <button class="btn" id="changeAvatarBtn" type="button">Change Avatar</button>
+          <button class="btn btn--link" id="copyProfileLinkBtn" type="button">Copy Profile Link</button>
+        </div>
       </section>
 
       <!-- QUICK STATS -->
@@ -69,43 +68,113 @@
         </ul>
       </section>
 
-      <!-- RIGHT: SECURITY -->
+      <!-- RIGHT: DETAILS + EDIT FORM -->
+      <section class="card details" aria-labelledby="details-title">
+        <div class="section-head">
+          <h2 id="details-title">Details</h2>
+          <button class="btn" type="button" id="toggleEditBtn">Toggle Edit</button>
+        </div>
+
+        <!-- DETAILS VIEW -->
+        <div id="detailsView" aria-live="polite">
+          <div class="row">
+            <div>
+              <p class="label">Full Name</p>
+              <p class="value" id="detail_fullName">—</p>
+            </div>
+            <div>
+              <p class="label">Role</p>
+              <p class="value" id="detail_role">—</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <p class="label">Email</p>
+              <p class="value" id="detail_email">—</p>
+            </div>
+            <div>
+              <p class="label">Phone Number</p>
+              <p class="value" id="detail_phoneNumber">—</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <p class="label">Location</p>
+              <p class="value" id="detail_location">—</p>
+            </div>
+            <div>
+              <p class="label">Username</p>
+              <p class="value" id="detail_username">—</p>
+            </div>
+          </div>
+
+          <div class="row span-2">
+            <div>
+              <p class="label">Bio</p>
+              <p class="value" id="detail_bio">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDIT FORM -->
+        <form id="editForm" class="edit-form" hidden>
+          <div class="form-grid">
+            <label><span class="label">Full Name</span><input id="input_fullName" type="text"></label>
+            <label><span class="label">Role</span><input id="input_role" type="text"></label>
+            <label><span class="label">Email</span><input id="input_email" type="email"></label>
+            <label><span class="label">Phone Number</span><input id="input_phoneNumber" type="tel"></label>
+            <label><span class="label">Location</span><input id="input_location" type="text"></label>
+            <label><span class="label">Username</span><input id="input_username" type="text"></label>
+
+            <label class="span-2">
+              <span class="label">Bio</span>
+              <textarea id="input_bio" rows="4"></textarea>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
+            <button type="submit" class="btn btn--primary">Save Changes</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- SECURITY SECTION -->
       <section class="card security">
         <h2>Security</h2>
 
         <div class="security-rows">
-
           <div class="security-row">
-            <div>
+            <div class="sr-left">
               <p class="label">Two-Factor Authentication</p>
-              <p class="subtle">Protect your account with a second verification step.</p>
+              <p class="subtle">Protect your account with a second step.</p>
             </div>
-            <button class="btn" id="toggle2FA">Configure</button>
+            <div class="sr-right"><button class="btn" id="toggle2FA">Configure</button></div>
           </div>
 
           <div class="security-row">
-            <div>
+            <div class="sr-left">
               <p class="label">Password</p>
               <p class="subtle">Use a strong unique password.</p>
             </div>
-            <button class="btn" id="changePasswordBtn">Change</button>
+            <div class="sr-right"><button class="btn" id="changePasswordBtn">Change</button></div>
           </div>
 
           <div class="security-row">
-            <div>
+            <div class="sr-left">
               <p class="label">Sessions</p>
-              <p class="subtle">Manage devices logged into your account.</p>
+              <p class="subtle">Manage signed-in devices.</p>
             </div>
-            <button class="btn" id="signOutAllBtn">Sign Out All</button>
+            <div class="sr-right"><button class="btn" id="signOutAllBtn">Sign Out All</button></div>
           </div>
-
         </div>
       </section>
 
       <!-- RECENT ACTIVITY -->
       <section class="card activity">
         <h2>Recent Activity</h2>
-
         <div class="table-wrap">
           <table class="txn-table">
             <thead>
@@ -117,12 +186,10 @@
               </tr>
             </thead>
             <tbody id="activityBody">
-              <!-- Will be populated later -->
               <tr><td colspan="4" class="subtle">No activity yet</td></tr>
             </tbody>
           </table>
         </div>
-
       </section>
 
     </div>
@@ -132,5 +199,6 @@
 
   <script src="scripts/default.js" type="module"></script>
   <script src="scripts/profile.js" type="module"></script>
+
 </body>
 </html>
