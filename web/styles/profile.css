@@ -26,13 +26,12 @@
 /* ===== CARDS BASE PADDING ===== */
 .profile-card,
 .quick-stats,
-.details,
 .security,
 .activity {
   padding: 1.25rem;
 }
 
-/* ===== PROFILE SUMMARY ===== */
+/* ===== PROFILE SUMMARY (merged with Details) ===== */
 .profile-card .actions {
   display: flex;
   gap: 0.6rem;
@@ -91,29 +90,7 @@
   font-weight: 700;
 }
 
-/* ===== DETAILS ===== */
-.details .section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
-}
-.details .label {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.details .value {
-  font-weight: 600;
-}
-.details .row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem 1rem;
-  margin-bottom: 0.8rem;
-}
-
-/* ===== EDIT FORM ===== */
+/* ===== EDIT FORM (now inside summary card) ===== */
 .edit-form {
   margin-top: 0.6rem;
 }
@@ -173,6 +150,9 @@ textarea {
 }
 
 /* ===== ACTIVITY ===== */
+.activity {
+  grid-column: 1 / -1; /* span full width */
+}
 .activity h2 {
   font-size: 1.1rem;
   margin-bottom: 0.6rem;
@@ -188,7 +168,6 @@ textarea {
   .profile-grid {
     grid-template-columns: 1fr;
   }
-  .details .row,
   .form-grid {
     grid-template-columns: 1fr;
   }
