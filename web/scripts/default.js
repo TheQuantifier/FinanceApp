@@ -71,7 +71,7 @@ function initAccountMenu() {
     icon.setAttribute("aria-expanded", isOpen);
   });
 
-  // Click outside closes menu
+  // Close on outside click
   document.addEventListener("click", (e) => {
     if (!icon.contains(e.target) && !menu.contains(e.target)) {
       menu.classList.remove("show");
@@ -79,7 +79,7 @@ function initAccountMenu() {
     }
   });
 
-  // ESC key closes
+  // Close on ESC
   icon.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       menu.classList.remove("show");
@@ -90,7 +90,7 @@ function initAccountMenu() {
 }
 
 /**
- * Converts a full name into initials ("John Hand" → "JH")
+ * Create initials from full name ("John Hand" → "JH")
  */
 function getInitials(name) {
   if (!name) return "?";
@@ -100,41 +100,41 @@ function getInitials(name) {
 }
 
 /**
- * Updates header state based on authentication
- * (shows avatar, username, etc.)
+ * Updates header avatar + name based on logged-in user
  */
 async function updateHeaderAuthState() {
   try {
     const { user } = await api.auth.me();
 
-    // --- SHOW LOGGED-IN UI ---
+    // SHOW logged-in UI
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.remove("hidden"));
-
-    // --- HIDE LOGGED-OUT UI ---
+    // HIDE logged-out UI
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.add("hidden"));
 
-    // --- Username in dropdown ---
+    // Determine display name
+    const displayName = user.fullName || user.username || "Account";
+
+    // Dropdown username
     const nameEl = document.getElementById("headerUserName");
-    if (nameEl) nameEl.textContent = user.name || "Account";
+    if (nameEl) nameEl.textContent = displayName;
 
-    // --- Avatar initials ---
+    // Avatar initials
     const avatar = document.getElementById("avatarLetters");
-    if (avatar) avatar.textContent = getInitials(user.name);
+    if (avatar) avatar.textContent = getInitials(displayName);
 
-  } catch {
-    // Not authenticated
+  } catch (err) {
+    // Not authenticated → show logged-out UI
     document.querySelectorAll(".auth-logged-in")
       .forEach((el) => el.classList.add("hidden"));
-
     document.querySelectorAll(".auth-logged-out")
       .forEach((el) => el.classList.remove("hidden"));
   }
 }
 
 /**
- * Handles logout click → backend logout → redirect
+ * Logout → backend logout → redirect
  */
 function wireLogoutButton() {
   document.addEventListener("click", async (e) => {
