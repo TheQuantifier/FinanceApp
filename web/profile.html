@@ -14,53 +14,123 @@
 
   <main class="main main--profile">
 
+    <!-- HERO -->
     <section class="profile-hero">
       <h1>Profile</h1>
       <p class="subtle">Manage your personal information</p>
       <button id="editProfileBtn" class="btn btn--primary">Edit</button>
     </section>
 
-    <section class="card profile-card">
+    <div class="profile-grid">
 
-      <!-- VIEW MODE -->
-      <div id="detailsView">
-        <div class="row"><span class="label">Username</span><span id="username">—</span></div>
-        <div class="row"><span class="label">Email</span><span id="email">—</span></div>
-        <div class="row"><span class="label">Location</span><span id="location">—</span></div>
-        <div class="row"><span class="label">Member Since</span><span id="createdAt">—</span></div>
-        <div class="row"><span class="label">Full Name</span><span id="fullName">—</span></div>
-        <div class="row"><span class="label">Role</span><span id="role">—</span></div>
-        <div class="row"><span class="label">Phone Number</span><span id="phoneNumber">—</span></div>
-        <div class="row"><span class="label">Bio</span><span id="bio">—</span></div>
-      </div>
+      <!-- LEFT: PROFILE CARD -->
+      <section class="card profile-card">
+        <h2 class="sr-only">Profile Information</h2>
 
-      <!-- EDIT MODE -->
-      <form id="editForm" hidden>
-        <label><span class="label">Username</span><input type="text" id="input_username" autocomplete="off"></label>
-        <label><span class="label">Email</span><input type="email" id="input_email" autocomplete="off"></label>
-        <label><span class="label">Location</span><input type="text" id="input_location"></label>
-        <label><span class="label">Full Name</span><input type="text" id="input_fullName"></label>
-        <label><span class="label">Role</span><input type="text" id="input_role" readonly></label>
-        <label><span class="label">Phone Number</span><input type="tel" id="input_phoneNumber"></label>
-        <label class="span-2">
-          <span class="label">Bio</span>
-          <textarea id="input_bio" rows="3"></textarea>
-        </label>
-
-        <div class="form-actions">
-          <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
-          <button type="submit" class="btn btn--primary">Save</button>
+        <!-- VIEW MODE -->
+        <div id="detailsView">
+          <div class="row"><span class="label">Username</span><span id="username">—</span></div>
+          <div class="row"><span class="label">Email</span><span id="email">—</span></div>
+          <div class="row"><span class="label">Location</span><span id="location">—</span></div>
+          <div class="row"><span class="label">Member Since</span><span id="createdAt">—</span></div>
+          <div class="row"><span class="label">Full Name</span><span id="fullName">—</span></div>
+          <div class="row"><span class="label">Role</span><span id="role">—</span></div>
+          <div class="row"><span class="label">Phone Number</span><span id="phoneNumber">—</span></div>
+          <div class="row"><span class="label">Bio</span><span id="bio">—</span></div>
         </div>
-      </form>
 
-    </section>
+        <!-- EDIT MODE -->
+        <form id="editForm" hidden>
+          <label><span class="label">Username</span><input type="text" id="input_username"></label>
+          <label><span class="label">Email</span><input type="email" id="input_email"></label>
+          <label><span class="label">Location</span><input type="text" id="input_location"></label>
+          <label><span class="label">Full Name</span><input type="text" id="input_fullName"></label>
+          <label><span class="label">Role</span><input type="text" id="input_role"></label>
+          <label><span class="label">Phone Number</span><input type="tel" id="input_phoneNumber"></label>
+          <label class="span-2">
+            <span class="label">Bio</span>
+            <textarea id="input_bio" rows="3"></textarea>
+          </label>
 
+          <div class="form-actions">
+            <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
+            <button type="submit" class="btn btn--primary">Save</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- QUICK STATS -->
+      <section class="card quick-stats">
+        <h2>Quick Stats</h2>
+        <ul class="stats-list">
+          <li><span class="stat-label">Last Login</span><span id="stat_lastLogin" class="stat-value">—</span></li>
+          <li><span class="stat-label">Two-Factor</span><span id="stat_2FA" class="stat-value">—</span></li>
+          <li><span class="stat-label">Records Uploaded</span><span id="stat_uploads" class="stat-value">—</span></li>
+        </ul>
+      </section>
+
+      <!-- RIGHT: SECURITY -->
+      <section class="card security">
+        <h2>Security</h2>
+
+        <div class="security-rows">
+
+          <div class="security-row">
+            <div>
+              <p class="label">Two-Factor Authentication</p>
+              <p class="subtle">Protect your account with a second verification step.</p>
+            </div>
+            <button class="btn" id="toggle2FA">Configure</button>
+          </div>
+
+          <div class="security-row">
+            <div>
+              <p class="label">Password</p>
+              <p class="subtle">Use a strong unique password.</p>
+            </div>
+            <button class="btn" id="changePasswordBtn">Change</button>
+          </div>
+
+          <div class="security-row">
+            <div>
+              <p class="label">Sessions</p>
+              <p class="subtle">Manage devices logged into your account.</p>
+            </div>
+            <button class="btn" id="signOutAllBtn">Sign Out All</button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- RECENT ACTIVITY -->
+      <section class="card activity">
+        <h2>Recent Activity</h2>
+
+        <div class="table-wrap">
+          <table class="txn-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Activity</th>
+                <th>IP</th>
+                <th class="num">Result</th>
+              </tr>
+            </thead>
+            <tbody id="activityBody">
+              <!-- Will be populated later -->
+              <tr><td colspan="4" class="subtle">No activity yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+    </div>
   </main>
 
   <div id="footer"></div>
 
   <script src="scripts/default.js" type="module"></script>
   <script src="scripts/profile.js" type="module"></script>
-
 </body>
 </html>
