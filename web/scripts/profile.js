@@ -1,131 +1,114 @@
 // scripts/profile.js
-// Profile page with real API integration
-// Loads authenticated user info + allows editing it
-
 import { api } from "./api.js";
 
 (function () {
-  const toggleBtn = document.getElementById("toggleEditBtn");
   const editBtn = document.getElementById("editProfileBtn");
   const cancelBtn = document.getElementById("cancelEditBtn");
   const form = document.getElementById("editForm");
   const view = document.getElementById("detailsView");
 
-  // Read-only UI fields
-  const f = {
-    fullName: document.getElementById("detailFullName"),
-    preferred: document.getElementById("detailPreferred"),
-    email: document.getElementById("profileEmail"),
-    phone: document.getElementById("profilePhone"),
-    bio: document.getElementById("detailBio"),
+  // VIEW FIELDS (exact names)
+  const fields = {
+    username: document.getElementById("username"),
+    email: document.getElementById("email"),
+    location: document.getElementById("location"),
+    createdAt: document.getElementById("createdAt"),
+    fullName: document.getElementById("fullName"),
+    role: document.getElementById("role"),
+    phoneNumber: document.getElementById("phoneNumber"),
+    bio: document.getElementById("bio"),
   };
 
-  // Form fields
+  // INPUT FIELDS (matching backend names)
   const input = {
-    fullName: document.getElementById("inputFullName"),
-    preferred: document.getElementById("inputPreferred"),
-    email: document.getElementById("inputEmail"),
-    phone: document.getElementById("inputPhone"),
-    bio: document.getElementById("inputBio"),
+    username: document.getElementById("input_username"),
+    email: document.getElementById("input_email"),
+    location: document.getElementById("input_location"),
+    fullName: document.getElementById("input_fullName"),
+    role: document.getElementById("input_role"),
+    phoneNumber: document.getElementById("input_phoneNumber"),
+    bio: document.getElementById("input_bio"),
   };
 
-  // -------------------------------
-  // Show / hide form
-  // -------------------------------
+  const safe = (v) => (v && v !== "" ? v : "—");
+
   function showForm() {
     form.hidden = false;
     view.hidden = true;
-    toggleBtn?.setAttribute("aria-expanded", "true");
   }
 
   function hideForm() {
     form.hidden = true;
     view.hidden = false;
-    toggleBtn?.setAttribute("aria-expanded", "false");
   }
 
-  toggleBtn?.addEventListener("click", () => {
-    form.hidden ? showForm() : hideForm();
-  });
+  editBtn.addEventListener("click", showForm);
+  cancelBtn.addEventListener("click", hideForm);
 
-  editBtn?.addEventListener("click", showForm);
-  cancelBtn?.addEventListener("click", hideForm);
-
-  // -------------------------------
-  // Load currently logged-in user
-  // -------------------------------
+  // LOAD USER
   async function loadUser() {
     try {
-      const { user } = await api.auth.me(); // GET /auth/me
+      const { user } = await api.auth.me();
 
-      // Read-only fields
-      f.fullName.textContent = user.name || "—";
-      f.preferred.textContent = user.preferredName || "—";
-      f.email.textContent = user.email || "—";
-      f.phone.textContent = user.phone || "—";
-      f.bio.textContent = user.bio || "—";
+      // Fill VIEW
+      fields.username.textContent = safe(user.username);
+      fields.email.textContent = safe(user.email);
+      fields.location.textContent = safe(user.location);
+      fields.createdAt.textContent = user.createdAt
+        ? new Date(user.createdAt).toLocaleDateString()
+        : "—";
+      fields.fullName.textContent = safe(user.fullName);
+      fields.role.textContent = safe(user.role);
+      fields.phoneNumber.textContent = safe(user.phoneNumber);
+      fields.bio.textContent = safe(user.bio);
 
-      // Form fields
-      input.fullName.value = user.name || "";
-      input.preferred.value = user.preferredName || "";
+      // Fill FORM
+      input.username.value = user.username || "";
       input.email.value = user.email || "";
-      input.phone.value = user.phone || "";
+      input.location.value = user.location || "";
+      input.fullName.value = user.fullName || "";
+      input.role.value = user.role || "";
+      input.phoneNumber.value = user.phoneNumber || "";
       input.bio.value = user.bio || "";
 
     } catch (err) {
-      console.error("Failed to load profile:", err);
-      alert("You must be logged in to view your profile.");
+      alert("You must be logged in.");
       window.location.href = "login.html";
     }
   }
 
-  // -------------------------------
-  // SUBMIT — Update profile
-  // -------------------------------
-  form?.addEventListener("submit", async (e) => {
+  // SAVE UPDATES
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const payload = {
-      name: input.fullName.value.trim(),
-      preferredName: input.preferred.value.trim(),
+      username: input.username.value.trim(),
       email: input.email.value.trim(),
-      phone: input.phone.value.trim(),
+      location: input.location.value.trim(),
+      fullName: input.fullName.value.trim(),
+      role: input.role.value.trim(),
+      phoneNumber: input.phoneNumber.value.trim(),
       bio: input.bio.value.trim(),
     };
 
     try {
-      // PUT /auth/me (handled in backend)
       const { user } = await api.auth.updateProfile(payload);
 
-      // Update read-only view
-      f.fullName.textContent = user.name || "—";
-      f.preferred.textContent = user.preferredName || "—";
-      f.email.textContent = user.email || "—";
-      f.phone.textContent = user.phone || "—";
-      f.bio.textContent = user.bio || "—";
+      // Update view
+      fields.username.textContent = user.username;
+      fields.email.textContent = user.email;
+      fields.location.textContent = user.location;
+      fields.fullName.textContent = user.fullName;
+      fields.role.textContent = user.role;
+      fields.phoneNumber.textContent = user.phoneNumber;
+      fields.bio.textContent = user.bio;
 
       hideForm();
 
     } catch (err) {
-      console.error(err);
       alert("Update failed: " + err.message);
     }
   });
 
-  // -------------------------------
-  // Copy profile link
-  // -------------------------------
-  document.getElementById("copyProfileLinkBtn")?.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      alert("Profile link copied!");
-    } catch {
-      alert("Could not copy link.");
-    }
-  });
-
-  // -------------------------------
-  // Init
-  // -------------------------------
   loadUser();
 })();
