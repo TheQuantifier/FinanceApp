@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finance App — Settings</title>
+
+  <link rel="stylesheet" href="styles/default.css" />
+  <link rel="stylesheet" href="styles/profile.css" />
+</head>
+
+<body>
+
+  <div id="header"></div>
+
+  <main class="main main--profile">
+
+    <!-- HERO -->
+    <section class="profile-hero">
+      <div class="title-wrap">
+        <h1>Settings</h1>
+        <p class="subtle">Manage your application preferences</p>
+      </div>
+    </section>
+
+    <div class="profile-grid">
+
+      <!-- GENERAL SETTINGS -->
+      <section class="card">
+        <h2>General</h2>
+
+        <div class="settings-row">
+          <p>Dark Mode</p>
+          <button class="btn" id="toggleDarkMode">Toggle</button>
+        </div>
+
+        <div class="settings-row">
+          <p>Language</p>
+          <select class="input">
+            <option>English</option>
+            <option>Spanish</option>
+            <option>French</option>
+          </select>
+        </div>
+
+      </section>
+
+      <!-- NOTIFICATIONS -->
+      <section class="card">
+        <h2>Notifications</h2>
+
+        <label class="settings-row">
+          <span>Email Notifications</span>
+          <input type="checkbox" id="notif_email" />
+        </label>
+
+        <label class="settings-row">
+          <span>SMS Alerts</span>
+          <input type="checkbox" id="notif_sms" />
+        </label>
+      </section>
+
+      <!-- ACCOUNT -->
+      <section class="card">
+        <h2>Account</h2>
+
+        <div class="settings-row">
+          <p>Delete Account</p>
+          <button class="btn btn--danger" id="deleteAccountBtn">Delete</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+  <script src="scripts/default.js" type="module"></script>
+  <script src="scripts/settings.js" type="module"></script>
+
+</body>
+</html>

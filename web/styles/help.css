@@ -1,0 +1,67 @@
+/* ===== HELP PAGE STYLES ===== */
+
+.help-container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.help-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.help-section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.08);
+}
+
+.help-section h2 {
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.help-faq {
+    margin-top: 10px;
+}
+
+.help-faq-item {
+    margin-bottom: 12px;
+}
+
+.help-faq-item h3 {
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
+}
+
+.help-faq-item p {
+    display: none;
+    margin-top: 6px;
+    padding-left: 10px;
+    color: #333;
+}
+
+.contact-support-box {
+    margin-top: 20px;
+}
+
+.contact-support-btn {
+    margin-top: 10px;
+    padding: 10px 16px;
+    background-color: #1cc88a;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.contact-support-btn:hover {
+    background-color: #17a673;
+}
