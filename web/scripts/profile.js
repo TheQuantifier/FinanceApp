@@ -1,114 +1,78 @@
-// scripts/profile.js
-import { api } from "./api.js";
+// -------------------------------
+// Load Profile on Page Load
+// -------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  loadUserProfile();
+});
 
-(function () {
-  const editBtn = document.getElementById("editProfileBtn");
-  const cancelBtn = document.getElementById("cancelEditBtn");
-  const form = document.getElementById("editForm");
-  const view = document.getElementById("detailsView");
+// -------------------------------
+// Load User Profile Data
+// -------------------------------
+async function loadUserProfile() {
+  try {
+      const response = await fetch("https://jsonplaceholder.typicode.com/users/1");
 
-  // VIEW FIELDS (exact IDs in the HTML)
-  const fields = {
-    username: document.getElementById("username"),
-    email: document.getElementById("email"),
-    location: document.getElementById("location"),
-    createdAt: document.getElementById("createdAt"),
-    fullName: document.getElementById("fullName"),
-    role: document.getElementById("role"),
-    phoneNumber: document.getElementById("phoneNumber"),
-    bio: document.getElementById("bio"),
+      if (!response.ok) {
+          throw new Error("Failed to fetch user profile");
+      }
+
+      const data = await response.json();
+
+      // ----------------------------------
+      // Map API → Our Required Fields
+      // ----------------------------------
+      const profile = {
+          username: data.username || "",
+          email: data.email || "",
+          location: data.address?.city || "",
+          createdAt: "2025-01-01", // Placeholder (API does not include this)
+          fullName: data.name || "",
+          role: "User", // Placeholder (API does not include this)
+          phoneNumber: data.phone || "",
+          bio: "This is your profile bio. You can update it later." // Placeholder
+      };
+
+      // ----------------------------------
+      // Populate Summary Section
+      // ----------------------------------
+      document.getElementById("summary-username").innerText = profile.username;
+      document.getElementById("summary-email").innerText = profile.email;
+      document.getElementById("summary-role").innerText = profile.role;
+      document.getElementById("summary-location").innerText = profile.location;
+
+      // ----------------------------------
+      // Populate Form Fields
+      // ----------------------------------
+      document.getElementById("username").value = profile.username;
+      document.getElementById("email").value = profile.email;
+      document.getElementById("location").value = profile.location;
+      document.getElementById("createdAt").value = profile.createdAt;
+      document.getElementById("fullName").value = profile.fullName;
+      document.getElementById("role").value = profile.role;
+      document.getElementById("phoneNumber").value = profile.phoneNumber;
+      document.getElementById("bio").value = profile.bio;
+
+  } catch (error) {
+      console.error("Error loading profile:", error);
+  }
+}
+
+// -------------------------------
+// Save / Update Profile
+// -------------------------------
+function saveProfile() {
+  const updatedProfile = {
+      username: document.getElementById("username").value,
+      email: document.getElementById("email").value,
+      location: document.getElementById("location").value,
+      createdAt: document.getElementById("createdAt").value,
+      fullName: document.getElementById("fullName").value,
+      role: document.getElementById("role").value,
+      phoneNumber: document.getElementById("phoneNumber").value,
+      bio: document.getElementById("bio").value
   };
 
-  // INPUT FIELDS (matching backend field names)
-  const input = {
-    username: document.getElementById("input_username"),
-    email: document.getElementById("input_email"),
-    location: document.getElementById("input_location"),
-    fullName: document.getElementById("input_fullName"),
-    role: document.getElementById("input_role"),
-    phoneNumber: document.getElementById("input_phoneNumber"),
-    bio: document.getElementById("input_bio"),
-  };
+  console.log("Updated Profile:", updatedProfile);
 
-  const safe = (v) => (v && v !== "" ? v : "—");
-
-  function showForm() {
-    form.hidden = false;
-    view.hidden = true;
-  }
-
-  function hideForm() {
-    form.hidden = true;
-    view.hidden = false;
-  }
-
-  editBtn.addEventListener("click", showForm);
-  cancelBtn.addEventListener("click", hideForm);
-
-  // LOAD USER PROFILE
-  async function loadUser() {
-    try {
-      const { user } = await api.auth.me();
-
-      // VIEW MODE FIELDS
-      fields.username.textContent = safe(user.username);
-      fields.email.textContent = safe(user.email);
-      fields.location.textContent = safe(user.location);
-      fields.createdAt.textContent = user.createdAt
-        ? new Date(user.createdAt).toLocaleDateString()
-        : "—";
-      fields.fullName.textContent = safe(user.fullName);
-      fields.role.textContent = safe(user.role);
-      fields.phoneNumber.textContent = safe(user.phoneNumber);
-      fields.bio.textContent = safe(user.bio);
-
-      // FORM FIELDS
-      input.username.value = user.username || "";
-      input.email.value = user.email || "";
-      input.location.value = user.location || "";
-      input.fullName.value = user.fullName || "";
-      input.role.value = user.role || "";
-      input.phoneNumber.value = user.phoneNumber || "";
-      input.bio.value = user.bio || "";
-
-    } catch (err) {
-      alert("You must be logged in.");
-      window.location.href = "login.html";
-    }
-  }
-
-  // SAVE UPDATES
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const payload = {
-      username: input.username.value.trim(),
-      email: input.email.value.trim(),
-      location: input.location.value.trim(),
-      fullName: input.fullName.value.trim(),
-      role: input.role.value.trim(),
-      phoneNumber: input.phoneNumber.value.trim(),
-      bio: input.bio.value.trim(),
-    };
-
-    try {
-      const { user } = await api.auth.updateProfile(payload);
-
-      // UPDATE VIEW MODE
-      fields.username.textContent = safe(user.username);
-      fields.email.textContent = safe(user.email);
-      fields.location.textContent = safe(user.location);
-      fields.fullName.textContent = safe(user.fullName);
-      fields.role.textContent = safe(user.role);
-      fields.phoneNumber.textContent = safe(user.phoneNumber);
-      fields.bio.textContent = safe(user.bio);
-
-      hideForm();
-
-    } catch (err) {
-      alert("Update failed: " + err.message);
-    }
-  });
-
-  loadUser();
-})();
+  alert("Profile saved (placeholder — no backend connected yet)");
+}
