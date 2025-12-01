@@ -7,7 +7,7 @@ const editBtn = document.getElementById("editProfileBtn");
 const form = document.getElementById("editForm");
 const cancelBtn = document.getElementById("cancelEditBtn");
 
-// Read-only summary fields (merged)
+// SUMMARY DISPLAY FIELDS
 const f = {
   fullName: document.getElementById("fullName"),
   username: document.getElementById("username"),
@@ -16,10 +16,10 @@ const f = {
   location: document.getElementById("location"),
   role: document.getElementById("role"),
   createdAt: document.getElementById("createdAt"),
-  bio: document.getElementById("bio"), // fixed to match HTML
+  bio: document.getElementById("bio"),
 };
 
-// Form inputs
+// FORM INPUTS
 const input = {
   fullName: document.getElementById("input_fullName"),
   username: document.getElementById("input_username"),
@@ -30,7 +30,7 @@ const input = {
   bio: document.getElementById("input_bio"),
 };
 
-// Stats inside security card
+// SECURITY / STATS FIELDS
 const stats = {
   lastLogin: document.getElementById("stat_lastLogin"),
   twoFA: document.getElementById("stat_2FA"),
@@ -38,7 +38,7 @@ const stats = {
 };
 
 // -------------------------------
-// SHOW / HIDE FORM
+// SHOW / HIDE EDIT FORM
 // -------------------------------
 function showForm() {
   form.hidden = false;
@@ -57,9 +57,7 @@ async function loadUserProfile() {
   try {
     const { user } = await api.auth.me();
 
-    // -------------------------------
-    // SUMMARY / READ-ONLY
-    // -------------------------------
+    // SUMMARY
     f.fullName.innerText = user.fullName || "—";
     f.username.innerText = "@" + (user.username || "—");
     f.email.innerText = user.email || "—";
@@ -71,18 +69,14 @@ async function loadUserProfile() {
       : "—";
     f.bio.innerText = user.bio || "—";
 
-    // -------------------------------
-    // STATS INSIDE SECURITY CARD
-    // -------------------------------
+    // SECURITY + STATS
     stats.lastLogin.innerText = user.lastLogin
       ? new Date(user.lastLogin).toLocaleString()
       : "—";
     stats.twoFA.innerText = user.twoFA ? "Enabled" : "Disabled";
     stats.uploads.innerText = user.recordsUploaded ?? "—";
 
-    // -------------------------------
     // FORM INPUTS
-    // -------------------------------
     input.fullName.value = user.fullName || "";
     input.username.value = user.username || "";
     input.email.value = user.email || "";
@@ -92,7 +86,6 @@ async function loadUserProfile() {
     input.bio.value = user.bio || "";
 
   } catch (err) {
-    console.error("Error loading user profile:", err);
     alert("You must be logged in.");
     window.location.href = "login.html";
   }
@@ -120,7 +113,6 @@ async function saveProfile(e) {
     loadUserProfile();
     alert("Profile updated successfully!");
   } catch (err) {
-    console.error("Profile update failed:", err);
     alert("Update failed: " + err.message);
   }
 }
@@ -137,14 +129,80 @@ document.getElementById("copyProfileLinkBtn")?.addEventListener("click", async (
   }
 });
 
-// -------------------------------
-// EVENT LISTENERS
-// -------------------------------
-editBtn.addEventListener("click", showForm);
-cancelBtn.addEventListener("click", hideForm);
-form.addEventListener("submit", saveProfile);
+// =====================================================
+//              CHANGE PASSWORD MODAL
+// =====================================================
+const passwordModal = document.getElementById("passwordModal");
+const passwordForm = document.getElementById("passwordForm");
+const closePasswordModal = document.getElementById("closePasswordModal");
+const changePasswordBtn = document.getElementById("changePasswordBtn");
+
+// OPEN modal
+changePasswordBtn?.addEventListener("click", () => {
+  passwordModal.hidden = false;
+  passwordModal.classList.remove("hidden");
+});
+
+// CLOSE modal (Cancel button)
+closePasswordModal?.addEventListener("click", () => {
+  passwordModal.hidden = true;
+  passwordModal.classList.add("hidden");
+});
+
+// CLOSE modal (click outside)
+passwordModal?.addEventListener("click", (e) => {
+  if (e.target === passwordModal) {
+    passwordModal.hidden = true;
+    passwordModal.classList.add("hidden");
+  }
+});
+
+// SUBMIT password form
+passwordForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const currentPassword = document.getElementById("currentPassword").value.trim();
+  const newPassword = document.getElementById("newPassword").value.trim();
+  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+  if (newPassword !== confirmPassword) {
+    alert("New passwords do not match.");
+    return;
+  }
+
+  try {
+    await api.auth.changePassword({
+      currentPassword,
+      newPassword,
+    });
+
+    alert("Password updated successfully!");
+    passwordModal.hidden = true;
+    passwordModal.classList.add("hidden");
+    passwordForm.reset();
+  } catch (err) {
+    alert("Password update failed: " + err.message);
+  }
+});
+
+// =====================================================
+//              SIGN OUT ALL SESSIONS
+// =====================================================
+document.getElementById("signOutAllBtn")?.addEventListener("click", async () => {
+  if (!confirm("Sign out all devices?")) return;
+
+  try {
+    await api.auth.signOutAll();
+    alert("All sessions have been signed out.");
+    window.location.href = "login.html";
+  } catch (err) {
+    alert("Failed to sign out all sessions: " + err.message);
+  }
+});
 
 // -------------------------------
 // INIT
 // -------------------------------
 document.addEventListener("DOMContentLoaded", loadUserProfile);
+
+// END

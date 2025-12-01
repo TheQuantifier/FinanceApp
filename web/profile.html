@@ -99,6 +99,35 @@
             </div>
           </div>
 
+          <!-- CHANGE PASSWORD MODAL -->
+          <div id="passwordModal" class="modal hidden" hidden>
+            <div class="modal-content card">
+              <h2>Change Password</h2>
+
+              <form id="passwordForm" class="form-grid">
+                <label class="span-2">
+                  <span class="label">Current Password</span>
+                  <input id="currentPassword" type="password" required />
+                </label>
+
+                <label class="span-2">
+                  <span class="label">New Password</span>
+                  <input id="newPassword" type="password" required minlength="6" />
+                </label>
+
+                <label class="span-2">
+                  <span class="label">Confirm New Password</span>
+                  <input id="confirmPassword" type="password" required minlength="6" />
+                </label>
+
+                <div class="form-actions span-2">
+                  <button type="button" class="btn" id="closePasswordModal">Cancel</button>
+                  <button type="submit" class="btn btn--primary">Update Password</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
           <div class="security-row">
             <div class="sr-left">
               <p class="label">Sessions</p>
