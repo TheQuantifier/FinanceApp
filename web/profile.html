@@ -59,6 +59,7 @@
             <label><span class="label">Role</span><input id="input_role" type="text"></label>
             <label class="span-2"><span class="label">Bio</span><textarea id="input_bio" rows="4"></textarea></label>
           </div>
+
           <div class="form-actions">
             <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
             <button type="submit" class="btn btn--primary">Save Changes</button>
@@ -76,12 +77,16 @@
         <h2>Security & Stats</h2>
 
         <div class="security-rows">
+
           <div class="security-row">
             <div class="sr-left">
               <p class="label">Two-Factor Authentication</p>
               <p class="subtle">Protect your account with a second step.</p>
             </div>
-            <div class="sr-right"><span id="stat_2FA">—</span> <button class="btn" id="toggle2FA">Configure</button></div>
+            <div class="sr-right align-right">
+              <span id="stat_2FA">—</span>
+              <button class="btn" id="toggle2FA">Configure</button>
+            </div>
           </div>
 
           <div class="security-row">
@@ -89,7 +94,9 @@
               <p class="label">Password</p>
               <p class="subtle">Use a strong unique password.</p>
             </div>
-            <div class="sr-right"><button class="btn" id="changePasswordBtn">Change</button></div>
+            <div class="sr-right align-right">
+              <button class="btn" id="changePasswordBtn">Change</button>
+            </div>
           </div>
 
           <div class="security-row">
@@ -97,22 +104,25 @@
               <p class="label">Sessions</p>
               <p class="subtle">Manage signed-in devices.</p>
             </div>
-            <div class="sr-right"><button class="btn" id="signOutAllBtn">Sign Out All</button></div>
+            <div class="sr-right align-right">
+              <button class="btn" id="signOutAllBtn">Sign Out All</button>
+            </div>
           </div>
 
           <div class="security-row">
             <div class="sr-left">
               <p class="label">Last Login</p>
             </div>
-            <div class="sr-right" id="stat_lastLogin">—</div>
+            <div class="sr-right align-right" id="stat_lastLogin">—</div>
           </div>
 
           <div class="security-row">
             <div class="sr-left">
               <p class="label">Records Uploaded</p>
             </div>
-            <div class="sr-right" id="stat_uploads">—</div>
+            <div class="sr-right align-right" id="stat_uploads">—</div>
           </div>
+
         </div>
       </section>
 
