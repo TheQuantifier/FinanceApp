@@ -1,3 +1,5 @@
+import { api } from "./api.js";
+
 // -------------------------------
 // Load Profile on Page Load
 // -------------------------------
@@ -6,73 +8,71 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // -------------------------------
-// Load User Profile Data
+// Load User Profile From Backend
 // -------------------------------
 async function loadUserProfile() {
   try {
-      const response = await fetch("https://jsonplaceholder.typicode.com/users/1");
+    const { user } = await api.auth.me();
 
-      if (!response.ok) {
-          throw new Error("Failed to fetch user profile");
-      }
+    // -------------------------------
+    // Populate SUMMARY section
+    // -------------------------------
+    document.getElementById("summary-username").innerText = user.username || "—";
+    document.getElementById("summary-email").innerText = user.email || "—";
+    document.getElementById("summary-role").innerText = user.role || "—";
+    document.getElementById("summary-location").innerText = user.location || "—";
 
-      const data = await response.json();
+    // -------------------------------
+    // Populate FORM fields
+    // -------------------------------
+    document.getElementById("username").value = user.username || "";
+    document.getElementById("email").value = user.email || "";
+    document.getElementById("location").value = user.location || "";
+    document.getElementById("createdAt").value = user.createdAt
+      ? new Date(user.createdAt).toLocaleDateString()
+      : "";
+    document.getElementById("fullName").value = user.fullName || "";
+    document.getElementById("role").value = user.role || "";
+    document.getElementById("phoneNumber").value = user.phoneNumber || "";
+    document.getElementById("bio").value = user.bio || "";
 
-      // ----------------------------------
-      // Map API → Our Required Fields
-      // ----------------------------------
-      const profile = {
-          username: data.username || "",
-          email: data.email || "",
-          location: data.address?.city || "",
-          createdAt: "2025-01-01", // Placeholder (API does not include this)
-          fullName: data.name || "",
-          role: "User", // Placeholder (API does not include this)
-          phoneNumber: data.phone || "",
-          bio: "This is your profile bio. You can update it later." // Placeholder
-      };
-
-      // ----------------------------------
-      // Populate Summary Section
-      // ----------------------------------
-      document.getElementById("summary-username").innerText = profile.username;
-      document.getElementById("summary-email").innerText = profile.email;
-      document.getElementById("summary-role").innerText = profile.role;
-      document.getElementById("summary-location").innerText = profile.location;
-
-      // ----------------------------------
-      // Populate Form Fields
-      // ----------------------------------
-      document.getElementById("username").value = profile.username;
-      document.getElementById("email").value = profile.email;
-      document.getElementById("location").value = profile.location;
-      document.getElementById("createdAt").value = profile.createdAt;
-      document.getElementById("fullName").value = profile.fullName;
-      document.getElementById("role").value = profile.role;
-      document.getElementById("phoneNumber").value = profile.phoneNumber;
-      document.getElementById("bio").value = profile.bio;
-
-  } catch (error) {
-      console.error("Error loading profile:", error);
+  } catch (err) {
+    console.error("Error loading user:", err);
+    alert("You must be logged in.");
+    window.location.href = "login.html";
   }
 }
 
 // -------------------------------
 // Save / Update Profile
 // -------------------------------
-function saveProfile() {
-  const updatedProfile = {
-      username: document.getElementById("username").value,
-      email: document.getElementById("email").value,
-      location: document.getElementById("location").value,
-      createdAt: document.getElementById("createdAt").value,
-      fullName: document.getElementById("fullName").value,
-      role: document.getElementById("role").value,
-      phoneNumber: document.getElementById("phoneNumber").value,
-      bio: document.getElementById("bio").value
+async function saveProfile() {
+  const updates = {
+    username: document.getElementById("username").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    location: document.getElementById("location").value.trim(),
+    fullName: document.getElementById("fullName").value.trim(),
+    role: document.getElementById("role").value.trim(),
+    phoneNumber: document.getElementById("phoneNumber").value.trim(),
+    bio: document.getElementById("bio").value.trim(),
   };
 
-  console.log("Updated Profile:", updatedProfile);
+  try {
+    const { user } = await api.auth.updateProfile(updates);
 
-  alert("Profile saved (placeholder — no backend connected yet)");
+    // Update summary instantly
+    document.getElementById("summary-username").innerText = user.username;
+    document.getElementById("summary-email").innerText = user.email;
+    document.getElementById("summary-role").innerText = user.role;
+    document.getElementById("summary-location").innerText = user.location;
+
+    alert("Profile updated successfully.");
+
+  } catch (err) {
+    console.error("Update failed:", err);
+    alert("Update failed: " + err.message);
+  }
 }
+
+// Make saveProfile() available to HTML button
+window.saveProfile = saveProfile;

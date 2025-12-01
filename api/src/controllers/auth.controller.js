@@ -8,20 +8,17 @@ function createToken(id) {
   return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
 }
 
-/**
- * Set JWT cookie with correct cross-site settings (Render + GitHub Pages)
- */
 function setTokenCookie(res, token) {
   res.cookie('token', token, {
     httpOnly: true,
-    secure: true,        // REQUIRED on Render (HTTPS)
-    sameSite: 'none',    // REQUIRED for cross-origin cookies
+    secure: true,
+    sameSite: 'none',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
 // =====================================================
-// REGISTER (unchanged for input, enhanced internally)
+// REGISTER
 // =====================================================
 exports.register = asyncHandler(async (req, res) => {
   const { email, password, name } = req.body;
@@ -30,22 +27,17 @@ exports.register = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
-  const existing = await User.findOne({ email });
-  if (existing) {
-    return res.status(400).json({ message: 'Email already in use' });
-  }
+  const normalizedEmail = email.toLowerCase().trim();
+  const exists = await User.findOne({ email: normalizedEmail });
+  if (exists) return res.status(400).json({ message: 'Email already in use' });
 
-  // Auto-generate new fields
-  const usernameBase = email.split('@')[0].toLowerCase();
+  const usernameBase = normalizedEmail.split('@')[0];
 
   const user = await User.create({
-    email,
+    email: normalizedEmail,
     password,
-    name,                   // OLD FIELD (still used)
-    
-    // New required fields
     username: usernameBase,
-    fullName: name,         // map to fullName
+    fullName: name,
     location: "",
     role: "user",
     phoneNumber: "",
@@ -59,7 +51,7 @@ exports.register = asyncHandler(async (req, res) => {
 });
 
 // =====================================================
-// LOGIN (email OR username allowed)
+// LOGIN (email OR username)
 // =====================================================
 exports.login = asyncHandler(async (req, res) => {
   const { identifier, password } = req.body;
@@ -68,12 +60,10 @@ exports.login = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Missing identifier or password' });
   }
 
-  // identifier may be email OR username
+  const lookup = identifier.toLowerCase().trim();
+
   const user = await User.findOne({
-    $or: [
-      { email: identifier.toLowerCase() },
-      { username: identifier.toLowerCase() }
-    ]
+    $or: [{ email: lookup }, { username: lookup }],
   });
 
   if (!user || !(await user.comparePassword(password))) {
@@ -108,45 +98,52 @@ exports.me = asyncHandler(async (req, res) => {
 });
 
 // =====================================================
-// UPDATE CURRENT USER
+// UPDATE PROFILE
 // =====================================================
 exports.updateMe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const updates = {};
 
-  // 🟦 Update your new fields
-  if (req.body.fullName !== undefined) updates.fullName = req.body.fullName;
-  if (req.body.location !== undefined) updates.location = req.body.location;
-  if (req.body.role !== undefined) updates.role = req.body.role;
-  if (req.body.phoneNumber !== undefined) updates.phoneNumber = req.body.phoneNumber;
-  if (req.body.bio !== undefined) updates.bio = req.body.bio;
+  // Allowed fields
+  const allowedFields = [
+    "username",
+    "email",
+    "fullName",
+    "location",
+    "role",
+    "phoneNumber",
+    "bio",
+  ];
 
-  // 🟦 Update legacy fields (still supported)
-  if (req.body.name !== undefined) updates.name = req.body.name;
+  for (const key of allowedFields) {
+    if (req.body[key] !== undefined) {
+      updates[key] = typeof req.body[key] === "string"
+        ? req.body[key].trim()
+        : req.body[key];
+    }
+  }
 
-  // 🟦 Unique email check
-  if (req.body.email !== undefined) {
-    const existing = await User.findOne({ email: req.body.email });
-    if (existing && existing._id.toString() !== userId.toString()) {
+  // Unique email
+  if (updates.email !== undefined) {
+    const emailCheck = await User.findOne({ email: updates.email });
+    if (emailCheck && emailCheck._id.toString() !== userId.toString()) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-    updates.email = req.body.email;
   }
 
-  // 🟦 Unique username check
-  if (req.body.username !== undefined) {
-    const existingUser = await User.findOne({ username: req.body.username.toLowerCase() });
-    if (existingUser && existingUser._id.toString() !== userId.toString()) {
+  // Unique username
+  if (updates.username !== undefined) {
+    updates.username = updates.username.toLowerCase().trim();
+    const usernameCheck = await User.findOne({ username: updates.username });
+    if (usernameCheck && usernameCheck._id.toString() !== userId.toString()) {
       return res.status(400).json({ message: 'Username already in use' });
     }
-    updates.username = req.body.username.toLowerCase();
   }
 
-  const updatedUser = await User.findByIdAndUpdate(
-    userId,
-    updates,
-    { new: true, runValidators: true }
-  );
+  const updated = await User.findByIdAndUpdate(userId, updates, {
+    new: true,
+    runValidators: true,
+  });
 
-  res.json({ user: updatedUser });
+  res.json({ user: updated });
 });

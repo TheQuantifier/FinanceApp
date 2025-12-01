@@ -28,11 +28,10 @@
 
     <div class="profile-grid">
 
-      <!-- LEFT: SUMMARY CARD (RESTORED STYLE) -->
+      <!-- SUMMARY CARD -->
       <section class="card profile-card" aria-labelledby="profile-summary-title">
         <h2 id="profile-summary-title" class="sr-only">Profile summary</h2>
 
-        <!-- AVATAR + NAME -->
         <div class="avatar-block">
           <div class="avatar" aria-hidden="true"></div>
 
@@ -42,7 +41,6 @@
           </div>
         </div>
 
-        <!-- USER META (based ONLY on your chosen fields) -->
         <dl class="meta">
           <div><dt>Email</dt><dd id="email">—</dd></div>
           <div><dt>Phone</dt><dd id="phoneNumber">—</dd></div>
@@ -51,7 +49,6 @@
           <div><dt>Member Since</dt><dd id="createdAt">—</dd></div>
         </dl>
 
-        <!-- ACTION BUTTONS -->
         <div class="actions">
           <button class="btn" id="changeAvatarBtn" type="button">Change Avatar</button>
           <button class="btn btn--link" id="copyProfileLinkBtn" type="button">Copy Profile Link</button>
@@ -68,14 +65,13 @@
         </ul>
       </section>
 
-      <!-- RIGHT: DETAILS + EDIT FORM -->
+      <!-- DETAILS CARD -->
       <section class="card details" aria-labelledby="details-title">
         <div class="section-head">
           <h2 id="details-title">Details</h2>
-          <button class="btn" type="button" id="toggleEditBtn">Toggle Edit</button>
         </div>
 
-        <!-- DETAILS VIEW -->
+        <!-- VIEW -->
         <div id="detailsView" aria-live="polite">
           <div class="row">
             <div>
@@ -141,10 +137,9 @@
         </form>
       </section>
 
-      <!-- SECURITY SECTION -->
+      <!-- SECURITY -->
       <section class="card security">
         <h2>Security</h2>
-
         <div class="security-rows">
           <div class="security-row">
             <div class="sr-left">
@@ -172,7 +167,7 @@
         </div>
       </section>
 
-      <!-- RECENT ACTIVITY -->
+      <!-- ACTIVITY -->
       <section class="card activity">
         <h2>Recent Activity</h2>
         <div class="table-wrap">
@@ -199,6 +194,5 @@
 
   <script src="scripts/default.js" type="module"></script>
   <script src="scripts/profile.js" type="module"></script>
-
 </body>
 </html>

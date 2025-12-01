@@ -2,9 +2,8 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load .env from the API root directory
 dotenv.config({
-  path: path.join(process.cwd(), '.env'),
+  path: path.join(__dirname, '..', '..', '.env'),
 });
 
 const required = (name) => {
@@ -25,9 +24,15 @@ module.exports = {
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
-  clientOrigin: process.env.CORS_ORIGIN || 'http://localhost:5500',
+  // comma-separated list of allowed origins
+  clientOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5500')
+    .split(',')
+    .map((o) => o.trim()),
 
   uploadTmpDir: process.env.UPLOAD_DIR || './tmp_uploads',
 
-  ocrWorkerScript: process.env.OCR_WORKER_SCRIPT || '../worker/ocr_demo.py',
+  // resolves relative to project root even in Render
+  ocrWorkerScript: process.env.OCR_WORKER_SCRIPT
+    ? path.resolve(process.env.OCR_WORKER_SCRIPT)
+    : path.resolve(__dirname, '..', '..', 'worker', 'ocr_demo.py'),
 };

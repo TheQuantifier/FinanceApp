@@ -8,7 +8,6 @@ const API_BASE =
     ? "http://localhost:5000/api"
     : "https://financeapp-5u9g.onrender.com/api";
 
-
 // --------------------------------------
 // INTERNAL REQUEST WRAPPER
 // --------------------------------------
@@ -34,7 +33,6 @@ async function request(path, options = {}) {
 
   return data;
 }
-
 
 // --------------------------------------
 // AUTH MODULE
@@ -65,9 +63,9 @@ export const auth = {
   },
 
   /**
-   * Update profile — supports new fields:
-   * fullName, location, role, phoneNumber, bio,
-   * and also older fields: name, email.
+   * Update profile — supports updated user schema:
+   * username, email, fullName, location,
+   * role, phoneNumber, bio
    */
   async updateProfile(updates) {
     return request("/auth/me", {
@@ -76,7 +74,6 @@ export const auth = {
     });
   },
 };
-
 
 // --------------------------------------
 // RECORDS MODULE
@@ -102,7 +99,6 @@ export const records = {
   },
 };
 
-
 // --------------------------------------
 // RECEIPTS MODULE
 // --------------------------------------
@@ -111,6 +107,7 @@ export const receipts = {
     const formData = new FormData();
     formData.append("file", file);
 
+    // IMPORTANT: No Content-Type header here
     const res = await fetch(`${API_BASE}/receipts/upload`, {
       method: "POST",
       credentials: "include",
@@ -143,7 +140,6 @@ export const receipts = {
     const res = await fetch(`${API_BASE}/receipts/${id}/download`, {
       method: "GET",
       credentials: "include",
-      headers: {}
     });
 
     if (!res.ok) throw new Error("Download failed");
@@ -164,7 +160,6 @@ export const receipts = {
     return request(`/receipts/${id}`, { method: "DELETE" });
   },
 };
-
 
 // --------------------------------------
 // EXPORTED API OBJECT
