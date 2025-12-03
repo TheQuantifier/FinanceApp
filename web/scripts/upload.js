@@ -174,7 +174,7 @@ import { api } from "./api.js";
       item.className = "file-item";
 
       // Thumbnail
-      const thumb = document.create.createElement("div");
+      const thumb = document.createElement("div");
       thumb.className = "file-thumb";
 
       if ((file.type || "").startsWith("image/")) {
