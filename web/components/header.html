@@ -16,7 +16,7 @@
       <a href="about.html">About</a>
     </nav>
 
-    <!-- Right side: Account dropdown (always present in the header) -->
+    <!-- Right side: Account dropdown -->
     <div class="account-controls">
 
       <div id="accountArea" class="account-area">
@@ -34,21 +34,41 @@
 
         <!-- Dropdown -->
         <ul id="account-menu" class="account-menu" role="menu">
-          <li class="account-name">
-            <span id="headerUserName">User</span>
+
+          <!-- Username (replaces "Account") -->
+          <li class="section-title" id="headerUserName">User</li>
+
+          <!-- Menu items -->
+          <li>
+            <button class="menu-btn" onclick="window.location.href='profile.html'">
+              Profile
+            </button>
           </li>
 
-          <li><a href="profile.html">Profile</a></li>
-          <li><a href="settings.html">Settings</a></li>
-          <li><a href="help.html">Help</a></li>
+          <li>
+            <button class="menu-btn" onclick="window.location.href='settings.html'">
+              Settings
+            </button>
+          </li>
 
+          <li>
+            <button class="menu-btn" onclick="window.location.href='help.html'">
+              Help
+            </button>
+          </li>
+
+          <!-- Logout -->
           <li class="logout">
-            <button id="logoutBtn" role="menuitem">Log Out</button>
+            <button id="logoutBtn" role="menuitem" class="menu-btn">
+              Log Out
+            </button>
           </li>
+
         </ul>
 
       </div>
 
     </div>
+
   </div>
 </header>
