@@ -38,7 +38,7 @@ async function request(path, options = {}) {
 // AUTH MODULE
 // --------------------------------------
 export const auth = {
-  // Registration — corrected to use fullName
+  // Registration — corrected to pass fullName
   async register(email, password, fullName) {
     return request("/auth/register", {
       method: "POST",
@@ -78,6 +78,24 @@ export const auth = {
 
   async deleteAccount() {
     return request("/auth/me", { method: "DELETE" });
+  },
+
+  // --------------------------------------
+  // STAND-IN FEATURES (NOT IMPLEMENTED)
+  // --------------------------------------
+
+  async toggle2FA() {
+    return {
+      status: false,
+      message: "Two-Factor Authentication is not implemented yet.",
+    };
+  },
+
+  async signOutAll() {
+    return {
+      status: false,
+      message: "Sign-out-from-all-devices is not implemented yet.",
+    };
   },
 };
 
