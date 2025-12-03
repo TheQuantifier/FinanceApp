@@ -164,7 +164,6 @@ EXAMPLE:
 
 ------------------------------------------------------------
  records.update(recordId, updates)
- NEW FUNCTION
 ------------------------------------------------------------
 DESCRIPTION:
   Updates any subset of fields for an existing record.
