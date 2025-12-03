@@ -38,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
       day: "2-digit"
     }) : "—";
 
+  // Convert ISO → yyyy-mm-dd for input[type=date]
+  const isoToInputDate = iso => (iso ? iso.split("T")[0] : "");
+
   const createRow = record => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -50,8 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="actions-menu-wrap">
           <button class="actions-btn" data-menu-btn="true">⋮</button>
           <div class="actions-dropdown hidden">
-            <button data-edit="${record.id}">Edit Record</button>
-            <button data-delete="${record.id}" style="color:#b91c1c;">Delete Record</button>
+            <button data-edit="${record._id}">Edit Record</button>
+            <button data-delete="${record._id}" style="color:#b91c1c;">Delete Record</button>
           </div>
         </div>
       </td>
@@ -70,6 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       const dropdown = menuBtn.nextElementSibling;
 
+      // Close all others
       document.querySelectorAll(".actions-dropdown").forEach(el => {
         if (el !== dropdown) el.classList.add("hidden");
       });
@@ -84,23 +88,27 @@ document.addEventListener("DOMContentLoaded", () => {
       const record = await api.records.getOne(editId);
       if (!record) return;
 
+      // Close menus
+      document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
+
       if (record.type === "expense") {
-        document.getElementById("expenseDate").value = record.date;
+        document.getElementById("expenseDate").value = isoToInputDate(record.date);
         document.getElementById("expenseAmount").value = record.amount;
         document.getElementById("expenseCategory").value = record.category;
         document.getElementById("expenseNotes").value = record.note;
-        addExpenseModal.dataset.editId = record.id;
+
+        addExpenseModal.dataset.editId = record._id;
         showModal(addExpenseModal);
       } else {
-        document.getElementById("incomeDate").value = record.date;
+        document.getElementById("incomeDate").value = isoToInputDate(record.date);
         document.getElementById("incomeAmount").value = record.amount;
         document.getElementById("incomeCategory").value = record.category;
         document.getElementById("incomeNotes").value = record.note;
-        addIncomeModal.dataset.editId = record.id;
+
+        addIncomeModal.dataset.editId = record._id;
         showModal(addIncomeModal);
       }
 
-      document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
       return;
     }
 
@@ -110,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
 
       if (confirm("Are you sure you want to delete this record?")) {
-        await api.records.remove(deleteId); // FIXED
+        await api.records.remove(deleteId);
         loadRecords();
       }
       return;
