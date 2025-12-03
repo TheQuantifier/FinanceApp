@@ -21,6 +21,11 @@ router.get('/', auth, controller.getAll);
 router.post('/', auth, controller.create);
 
 // --------------------------------------------------
+// Update an existing record
+// --------------------------------------------------
+router.put('/:id', auth, controller.update);
+
+// --------------------------------------------------
 // Delete a record
 // --------------------------------------------------
 router.delete('/:id', auth, controller.remove);

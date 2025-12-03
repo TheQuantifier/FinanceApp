@@ -38,7 +38,7 @@ async function request(path, options = {}) {
 // AUTH MODULE
 // --------------------------------------
 export const auth = {
-  // Registration stays exactly the same (only email, password, name)
+  // Registration
   async register(email, password, name) {
     return request("/auth/register", {
       method: "POST",
@@ -46,7 +46,7 @@ export const auth = {
     });
   },
 
-  // Login now uses "identifier" instead of "email"
+  // Login uses "identifier"
   async login(identifier, password) {
     return request("/auth/login", {
       method: "POST",
@@ -62,11 +62,6 @@ export const auth = {
     return request("/auth/me");
   },
 
-  /**
-   * Update profile — supports:
-   * username, email, fullName, location,
-   * role, phoneNumber, bio
-   */
   async updateProfile(updates) {
     return request("/auth/me", {
       method: "PUT",
@@ -74,10 +69,6 @@ export const auth = {
     });
   },
 
-  /**
-   * Change password for logged-in user
-   * Body: { currentPassword, newPassword }
-   */
   async changePassword(currentPassword, newPassword) {
     return request("/auth/change-password", {
       method: "POST",
@@ -85,14 +76,6 @@ export const auth = {
     });
   },
 
-  /**
-   * Permanently delete the current user
-   * DELETE /auth/me
-   * - Deletes user
-   * - Deletes all records
-   * - Deletes all receipts
-   * - Deletes all GridFS files
-   */
   async deleteAccount() {
     return request("/auth/me", { method: "DELETE" });
   },
@@ -113,6 +96,14 @@ export const records = {
     });
   },
 
+  // ✅ NEW UPDATE METHOD
+  async update(id, updates) {
+    return request(`/records/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  },
+
   async getOne(id) {
     return request(`/records/${id}`);
   },
@@ -130,7 +121,6 @@ export const receipts = {
     const formData = new FormData();
     formData.append("file", file);
 
-    // IMPORTANT: No Content-Type header here
     const res = await fetch(`${API_BASE}/receipts/upload`, {
       method: "POST",
       credentials: "include",

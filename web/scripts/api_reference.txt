@@ -3,18 +3,13 @@
  All callable functions from web/scripts/api.js
 ============================================================
 
-BASE URL:
-The API module automatically points to:
-    https://financeapp-5u9g.onrender.com/api
+BASE URL (auto-switched):
+  Production: https://financeapp-5u9g.onrender.com/api
+  Local:      http://localhost:5000/api
 
-For local testing:
-    http://localhost:5000/api
-
-All functions return Promises and should be called with:
-    const user = await api.auth.login(...);
-or
-    api.records.getAll().then(...)
-============================================================
+All functions return Promises:
+  const user = await api.auth.login(...)
+  const list = await api.records.getAll()
 
 
 ============================================================
@@ -25,96 +20,96 @@ or
  auth.register(email, password, name)
 ------------------------------------------------------------
 DESCRIPTION:
-    Creates a new user account and logs them in automatically.
-    Saves the JWT cookie in the browser.
-    Backend auto-generates:
-        username, fullName, location, role, phoneNumber, bio.
+  Creates a new user account and logs them in automatically.
 
 ARGUMENTS:
-    email (string)
-    password (string)
-    name (string)
+  email (string)
+  password (string)
+  name (string)
 
 RETURNS:
-    { user }
+  { user }
 
 EXAMPLE:
-    await api.auth.register("john@example.com", "mypassword", "John");
+  await api.auth.register("john@example.com", "mypassword", "John");
 
 
 ------------------------------------------------------------
  auth.login(identifier, password)
 ------------------------------------------------------------
 DESCRIPTION:
-    Logs in a user using EITHER:
-        - email + password, OR
-        - username + password
-    Stores the JWT cookie.
+  Logs in a user using email OR username.
 
 ARGUMENTS:
-    identifier (string)  // email OR username
-    password   (string)
+  identifier (string)
+  password   (string)
 
 RETURNS:
-    { user }
+  { user }
 
 EXAMPLE:
-    await api.auth.login("john@example.com", "mypassword");
-    await api.auth.login("johnhand", "mypassword");
+  await api.auth.login("johnhand", "mypassword");
 
 
 ------------------------------------------------------------
  auth.logout()
 ------------------------------------------------------------
 DESCRIPTION:
-    Logs the user out by clearing their JWT cookie.
-
-ARGUMENTS:
-    none
-
-RETURNS:
-    { message: "Logged out" }
+  Logs the user out by clearing their JWT cookie.
 
 EXAMPLE:
-    await api.auth.logout();
+  await api.auth.logout();
 
 
 ------------------------------------------------------------
  auth.me()
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves the currently authenticated user.
-
-ARGUMENTS:
-    none
-
-RETURNS:
-    { user }
+  Retrieves the authenticated user.
 
 EXAMPLE:
-    const currentUser = await api.auth.me();
+  const me = await api.auth.me();
 
 
 ------------------------------------------------------------
  auth.updateProfile(updates)
 ------------------------------------------------------------
 DESCRIPTION:
-    Updates any subset of user profile fields.
-    Supports both old and new profile fields:
-        fullName, location, role, phoneNumber, bio,
-        name, email, username.
+  Updates any subset of user profile fields.
 
 ARGUMENTS:
-    updates (object)
+  updates (object)
 
 RETURNS:
-    { user }
+  { user }
 
 EXAMPLE:
-    await api.auth.updateProfile({
-        fullName: "John Alexander Hand",
-        phoneNumber: "555-1234"
-    });
+  await api.auth.updateProfile({ fullName: "John Hand" });
+
+
+------------------------------------------------------------
+ auth.changePassword(currentPassword, newPassword)
+------------------------------------------------------------
+DESCRIPTION:
+  Change the authenticated user’s password.
+
+EXAMPLE:
+  await api.auth.changePassword("oldPass", "newPass");
+
+
+------------------------------------------------------------
+ auth.deleteAccount()
+------------------------------------------------------------
+DESCRIPTION:
+  Permanently deletes:
+    - user account
+    - all records
+    - all receipts
+    - all GridFS files
+
+EXAMPLE:
+  await api.auth.deleteAccount();
+
 
 
 ============================================================
@@ -125,87 +120,79 @@ EXAMPLE:
  records.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-    Returns all financial records of the logged-in user.
-
-ARGUMENTS:
-    none
-
-RETURNS:
-    Array of record objects:
-    [
-      {
-        _id,
-        user,
-        type,
-        amount,
-        category,
-        date,
-        note,
-        createdAt,
-        updatedAt
-      }
-    ]
+  Returns all financial records of the logged-in user.
 
 EXAMPLE:
-    const list = await api.records.getAll();
+  const list = await api.records.getAll();
 
 
 ------------------------------------------------------------
  records.getOne(recordId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves one financial record.
+  Fetch a single record by ID.
 
 ARGUMENTS:
-    recordId (string)
-
-RETURNS:
-    Record object.
+  recordId (string)
 
 EXAMPLE:
-    const record = await api.records.getOne("675ab92f19c9fd7fd050cb92");
+  const record = await api.records.getOne("675ab92f19c9fd7fd050cb92");
 
 
 ------------------------------------------------------------
  records.create({ type, amount, category, date, note })
 ------------------------------------------------------------
 DESCRIPTION:
-    Creates a new financial record.
+  Creates a new financial record.
 
 ARGUMENTS:
-    type      (string: "income" | "expense")
-    amount    (number)
-    category  (string)
-    date      (string)
-    note      (string, optional)
-
-RETURNS:
-    Newly created record.
+  type      ("income" | "expense")
+  amount    (number)
+  category  (string)
+  date      (string or ISO date)
+  note      (string)
 
 EXAMPLE:
-    await api.records.create({
-        type: "expense",
-        amount: 25.50,
-        category: "Food",
-        date: "2025-01-28",
-        note: "Lunch at campus"
-    });
+  await api.records.create({
+    type: "expense",
+    amount: 25.50,
+    category: "Food",
+    date: "2025-01-28",
+    note: "Lunch"
+  });
+
+
+------------------------------------------------------------
+ records.update(recordId, updates)
+ NEW FUNCTION
+------------------------------------------------------------
+DESCRIPTION:
+  Updates any subset of fields for an existing record.
+
+ARGUMENTS:
+  recordId (string)
+  updates  (object)
+
+RETURNS:
+  { message, record }
+
+EXAMPLE:
+  await api.records.update("675ab92f19c9fd7fd050cb92", {
+    amount: 40,
+    category: "Dining",
+    note: "Updated record"
+  });
 
 
 ------------------------------------------------------------
  records.remove(recordId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Deletes a financial record.
-
-ARGUMENTS:
-    recordId (string)
-
-RETURNS:
-    { message: "Record deleted" }
+  Deletes a financial record.
 
 EXAMPLE:
-    await api.records.remove("675ab92f19c9fd7fd050cb92");
+  await api.records.remove("675ab92f19c9fd7fd050cb92");
+
 
 
 ============================================================
@@ -216,108 +203,64 @@ EXAMPLE:
  receipts.upload(file)
 ------------------------------------------------------------
 DESCRIPTION:
-    Uploads a file (PDF/JPG/PNG).
-    Stored in MongoDB GridFS.
-    OCR text is extracted server-side.
+  Uploads a file to GridFS + extracts OCR text.
 
 ARGUMENTS:
-    file (File)
-
-RETURNS:
-    {
-      _id,
-      user,
-      originalFilename,
-      storedFilename,
-      ocrText,
-      createdAt,
-      updatedAt
-    }
+  file (File)
 
 EXAMPLE:
-    const file = document.querySelector("#fileInput").files[0];
-    const result = await api.receipts.upload(file);
+  const file = document.querySelector("#fileInput").files[0];
+  const result = await api.receipts.upload(file);
 
 
 ------------------------------------------------------------
  receipts.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves all receipts for the logged-in user.
-
-ARGUMENTS:
-    none
-
-RETURNS:
-    Array of receipt objects.
+  Retrieves all receipts for logged-in user.
 
 EXAMPLE:
-    const list = await api.receipts.getAll();
+  const list = await api.receipts.getAll();
 
 
 ------------------------------------------------------------
  receipts.getOne(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Retrieves one receipt by ID.
-
-ARGUMENTS:
-    receiptId (string)
-
-RETURNS:
-    Receipt object.
+  Returns metadata for one receipt.
 
 EXAMPLE:
-    const r = await api.receipts.getOne("677cb9123abc9123abc9123a");
+  const receipt = await api.receipts.getOne("677cb9123abc9123abc9123a");
 
 
 ------------------------------------------------------------
  receipts.download(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Downloads the original file as a Blob.
-
-ARGUMENTS:
-    receiptId (string)
-
-RETURNS:
-    Blob
+  Downloads the original file as a Blob.
 
 EXAMPLE:
-    const blob = await api.receipts.download("675ca881ab9c45f123abc911");
+  const blob = await api.receipts.download("675ca881ab9c45f123abc911");
 
 
 ------------------------------------------------------------
  receipts.downloadToFile(receiptId, filename)
 ------------------------------------------------------------
 DESCRIPTION:
-    Downloads the file and auto-saves it to disk.
-
-ARGUMENTS:
-    receiptId (string)
-    filename (string, default "receipt")
-
-RETURNS:
-    void
+  Downloads and auto-saves the file.
 
 EXAMPLE:
-    await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "receipt.pdf");
+  await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "receipt.pdf");
 
 
 ------------------------------------------------------------
  receipts.remove(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-    Deletes a receipt record.
-
-ARGUMENTS:
-    receiptId (string)
-
-RETURNS:
-    { message: "Receipt deleted" }
+  Deletes receipt metadata AND deletes file from GridFS.
 
 EXAMPLE:
-    await api.receipts.remove("675ca881ab9c45f123abc911");
+  await api.receipts.remove("675ca881ab9c45f123abc911");
 
 
 ============================================================

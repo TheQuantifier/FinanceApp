@@ -52,6 +52,44 @@ exports.create = asyncHandler(async (req, res) => {
 });
 
 // ==========================================================
+// PUT /api/records/:id
+// Update an existing record
+// ==========================================================
+exports.update = asyncHandler(async (req, res) => {
+  const { type, amount, category, date, note } = req.body;
+
+  // Validate required fields if they are provided
+  if (type && !['income', 'expense'].includes(type)) {
+    return res.status(400).json({ message: 'Invalid record type' });
+  }
+
+  if (amount !== undefined && amount < 0) {
+    return res.status(400).json({ message: 'Amount must be >= 0' });
+  }
+
+  // Find the record
+  const record = await Record.findOne({
+    _id: req.params.id,
+    user: req.user.id,
+  });
+
+  if (!record) {
+    return res.status(404).json({ message: 'Record not found' });
+  }
+
+  // Update allowed fields
+  if (type !== undefined) record.type = type;
+  if (amount !== undefined) record.amount = amount;
+  if (category !== undefined) record.category = category;
+  if (date !== undefined) record.date = date;
+  if (note !== undefined) record.note = note;
+
+  await record.save();
+
+  res.json({ message: "Record updated", record });
+});
+
+// ==========================================================
 // DELETE /api/records/:id
 // ==========================================================
 exports.remove = asyncHandler(async (req, res) => {
