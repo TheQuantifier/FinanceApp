@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const minAmt = parseFloat(form.querySelector("input[id^=minAmt]").value) || 0;
     const maxAmt = parseFloat(form.querySelector("input[id^=maxAmt]").value) || Infinity;
     const sort = form.querySelector("select[id^=sort]").value;
-    const pageSize = parseInt(form.querySelector("select[id^=pageSize]").value) || 25;
+    const pageSize = parseInt(form.querySelector("select[id^=pageSize]").value) || 10;
 
     let filtered = records.filter(r => {
       const matchQ =
