@@ -36,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   const showModal = modal => modal.classList.remove("hidden");
   const hideModal = modal => modal.classList.add("hidden");
-
   const fmtDate = d => d ? new Date(d).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"2-digit" }) : "—";
 
   const createRow = record => {
@@ -60,70 +59,71 @@ document.addEventListener("DOMContentLoaded", () => {
     return tr;
   };
 
-  const wireActionMenus = () => {
-    document.querySelectorAll(".actions-menu-wrap").forEach(wrapper => {
-      const btn = wrapper.querySelector("[data-menu-btn]");
-      const menu = wrapper.querySelector(".actions-dropdown");
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        document.querySelectorAll(".actions-dropdown").forEach(m => { if(m!==menu) m.classList.add("hidden"); });
-        menu.classList.toggle("hidden");
-      });
-    });
-    document.addEventListener("click", () => {
-      document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
-    });
-  };
+  // ===============================
+  // EVENT DELEGATION
+  // ===============================
+  document.addEventListener("click", async e => {
+    // 3-dot menu toggle
+    const menuBtn = e.target.closest("[data-menu-btn]");
+    if(menuBtn){
+      e.stopPropagation();
+      const menu = menuBtn.nextElementSibling;
+      document.querySelectorAll(".actions-dropdown").forEach(m => { if(m!==menu) m.classList.add("hidden"); });
+      menu.classList.toggle("hidden");
+      return;
+    }
 
-  const wireRowActionEvents = () => {
-    document.addEventListener("click", async e => {
-      const editId = e.target.dataset.edit;
-      const delId = e.target.dataset.delete;
+    // Edit record
+    const editId = e.target.dataset.edit;
+    if(editId){
+      const record = await api.records.getById(editId);
+      if(!record) return;
 
-      if(editId) {
-        const record = await api.records.getById(editId);
-        if(!record) return;
-
-        if(record.type === "expense") {
-          document.getElementById("expenseDate").value = record.date;
-          document.getElementById("expenseAmount").value = record.amount;
-          document.getElementById("expenseCategory").value = record.category;
-          document.getElementById("expenseNotes").value = record.note;
-          addExpenseModal.dataset.editId = record.id;
-          showModal(addExpenseModal);
-        } else {
-          document.getElementById("incomeDate").value = record.date;
-          document.getElementById("incomeAmount").value = record.amount;
-          document.getElementById("incomeCategory").value = record.category;
-          document.getElementById("incomeNotes").value = record.note;
-          addIncomeModal.dataset.editId = record.id;
-          showModal(addIncomeModal);
-        }
+      if(record.type==="expense"){
+        document.getElementById("expenseDate").value = record.date;
+        document.getElementById("expenseAmount").value = record.amount;
+        document.getElementById("expenseCategory").value = record.category;
+        document.getElementById("expenseNotes").value = record.note;
+        addExpenseModal.dataset.editId = record.id;
+        showModal(addExpenseModal);
+      } else {
+        document.getElementById("incomeDate").value = record.date;
+        document.getElementById("incomeAmount").value = record.amount;
+        document.getElementById("incomeCategory").value = record.category;
+        document.getElementById("incomeNotes").value = record.note;
+        addIncomeModal.dataset.editId = record.id;
+        showModal(addIncomeModal);
       }
+      return;
+    }
 
-      if(delId) {
-        deleteTargetId = delId;
-        showModal(deleteModal);
-      }
-    });
-  };
+    // Delete record
+    const delId = e.target.dataset.delete;
+    if(delId){
+      deleteTargetId = delId;
+      showModal(deleteModal);
+      return;
+    }
+
+    // Click outside closes all menus
+    document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
+  });
 
   // ===============================
   // LOAD RECORDS
   // ===============================
-  async function loadRecords() {
-    try {
+  async function loadRecords(){
+    try{
       expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
       incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
 
-      const records = await api.records.getAll(); // ensure API returns ALL existing records
+      const records = await api.records.getAll(); // fetch all existing records
       const expenses = records.filter(r => r.type==="expense");
       const income = records.filter(r => r.type==="income");
 
       renderTable(expenses, expenseTbody, filtersForm);
       renderTable(income, incomeTbody, filtersFormIncome);
-
-    } catch(err) {
+    } catch(err){
       console.error(err);
       expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading expenses.</td></tr>`;
       incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading income.</td></tr>`;
@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return matchQ && matchCat && matchDate && matchAmt;
     });
 
-    filtered.sort((a,b) => {
+    filtered.sort((a,b)=>{
       switch(sort){
         case "date_asc": return (a.date||"").localeCompare(b.date||"");
         case "date_desc": return (b.date||"").localeCompare(a.date||"");
@@ -163,13 +163,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const display = filtered.slice(0, pageSize);
     tbody.innerHTML = "";
 
-    if(!display.length) {
+    if(!display.length){
       tbody.innerHTML = `<tr><td colspan="6" class="subtle">No matching records.</td></tr>`;
       return;
     }
 
-    display.forEach(r => tbody.appendChild(createRow(r)));
-    wireActionMenus();
+    display.forEach(r=>tbody.appendChild(createRow(r)));
   };
 
   // ===============================
@@ -244,12 +243,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   filtersForm?.addEventListener("submit", e=>{ e.preventDefault(); loadRecords(); });
   filtersFormIncome?.addEventListener("submit", e=>{ e.preventDefault(); loadRecords(); });
-
   document.getElementById("btnClear")?.addEventListener("click", ()=>{
     filtersForm.reset();
     loadRecords();
   });
-
   document.getElementById("btnClearIncome")?.addEventListener("click", ()=>{
     filtersFormIncome.reset();
     loadRecords();
@@ -262,13 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const records = await api.records.getAll();
     exportToCSV(records.filter(r=>r.type==="expense"), "expenses");
   });
-
   btnExportIncome?.addEventListener("click", async ()=>{
     const records = await api.records.getAll();
     exportToCSV(records.filter(r=>r.type==="income"), "income");
   });
 
-  function exportToCSV(records, label){
+  const exportToCSV = (records,label)=>{
     if(!records.length){ alert("No records to export."); return; }
     const headers=["Date","Type","Category","Amount","Notes"];
     const rows=[headers.join(",")];
@@ -287,11 +283,10 @@ document.addEventListener("DOMContentLoaded", () => {
     a.download=`${label}_records_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }
+  };
 
   // ===============================
   // INITIAL LOAD
   // ===============================
-  wireRowActionEvents();
-  loadRecords(); // ensures all existing records show immediately
+  loadRecords();
 });
