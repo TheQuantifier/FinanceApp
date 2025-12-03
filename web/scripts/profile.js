@@ -1,13 +1,13 @@
 import { api } from "./api.js";
 
-// -------------------------------
-// DOM ELEMENTS
-// -------------------------------
+/* ----------------------------------------
+   DOM ELEMENTS
+---------------------------------------- */
 const editBtn = document.getElementById("editProfileBtn");
 const form = document.getElementById("editForm");
 const cancelBtn = document.getElementById("cancelEditBtn");
 
-// SUMMARY DISPLAY FIELDS
+// SUMMARY ELEMENTS
 const f = {
   fullName: document.getElementById("fullName"),
   username: document.getElementById("username"),
@@ -30,16 +30,16 @@ const input = {
   bio: document.getElementById("input_bio"),
 };
 
-// SECURITY / STATS FIELDS
+// SECURITY STATS
 const stats = {
   lastLogin: document.getElementById("stat_lastLogin"),
   twoFA: document.getElementById("stat_2FA"),
   uploads: document.getElementById("stat_uploads"),
 };
 
-// -------------------------------
-// SHOW / HIDE EDIT FORM
-// -------------------------------
+/* ----------------------------------------
+   EDIT PROFILE FORM
+---------------------------------------- */
 function showForm() {
   form.hidden = false;
   editBtn.disabled = true;
@@ -50,14 +50,10 @@ function hideForm() {
   editBtn.disabled = false;
 }
 
-// -------------------------------
-// LOAD USER PROFILE
-// -------------------------------
 async function loadUserProfile() {
   try {
     const { user } = await api.auth.me();
 
-    // SUMMARY
     f.fullName.innerText = user.fullName || "—";
     f.username.innerText = "@" + (user.username || "—");
     f.email.innerText = user.email || "—";
@@ -69,21 +65,15 @@ async function loadUserProfile() {
       : "—";
     f.bio.innerText = user.bio || "—";
 
-    // SECURITY + STATS
     stats.lastLogin.innerText = user.lastLogin
       ? new Date(user.lastLogin).toLocaleString()
       : "—";
     stats.twoFA.innerText = user.twoFA ? "Enabled" : "Disabled";
     stats.uploads.innerText = user.recordsUploaded ?? "—";
 
-    // EDIT FORM INPUTS
-    input.fullName.value = user.fullName || "";
-    input.username.value = user.username || "";
-    input.email.value = user.email || "";
-    input.phoneNumber.value = user.phoneNumber || "";
-    input.location.value = user.location || "";
-    input.role.value = user.role || "";
-    input.bio.value = user.bio || "";
+    Object.keys(input).forEach((k) => {
+      input[k].value = user[k] || "";
+    });
 
   } catch (err) {
     alert("You must be logged in.");
@@ -91,77 +81,58 @@ async function loadUserProfile() {
   }
 }
 
-// -------------------------------
-// SAVE PROFILE
-// -------------------------------
 async function saveProfile(e) {
   e.preventDefault();
 
-  const updates = {
-    fullName: input.fullName.value.trim(),
-    username: input.username.value.trim(),
-    email: input.email.value.trim(),
-    phoneNumber: input.phoneNumber.value.trim(),
-    location: input.location.value.trim(),
-    role: input.role.value.trim(),
-    bio: input.bio.value.trim(),
-  };
+  const updates = {};
+  for (const key in input) updates[key] = input[key].value.trim();
 
   try {
     await api.auth.updateProfile(updates);
     hideForm();
-    loadUserProfile();
+    await loadUserProfile();
     alert("Profile updated successfully!");
   } catch (err) {
     alert("Update failed: " + err.message);
   }
 }
 
-// -------------------------------
-// COPY PROFILE LINK
-// -------------------------------
-document.getElementById("copyProfileLinkBtn")
-  ?.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      alert("Profile link copied!");
-    } catch {
-      alert("Could not copy link.");
-    }
-  });
+/* ----------------------------------------
+   COPY PROFILE LINK
+---------------------------------------- */
+document.getElementById("copyProfileLinkBtn").addEventListener("click", async () => {
+  await navigator.clipboard.writeText(location.href);
+  alert("Profile link copied!");
+});
 
-// =====================================================
-//              CHANGE PASSWORD MODAL
-// =====================================================
+/* ----------------------------------------
+   CHANGE PASSWORD
+---------------------------------------- */
 const passwordModal = document.getElementById("passwordModal");
 const passwordForm = document.getElementById("passwordForm");
 const closePasswordModal = document.getElementById("closePasswordModal");
-const changePasswordBtn = document.getElementById("changePasswordBtn");
 
-// OPEN modal
-changePasswordBtn?.addEventListener("click", () => {
-  passwordModal.hidden = false;
+document.getElementById("changePasswordBtn").addEventListener("click", () => {
+  passwordModal.classList.remove("hidden");
 });
 
-// CLOSE modal (Cancel button)
-closePasswordModal?.addEventListener("click", () => {
-  passwordModal.hidden = true;
+closePasswordModal.addEventListener("click", () => {
+  passwordModal.classList.add("hidden");
 });
 
-// CLOSE modal (click outside)
-passwordModal?.addEventListener("click", (e) => {
+// close modal if clicked outside
+passwordModal.addEventListener("click", (e) => {
   if (e.target === passwordModal) {
-    passwordModal.hidden = true;
+    passwordModal.classList.add("hidden");
   }
 });
 
-// SUBMIT password form
-passwordForm?.addEventListener("submit", async (e) => {
+passwordForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const currentPassword = document.getElementById("currentPassword").value.trim();
-  const newPassword = document.getElementById("newPassword").value.trim();
-  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+  const currentPassword = document.getElementById("currentPassword").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
 
   if (newPassword !== confirmPassword) {
     alert("New passwords do not match.");
@@ -169,49 +140,59 @@ passwordForm?.addEventListener("submit", async (e) => {
   }
 
   try {
-    await api.auth.changePassword({
-      currentPassword,
-      newPassword,
-    });
-
+    await api.auth.changePassword({ currentPassword, newPassword });
     alert("Password updated successfully!");
-    passwordModal.hidden = true;
+    passwordModal.classList.add("hidden");
     passwordForm.reset();
   } catch (err) {
     alert("Password update failed: " + err.message);
   }
 });
 
-// =====================================================
-//              SIGN OUT ALL SESSIONS
-// =====================================================
-document.getElementById("signOutAllBtn")
-  ?.addEventListener("click", async () => {
-    if (!confirm("Sign out all devices?")) return;
+/* ----------------------------------------
+   TWO-FACTOR AUTH
+---------------------------------------- */
+document.getElementById("toggle2FA").addEventListener("click", async () => {
+  try {
+    const { status } = await api.auth.toggle2FA();
+    stats.twoFA.innerText = status ? "Enabled" : "Disabled";
+    alert(`Two-factor authentication ${status ? "enabled" : "disabled"}.`);
+  } catch (err) {
+    alert("Could not update Two-Factor Authentication.");
+  }
+});
 
-    try {
-      await api.auth.signOutAll();
-      alert("All sessions have been signed out.");
-      window.location.href = "login.html";
-    } catch (err) {
-      alert("Failed to sign out all sessions: " + err.message);
-    }
+/* ----------------------------------------
+   SIGN OUT ALL SESSIONS
+---------------------------------------- */
+document.getElementById("signOutAllBtn").addEventListener("click", async () => {
+  if (!confirm("Sign out all devices?")) return;
+
+  try {
+    await api.auth.signOutAll();
+    alert("All sessions have been signed out.");
+    window.location.href = "login.html";
+  } catch (err) {
+    alert("Failed to sign out all sessions: " + err.message);
+  }
+});
+
+/* ----------------------------------------
+   LOGOUT (from profile section)
+---------------------------------------- */
+const logoutBtn = document.getElementById("logoutFromProfile");
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    await api.auth.logout();
+    window.location.href = "login.html";
   });
+}
 
-// =====================================================
-//              RESTORE EDIT PROFILE FUNCTIONALITY
-// =====================================================
-
-// Show form when clicking Edit Profile
-editBtn?.addEventListener("click", showForm);
-
-// Hide form when clicking Cancel
-cancelBtn?.addEventListener("click", hideForm);
-
-// Save Profile
-form?.addEventListener("submit", saveProfile);
-
-// -------------------------------
-// INIT
-// -------------------------------
+/* ----------------------------------------
+   INIT
+---------------------------------------- */
 document.addEventListener("DOMContentLoaded", loadUserProfile);
+form.addEventListener("submit", saveProfile);
+editBtn.addEventListener("click", showForm);
+cancelBtn.addEventListener("click", hideForm);
