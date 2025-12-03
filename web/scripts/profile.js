@@ -106,7 +106,7 @@ document.getElementById("copyProfileLinkBtn").addEventListener("click", async ()
 });
 
 /* ----------------------------------------
-   CHANGE PASSWORD
+   CHANGE PASSWORD — MATCHES api.js
 ---------------------------------------- */
 const passwordModal = document.getElementById("passwordModal");
 const passwordForm = document.getElementById("passwordForm");
@@ -120,7 +120,6 @@ closePasswordModal.addEventListener("click", () => {
   passwordModal.classList.add("hidden");
 });
 
-// close modal if clicked outside
 passwordModal.addEventListener("click", (e) => {
   if (e.target === passwordModal) {
     passwordModal.classList.add("hidden");
@@ -130,9 +129,9 @@ passwordModal.addEventListener("click", (e) => {
 passwordForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const currentPassword = document.getElementById("currentPassword").value;
-  const newPassword = document.getElementById("newPassword").value;
-  const confirmPassword = document.getElementById("confirmPassword").value;
+  const currentPassword = document.getElementById("currentPassword").value.trim();
+  const newPassword = document.getElementById("newPassword").value.trim();
+  const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
   if (newPassword !== confirmPassword) {
     alert("New passwords do not match.");
@@ -140,7 +139,8 @@ passwordForm.addEventListener("submit", async (e) => {
   }
 
   try {
-    await api.auth.changePassword({ currentPassword, newPassword });
+    await api.auth.changePassword(currentPassword, newPassword);
+
     alert("Password updated successfully!");
     passwordModal.classList.add("hidden");
     passwordForm.reset();
@@ -148,6 +148,7 @@ passwordForm.addEventListener("submit", async (e) => {
     alert("Password update failed: " + err.message);
   }
 });
+
 
 /* ----------------------------------------
    TWO-FACTOR AUTH
