@@ -170,9 +170,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (tbody.id === "recordsTbody") {
       currentPage = expensePage;
-      pagerPrev = document.getElementById("prevPage");
-      pagerNext = document.getElementById("nextPage");
-      pagerInfo = document.getElementById("pageInfo");
+      pagerPrev = document.getElementById("prevPageExpense");
+      pagerNext = document.getElementById("nextPageExpense");
+      pagerInfo = document.getElementById("pageInfoExpense");
     } else {
       currentPage = incomePage;
       pagerPrev = document.getElementById("prevPageIncome");
@@ -338,14 +338,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // PAGINATION BUTTONS
   // ===============================
 
-  document.getElementById("prevPage")?.addEventListener("click", ()=>{
+  document.getElementById("prevPageExpense")?.addEventListener("click", ()=>{
     if (expensePage > 1) {
       expensePage--;
       loadRecords();
     }
   });
 
-  document.getElementById("nextPage")?.addEventListener("click", ()=>{
+  document.getElementById("nextPageExpense")?.addEventListener("click", ()=>{
     expensePage++;
     loadRecords();
   });
