@@ -1,144 +1,67 @@
-/* ========== RECORDS PAGE (Expenses + Income) ========== */
+/* =========================================================
+   Finance App — Records Page (page-specific enhancements)
+   ========================================================= */
 
-/* Basic page setup */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f5f5f5;
-  color: #333;
+/* Completely divide Income and Expenses */
+.records-section {
+  margin-bottom: 4rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid var(--border);
 }
 
-/* Section separator */
-.section-divider {
-  margin: 2rem 0;
-  border: 0;
-  height: 1px;
-  background: #eceff1;
-}
-
-.main--records {
-  padding-top: 100px; /* adjust to match your header height */
-}
-
-
-/* ==============================
-   HERO SECTIONS
-   ============================== */
-.records-hero {
+/* Title (left) + Actions (right) */
+.records-header {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.records-hero h1 {
-  margin: 0;
-}
-
-.records-hero .actions {
-  display: flex;
-  gap: 0.5rem;
+  align-items: flex-end;
   flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
 }
 
-.records-hero .actions .btn {
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background-color: #1976d2;
-  color: #fff;
-  transition: background 0.2s;
+.records-title p {
+  margin-top: 0.25rem;
 }
 
-.records-hero .actions .btn:hover {
-  background-color: #0d47a1;
-}
-
-/* ==============================
-   FILTERS
-   ============================== */
-.filters.card {
-  margin: 1rem 0 1.25rem;
-  padding: 1rem;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-}
-
-.filters form {
+/* Buttons aligned on the right */
+.records-actions {
   display: flex;
-  flex-direction: column;
   gap: 1rem;
 }
 
-.filters .grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
-  gap: 0.8rem;
+/* Space between subsections (filters → table → pagination) */
+.records-subsection {
+  margin-top: 1.75rem;
+  margin-bottom: 1.75rem;
 }
 
-.filters label {
+/* Ensure label text always above input */
+.records-filters-grid label {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.filters label span {
-  font-weight: 600;
-  font-size: 0.95rem;
+/* Grid for filter inputs */
+.records-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.filters input,
-.filters select {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 0.6rem 0.7rem;
-  background: #fff;
-}
-
-.filter-buttons {
+/* Pagination centered */
+.records-pager {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
 }
 
-/* ==============================
-   TABLES
-   ============================== */
-.records-table .table-wrap {
-  overflow-x: auto;
-  margin-bottom: 1rem;
-}
+/* =========================================================
+   ACTIONS MENU (⋮ dropdown)
+   ========================================================= */
 
-.txn-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.txn-table th,
-.txn-table td {
-  padding: 0.75rem 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid #eceff1;
-}
-
-.txn-table th.num,
-.txn-table td.num {
-  text-align: right;
-}
-
-.txn-table th.actions-col,
-.txn-table td.actions-col {
-  text-align: center;
-  width: 80px;
-}
-
-/* ==============================
-   ACTIONS COLUMN (Three Dot Menu)
-   ============================== */
 .actions-menu-wrap {
   position: relative;
   display: inline-block;
@@ -149,149 +72,73 @@ body {
   border: none;
   font-size: 20px;
   cursor: pointer;
-  line-height: 1;
   padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  color: var(--text);
 }
 
+.actions-btn:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+/* Updated dropdown box */
 .actions-dropdown {
   position: absolute;
   top: 28px;
   right: 0;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
   padding: 6px 0;
-  display: none;
-  z-index: 30;
-  min-width: 140px;
+  z-index: 50;
+  min-width: 150px;
+
+  display: flex;            /* stacked vertically */
+  flex-direction: column;
 }
 
+/* Hidden state (JS toggles this) */
+.actions-dropdown.hidden {
+  display: none;
+}
+
+/* Invisible-style buttons */
 .actions-dropdown button {
   width: 100%;
   text-align: left;
+  background: transparent;   /* invisible look */
   border: none;
-  background: none;
-  padding: 8px 12px;
+  padding: 10px 14px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.9rem;
+  color: var(--text);
+  border-radius: 0;          /* no squared edges */
 }
 
+/* Subtle clean hover */
 .actions-dropdown button:hover {
-  background: #f5f5f5;
+  background: rgba(0, 0, 0, 0.04);
 }
 
-.hidden {
-  display: none !important;
-}
-
-/* ==============================
-   MODALS
-   ============================== */
-.modal {
-  position: fixed;
-  z-index: 999;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 5%;
-  background: rgba(0, 0, 0, 0.4);
-  overflow-y: auto;
-}
-
-.modal-content {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.modal-content h2 {
-  margin-top: 0;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.modal-actions .btn {
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn--primary {
-  background-color: #1976d2;
-  color: #fff;
-}
-
-.btn--primary:hover {
-  background-color: #0d47a1;
-}
-
-.btn--danger {
-  background-color: #b91c1c;
-  color: #fff;
-}
-
-.btn--danger:hover {
-  background-color: #7f1d1d;
-}
-
-.hidden {
-  display: none !important;
-}
-
-/* ==============================
-   PAGER
-   ============================== */
-.pager {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  justify-content: center;
-  padding: 0.8rem 0;
-}
-
-.pager .btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  background: #1976d2;
-  color: #fff;
-  cursor: pointer;
-}
-
-.pager .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ==============================
+/* =========================================================
    RESPONSIVE
-   ============================== */
+   ========================================================= */
+
 @media (max-width: 900px) {
-  .filters .grid {
-    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  .records-filters-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 600px) {
-  .records-hero {
+  .records-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  .filters .grid {
+
+  .records-filters-grid {
     grid-template-columns: 1fr;
   }
 }

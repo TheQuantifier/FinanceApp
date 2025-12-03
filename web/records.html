@@ -5,252 +5,260 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Finance App — Records</title>
 
-  <!-- Meta -->
-  <meta name="description" content="Browse, search, filter, and export your expense and income transactions." />
-  <meta name="author" content="Finance App" />
+  <meta name="description" content="Browse, filter, and manage your expense and income transactions." />
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
-  <!-- Styles -->
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/records.css" />
 </head>
 
 <body>
-  <!-- Header -->
+
   <div id="header"></div>
 
-  <main class="main main--records">
+  <main class="main">
 
     <!-- ========================================================
-         EXPENSES
+         EXPENSES SECTION
     ========================================================= -->
-    <section class="records-hero">
-      <div class="title-wrap">
-        <h1>Expenses</h1>
-        <p class="subtle">Search, filter, sort, and export your expense transactions.</p>
-      </div>
+    <section class="records-section">
 
-      <div class="actions" role="group">
-        <button class="btn" id="btnAddExpense">Add Expense</button>
-        <button class="btn btn--primary" id="btnExportExpenses">Export CSV</button>
-      </div>
-    </section>
-
-    <!-- Expense Filters -->
-    <section class="filters card">
-      <form id="filtersForm">
-        <div class="grid">
-
-          <label>
-            <span>Search</span>
-            <input type="search" id="q" placeholder="Category or note…" />
-          </label>
-
-          <label>
-            <span>Category</span>
-            <select id="category">
-              <option value="">All</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Min Date</span>
-            <input type="date" id="minDate" />
-          </label>
-
-          <label>
-            <span>Max Date</span>
-            <input type="date" id="maxDate" />
-          </label>
-
-          <label>
-            <span>Min Amount</span>
-            <input type="number" step="0.01" id="minAmt" placeholder="0.00" />
-          </label>
-
-          <label>
-            <span>Max Amount</span>
-            <input type="number" step="0.01" id="maxAmt" placeholder="9999.99" />
-          </label>
-
-          <label>
-            <span>Sort</span>
-            <select id="sort">
-              <option value="date_desc">Date ↓ (newest)</option>
-              <option value="date_asc">Date ↑ (oldest)</option>
-              <option value="amount_desc">Amount ↓</option>
-              <option value="amount_asc">Amount ↑</option>
-              <option value="category_asc">Category A–Z</option>
-              <option value="category_desc">Category Z–A</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Rows per page</span>
-            <select id="pageSize">
-              <option>10</option>
-              <option selected>25</option>
-              <option>50</option>
-              <option>100</option>
-            </select>
-          </label>
-
+      <div class="records-header">
+        <div class="records-title">
+          <h1>Expenses</h1>
+          <p class="subtle">Search, filter, sort, and export your expense transactions.</p>
         </div>
 
-        <div class="filter-buttons">
-          <button class="btn" type="submit">Apply</button>
-          <button class="btn btn--link" type="button" id="btnClear">Clear</button>
+        <div class="records-actions">
+          <button class="btn" id="btnAddExpense">Add Expense</button>
+          <button class="btn btn--primary" id="btnExportExpenses">Export CSV</button>
         </div>
-      </form>
-    </section>
-
-    <!-- Expense Table -->
-    <section class="records-table">
-      <div class="table-wrap card" tabindex="0">
-        <table class="txn-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th class="num">Amount</th>
-              <th>Note</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="recordsTbody">
-            <tr><td colspan="6" class="subtle">Loading…</td></tr>
-          </tbody>
-        </table>
       </div>
 
-      <nav class="pager">
-        <button class="btn" id="prevPage" disabled>← Prev</button>
-        <span id="pageInfo" class="subtle">Page 1 of 1</span>
-        <button class="btn" id="nextPage" disabled>Next →</button>
-      </nav>
+      <!-- Filters -->
+      <div class="card records-subsection">
+        <form id="filtersForm">
+
+          <div class="records-filters-grid">
+
+            <label>
+              <span>Search</span>
+              <input type="text" id="q" placeholder="Category or note…" />
+            </label>
+
+            <label>
+              <span>Category</span>
+              <select id="category">
+                <option value="">All</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Min Date</span>
+              <input type="date" id="minDate" />
+            </label>
+
+            <label>
+              <span>Max Date</span>
+              <input type="date" id="maxDate" />
+            </label>
+
+            <label>
+              <span>Min Amount</span>
+              <input type="number" id="minAmt" step="0.01" placeholder="0.00" />
+            </label>
+
+            <label>
+              <span>Max Amount</span>
+              <input type="number" id="maxAmt" step="0.01" placeholder="9999.99" />
+            </label>
+
+            <label>
+              <span>Sort</span>
+              <select id="sort">
+                <option value="date_desc">Date ↓</option>
+                <option value="date_asc">Date ↑</option>
+                <option value="amount_desc">Amount ↓</option>
+                <option value="amount_asc">Amount ↑</option>
+                <option value="category_asc">Category A–Z</option>
+                <option value="category_desc">Category Z–A</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Rows per page</span>
+              <select id="pageSize">
+                <option>10</option>
+                <option selected>25</option>
+                <option>50</option>
+                <option>100</option>
+              </select>
+            </label>
+
+          </div>
+
+          <div class="flex" style="gap: 1rem;">
+            <button type="submit" class="btn btn--primary">Apply</button>
+            <button type="button" class="btn btn--link" id="btnClear">Clear</button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Table -->
+      <div class="records-table records-subsection">
+        <div class="table-wrap card">
+          <table class="txn-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th class="num">Amount</th>
+                <th>Note</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTbody">
+              <tr><td colspan="6" class="subtle">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="records-pager">
+          <button class="btn" id="prevPage" disabled>← Prev</button>
+          <span id="pageInfo" class="subtle">Page 1 of 1</span>
+          <button class="btn" id="nextPage" disabled>Next →</button>
+        </nav>
+      </div>
+
     </section>
 
-    <!-- Divider -->
-    <hr class="section-divider" />
 
     <!-- ========================================================
-         INCOME
+         INCOME SECTION
     ========================================================= -->
-    <section class="records-hero">
-      <div class="title-wrap">
-        <h1>Income</h1>
-        <p class="subtle">Search, filter, sort, and export your income transactions.</p>
-      </div>
+    <section class="records-section">
 
-      <div class="actions" role="group">
-        <button class="btn" id="btnAddIncome">Add Income</button>
-        <button class="btn btn--primary" id="btnExportIncome">Export CSV</button>
-      </div>
-    </section>
-
-    <!-- Income Filters -->
-    <section class="filters card">
-      <form id="filtersFormIncome">
-        <div class="grid">
-
-          <label>
-            <span>Search</span>
-            <input type="search" id="qIncome" placeholder="Category or note…" />
-          </label>
-
-          <label>
-            <span>Category</span>
-            <select id="categoryIncome">
-              <option value="">All</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Min Date</span>
-            <input type="date" id="minDateIncome" />
-          </label>
-
-          <label>
-            <span>Max Date</span>
-            <input type="date" id="maxDateIncome" />
-          </label>
-
-          <label>
-            <span>Min Amount</span>
-            <input type="number" step="0.01" id="minAmtIncome" placeholder="0.00" />
-          </label>
-
-          <label>
-            <span>Max Amount</span>
-            <input type="number" step="0.01" id="maxAmtIncome" placeholder="99999.99" />
-          </label>
-
-          <label>
-            <span>Sort</span>
-            <select id="sortIncome">
-              <option value="date_desc">Date ↓ (newest)</option>
-              <option value="date_asc">Date ↑ (oldest)</option>
-              <option value="amount_desc">Amount ↓</option>
-              <option value="amount_asc">Amount ↑</option>
-              <option value="category_asc">Category A–Z</option>
-              <option value="category_desc">Category Z–A</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Rows per page</span>
-            <select id="pageSizeIncome">
-              <option>10</option>
-              <option selected>25</option>
-              <option>50</option>
-              <option>100</option>
-            </select>
-          </label>
-
+      <div class="records-header">
+        <div class="records-title">
+          <h1>Income</h1>
+          <p class="subtle">Search, filter, sort, and export your income transactions.</p>
         </div>
 
-        <div class="filter-buttons">
-          <button class="btn" type="submit">Apply</button>
-          <button class="btn btn--link" type="button" id="btnClearIncome">Clear</button>
+        <div class="records-actions">
+          <button class="btn" id="btnAddIncome">Add Income</button>
+          <button class="btn btn--primary" id="btnExportIncome">Export CSV</button>
         </div>
-      </form>
-    </section>
-
-    <!-- Income Table -->
-    <section class="records-table">
-      <div class="table-wrap card" tabindex="0">
-        <table class="txn-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th class="num">Amount</th>
-              <th>Note</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="recordsTbodyIncome">
-            <tr><td colspan="6" class="subtle">Loading…</td></tr>
-          </tbody>
-        </table>
       </div>
 
-      <nav class="pager">
-        <button class="btn" id="prevPageIncome" disabled>← Prev</button>
-        <span id="pageInfoIncome" class="subtle">Page 1 of 1</span>
-        <button class="btn" id="nextPageIncome" disabled>Next →</button>
-      </nav>
+      <!-- Filters -->
+      <div class="card records-subsection">
+        <form id="filtersFormIncome">
+
+          <div class="records-filters-grid">
+
+            <label>
+              <span>Search</span>
+              <input type="text" id="qIncome" placeholder="Category or note…" />
+            </label>
+
+            <label>
+              <span>Category</span>
+              <select id="categoryIncome">
+                <option value="">All</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Min Date</span>
+              <input type="date" id="minDateIncome" />
+            </label>
+
+            <label>
+              <span>Max Date</span>
+              <input type="date" id="maxDateIncome" />
+            </label>
+
+            <label>
+              <span>Min Amount</span>
+              <input type="number" id="minAmtIncome" step="0.01" placeholder="0.00" />
+            </label>
+
+            <label>
+              <span>Max Amount</span>
+              <input type="number" id="maxAmtIncome" step="0.01" placeholder="99999.99" />
+            </label>
+
+            <label>
+              <span>Sort</span>
+              <select id="sortIncome">
+                <option value="date_desc">Date ↓</option>
+                <option value="date_asc">Date ↑</option>
+                <option value="amount_desc">Amount ↓</option>
+                <option value="amount_asc">Amount ↑</option>
+                <option value="category_asc">Category A–Z</option>
+                <option value="category_desc">Category Z–A</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Rows per page</span>
+              <select id="pageSizeIncome">
+                <option>10</option>
+                <option selected>25</option>
+                <option>50</option>
+                <option>100</option>
+              </select>
+            </label>
+
+          </div>
+
+          <div class="flex" style="gap: 1rem;">
+            <button type="submit" class="btn btn--primary">Apply</button>
+            <button type="button" class="btn btn--link" id="btnClearIncome">Clear</button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Table -->
+      <div class="records-table records-subsection">
+        <div class="table-wrap card">
+          <table class="txn-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th class="num">Amount</th>
+                <th>Note</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTbodyIncome">
+              <tr><td colspan="6" class="subtle">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="records-pager">
+          <button class="btn" id="prevPageIncome" disabled>← Prev</button>
+          <span id="pageInfoIncome" class="subtle">Page 1 of 1</span>
+          <button class="btn" id="nextPageIncome" disabled>Next →</button>
+        </nav>
+      </div>
+
     </section>
+
 
     <!-- ========================================================
          MODALS
     ========================================================= -->
 
-    <!-- Add Expense -->
+    <!-- Add Expense Modal -->
     <div id="addExpenseModal" class="modal hidden">
-      <div class="modal-content card">
+      <div class="modal-content">
         <h2>Add New Expense</h2>
 
         <form id="expenseForm" class="txn-form">
@@ -275,9 +283,9 @@
       </div>
     </div>
 
-    <!-- Add Income -->
+    <!-- Add Income Modal -->
     <div id="addIncomeModal" class="modal hidden">
-      <div class="modal-content card">
+      <div class="modal-content">
         <h2>Add New Income</h2>
 
         <form id="incomeForm" class="txn-form">
@@ -301,9 +309,9 @@
         </form>
       </div>
     </div>
+
   </main>
 
-  <!-- Footer -->
   <div id="footer"></div>
 
   <!-- Scripts -->
