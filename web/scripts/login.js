@@ -18,17 +18,17 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     errorEl.textContent = "";
 
-    const email = document.getElementById("email")?.value.trim();
+    const identifier = document.getElementById("email")?.value.trim();
     const password = document.getElementById("password")?.value.trim();
 
-    if (!email || !password) {
-      errorEl.textContent = "Please enter your email and password.";
+    if (!identifier || !password) {
+      errorEl.textContent = "Please enter your email/username and password.";
       return;
     }
 
     try {
       // ---- LOGIN THROUGH CENTRALIZED API MODULE ----
-      await api.auth.login(email, password);
+      await api.auth.login(identifier, password);
 
       // Success → redirect to dashboard
       window.location.href = "home.html";

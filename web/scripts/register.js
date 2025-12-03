@@ -17,12 +17,12 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.style.color = "";
 
     // --- Get field values ---
-    const name = document.getElementById("name")?.value.trim();
+    const fullName = document.getElementById("name")?.value.trim();
     const email = document.getElementById("email")?.value.trim();
     const password = document.getElementById("password")?.value;
 
     // --- Validation ---
-    if (!name || !email || !password) {
+    if (!fullName || !email || !password) {
       msg.textContent = "Please fill in all fields.";
       msg.style.color = "red";
       return;
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       // ---- CALL BACKEND THROUGH api.js ----
-      const result = await api.auth.register(email, password, name);
+      const result = await api.auth.register(email, password, fullName);
 
       msg.textContent = "✅ Account created! Redirecting…";
       msg.style.color = "green";

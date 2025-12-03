@@ -38,11 +38,11 @@ async function request(path, options = {}) {
 // AUTH MODULE
 // --------------------------------------
 export const auth = {
-  // Registration
-  async register(email, password, name) {
+  // Registration — corrected to use fullName
+  async register(email, password, fullName) {
     return request("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, fullName }),
     });
   },
 
@@ -96,7 +96,6 @@ export const records = {
     });
   },
 
-  //  NEW UPDATE METHOD
   async update(id, updates) {
     return request(`/records/${id}`, {
       method: "PUT",

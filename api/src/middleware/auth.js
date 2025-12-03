@@ -5,33 +5,62 @@ const { jwtSecret } = require('../config/env');
 
 module.exports = async function auth(req, res, next) {
   try {
-    let token = req.cookies?.token || null;
+    let token = null;
 
-    if (!token && req.headers.authorization) {
-      const [type, value] = req.headers.authorization.split(' ');
-      if (type === 'Bearer') token = value;
+    /* ----------------------------------------------
+       1. Prefer secure cookie
+    ---------------------------------------------- */
+    if (req.cookies?.token) {
+      token = req.cookies.token;
     }
 
-    if (!token)
-      return res.status(401).json({ message: 'Authentication required' });
+    /* ----------------------------------------------
+       2. Fallback: Authorization Bearer header
+    ---------------------------------------------- */
+    if (!token && req.headers.authorization) {
+      const [scheme, value] = req.headers.authorization.split(' ');
 
+      if (scheme === 'Bearer' && value && value !== 'null' && value !== 'undefined') {
+        token = value.trim();
+      }
+    }
+
+    /* ----------------------------------------------
+       3. Missing token → reject
+    ---------------------------------------------- */
+    if (!token) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    /* ----------------------------------------------
+       4. Verify token
+    ---------------------------------------------- */
     let payload;
     try {
       payload = jwt.verify(token, jwtSecret);
-    } catch {
+    } catch (err) {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
+    /* ----------------------------------------------
+       5. Fetch user
+       toJSON() automatically strips password
+    ---------------------------------------------- */
     const user = await User.findById(payload.id);
-    if (!user)
-      return res.status(401).json({ message: 'User not found or removed' });
 
-    // Attach full safe user (password already stripped by toJSON)
+    if (!user) {
+      return res.status(401).json({ message: 'User no longer exists' });
+    }
+
+    /* ----------------------------------------------
+       6. Attach safe user to req
+    ---------------------------------------------- */
     req.user = user;
 
-    next();
+    return next();
+
   } catch (err) {
     console.error("AUTH ERROR:", err);
-    res.status(500).json({ message: "Authentication server error" });
+    return res.status(500).json({ message: 'Authentication server error' });
   }
 };

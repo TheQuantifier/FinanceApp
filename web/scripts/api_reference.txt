@@ -17,7 +17,7 @@ All functions return Promises:
 ============================================================
 
 ------------------------------------------------------------
- auth.register(email, password, name)
+ auth.register(email, password, userName)
 ------------------------------------------------------------
 DESCRIPTION:
   Creates a new user account and logs them in automatically.
@@ -25,7 +25,7 @@ DESCRIPTION:
 ARGUMENTS:
   email (string)
   password (string)
-  name (string)
+  userName (string)
 
 RETURNS:
   { user }

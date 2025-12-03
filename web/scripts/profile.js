@@ -1,5 +1,26 @@
 import { api } from "./api.js";
 
+/* --------------------------------------------------
+   STUB FUNCTIONS FOR UNIMPLEMENTED AUTH FEATURES
+-------------------------------------------------- */
+if (!api.auth.toggle2FA) {
+  api.auth.toggle2FA = async () => {
+    return {
+      status: false,
+      message: "Two-factor authentication is not implemented yet.",
+    };
+  };
+}
+
+if (!api.auth.signOutAll) {
+  api.auth.signOutAll = async () => {
+    return {
+      status: false,
+      message: "Sign-out-from-all-devices is not implemented yet.",
+    };
+  };
+}
+
 /* ----------------------------------------
    DOM ELEMENTS
 ---------------------------------------- */
@@ -30,7 +51,7 @@ const input = {
   bio: document.getElementById("input_bio"),
 };
 
-// SECURITY STATS
+// SECURITY STATS (backend does not provide these)
 const stats = {
   lastLogin: document.getElementById("stat_lastLogin"),
   twoFA: document.getElementById("stat_2FA"),
@@ -50,11 +71,15 @@ function hideForm() {
   editBtn.disabled = false;
 }
 
+/* ----------------------------------------
+   LOAD USER PROFILE
+---------------------------------------- */
 async function loadUserProfile() {
   try {
     const { user } = await api.auth.me();
 
-    f.fullName.innerText = user.fullName || "—";
+    // FULLNAME WITH USERNAME FALLBACK
+    f.fullName.innerText = user.fullName || user.username || "—";
     f.username.innerText = "@" + (user.username || "—");
     f.email.innerText = user.email || "—";
     f.phoneNumber.innerText = user.phoneNumber || "—";
@@ -65,12 +90,12 @@ async function loadUserProfile() {
       : "—";
     f.bio.innerText = user.bio || "—";
 
-    stats.lastLogin.innerText = user.lastLogin
-      ? new Date(user.lastLogin).toLocaleString()
-      : "—";
-    stats.twoFA.innerText = user.twoFA ? "Enabled" : "Disabled";
-    stats.uploads.innerText = user.recordsUploaded ?? "—";
+    // SAFE FALLBACKS FOR UNIMPLEMENTED FIELDS
+    stats.lastLogin.innerText = "Not available";
+    stats.twoFA.innerText = "Not available";
+    stats.uploads.innerText = "Not available";
 
+    // Populate form fields
     Object.keys(input).forEach((k) => {
       input[k].value = user[k] || "";
     });
@@ -81,11 +106,16 @@ async function loadUserProfile() {
   }
 }
 
+/* ----------------------------------------
+   SAVE PROFILE
+---------------------------------------- */
 async function saveProfile(e) {
   e.preventDefault();
 
   const updates = {};
-  for (const key in input) updates[key] = input[key].value.trim();
+  for (const key in input) {
+    updates[key] = input[key].value.trim();
+  }
 
   try {
     await api.auth.updateProfile(updates);
@@ -106,7 +136,7 @@ document.getElementById("copyProfileLinkBtn").addEventListener("click", async ()
 });
 
 /* ----------------------------------------
-   CHANGE PASSWORD — MATCHES api.js
+   CHANGE PASSWORD — Works with backend
 ---------------------------------------- */
 const passwordModal = document.getElementById("passwordModal");
 const passwordForm = document.getElementById("passwordForm");
@@ -149,37 +179,35 @@ passwordForm.addEventListener("submit", async (e) => {
   }
 });
 
-
 /* ----------------------------------------
-   TWO-FACTOR AUTH
+   TWO-FACTOR AUTH (STUB)
 ---------------------------------------- */
 document.getElementById("toggle2FA").addEventListener("click", async () => {
   try {
-    const { status } = await api.auth.toggle2FA();
-    stats.twoFA.innerText = status ? "Enabled" : "Disabled";
-    alert(`Two-factor authentication ${status ? "enabled" : "disabled"}.`);
+    const result = await api.auth.toggle2FA();
+    stats.twoFA.innerText = "Not available";
+    alert(result.message);
   } catch (err) {
     alert("Could not update Two-Factor Authentication.");
   }
 });
 
 /* ----------------------------------------
-   SIGN OUT ALL SESSIONS
+   SIGN OUT ALL SESSIONS (STUB)
 ---------------------------------------- */
 document.getElementById("signOutAllBtn").addEventListener("click", async () => {
   if (!confirm("Sign out all devices?")) return;
 
   try {
-    await api.auth.signOutAll();
-    alert("All sessions have been signed out.");
-    window.location.href = "login.html";
+    const result = await api.auth.signOutAll();
+    alert(result.message);
   } catch (err) {
-    alert("Failed to sign out all sessions: " + err.message);
+    alert("Failed to sign out all sessions.");
   }
 });
 
 /* ----------------------------------------
-   LOGOUT (from profile section)
+   LOGOUT
 ---------------------------------------- */
 const logoutBtn = document.getElementById("logoutFromProfile");
 

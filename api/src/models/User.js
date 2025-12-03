@@ -4,9 +4,9 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
-    // ------------------------
-    // Required Auth Fields
-    // ------------------------
+    /* --------------------------------------------------
+       AUTH FIELDS
+    -------------------------------------------------- */
     username: {
       type: String,
       required: true,
@@ -29,9 +29,9 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
     },
 
-    // ------------------------
-    // Profile Fields
-    // ------------------------
+    /* --------------------------------------------------
+       PROFILE FIELDS
+    -------------------------------------------------- */
     fullName: {
       type: String,
       required: true,
@@ -62,35 +62,48 @@ const userSchema = new mongoose.Schema(
       default: '',
     },
   },
-  { timestamps: true } // auto creates createdAt + updatedAt
+  { timestamps: true }
 );
 
-// --------------------------------------------------
-// Password Hashing Middleware
-// --------------------------------------------------
+/* --------------------------------------------------
+   INDEXES (for faster login & uniqueness)
+-------------------------------------------------- */
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+
+
+/* --------------------------------------------------
+   PASSWORD HASHING
+-------------------------------------------------- */
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
+  if (!this.isModified('password')) return next();
+
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
-    return next();
+    next();
   } catch (err) {
-    return next(err);
+    next(err);
   }
 });
 
-// Compare provided password with stored hash
+
+/* --------------------------------------------------
+   CHECK PASSWORD
+-------------------------------------------------- */
 userSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
 
-// Remove password when converting to JSON
+
+/* --------------------------------------------------
+   REMOVE PASSWORD WHEN RETURNING JSON
+-------------------------------------------------- */
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   return obj;
 };
+
 
 module.exports = mongoose.model('User', userSchema);

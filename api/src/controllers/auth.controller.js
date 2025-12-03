@@ -15,31 +15,37 @@ function setTokenCookie(res, token) {
     httpOnly: true,
     secure: true,
     sameSite: 'none',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
 
-// =====================================================
-// REGISTER
-// =====================================================
-exports.register = asyncHandler(async (req, res) => {
-  const { email, password, name } = req.body;
 
-  if (!email || !password || !name) {
+
+/* =====================================================
+   REGISTER  — now uses fullName consistently
+===================================================== */
+exports.register = asyncHandler(async (req, res) => {
+  const { email, password, fullName } = req.body;
+
+  if (!email || !password || !fullName) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  const exists = await User.findOne({ email: normalizedEmail });
-  if (exists) return res.status(400).json({ message: 'Email already in use' });
 
-  const usernameBase = normalizedEmail.split('@')[0];
+  const exists = await User.findOne({ email: normalizedEmail });
+  if (exists) {
+    return res.status(400).json({ message: 'Email already in use' });
+  }
+
+  // Username = part before @, lowercased
+  const usernameBase = normalizedEmail.split('@')[0].toLowerCase().trim();
 
   const user = await User.create({
     email: normalizedEmail,
     password,
     username: usernameBase,
-    fullName: name,
+    fullName: fullName.trim(),
     location: "",
     role: "user",
     phoneNumber: "",
@@ -52,9 +58,11 @@ exports.register = asyncHandler(async (req, res) => {
   res.status(201).json({ user });
 });
 
-// =====================================================
-// LOGIN (email OR username)
-// =====================================================
+
+
+/* =====================================================
+   LOGIN (email OR username)
+===================================================== */
 exports.login = asyncHandler(async (req, res) => {
   const { identifier, password } = req.body;
 
@@ -78,9 +86,11 @@ exports.login = asyncHandler(async (req, res) => {
   res.json({ user });
 });
 
-// =====================================================
-// LOGOUT
-// =====================================================
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
 exports.logout = asyncHandler(async (_req, res) => {
   res.cookie('token', '', {
     httpOnly: true,
@@ -92,21 +102,24 @@ exports.logout = asyncHandler(async (_req, res) => {
   res.json({ message: 'Logged out' });
 });
 
-// =====================================================
-// CURRENT USER
-// =====================================================
+
+
+/* =====================================================
+   CURRENT USER
+===================================================== */
 exports.me = asyncHandler(async (req, res) => {
   res.json({ user: req.user });
 });
 
-// =====================================================
-// UPDATE PROFILE
-// =====================================================
+
+
+/* =====================================================
+   UPDATE PROFILE (fullName, email, username, etc.)
+===================================================== */
 exports.updateMe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const updates = {};
 
-  // Allowed fields
   const allowedFields = [
     "username",
     "email",
@@ -119,25 +132,30 @@ exports.updateMe = asyncHandler(async (req, res) => {
 
   for (const key of allowedFields) {
     if (req.body[key] !== undefined) {
-      updates[key] = typeof req.body[key] === "string"
-        ? req.body[key].trim()
-        : req.body[key];
+      updates[key] =
+        typeof req.body[key] === "string"
+          ? req.body[key].trim()
+          : req.body[key];
     }
   }
 
-  // Unique email
+  // Validate unique email
   if (updates.email !== undefined) {
-    const emailCheck = await User.findOne({ email: updates.email });
-    if (emailCheck && emailCheck._id.toString() !== userId.toString()) {
+    const normalizedEmail = updates.email.toLowerCase().trim();
+    updates.email = normalizedEmail;
+
+    const exists = await User.findOne({ email: normalizedEmail });
+    if (exists && exists._id.toString() !== userId.toString()) {
       return res.status(400).json({ message: 'Email already in use' });
     }
   }
 
-  // Unique username
+  // Validate unique username
   if (updates.username !== undefined) {
     updates.username = updates.username.toLowerCase().trim();
-    const usernameCheck = await User.findOne({ username: updates.username });
-    if (usernameCheck && usernameCheck._id.toString() !== userId.toString()) {
+
+    const exists = await User.findOne({ username: updates.username });
+    if (exists && exists._id.toString() !== userId.toString()) {
       return res.status(400).json({ message: 'Username already in use' });
     }
   }
@@ -150,36 +168,38 @@ exports.updateMe = asyncHandler(async (req, res) => {
   res.json({ user: updated });
 });
 
-// =====================================================
-// CHANGE PASSWORD
-// =====================================================
-// Body: { currentPassword, newPassword }
+
+
+/* =====================================================
+   CHANGE PASSWORD
+===================================================== */
 exports.changePassword = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({ message: 'Current and new password are required' });
+    return res.status(400).json({
+      message: 'Current and new password are required',
+    });
   }
 
   if (typeof newPassword !== 'string' || newPassword.length < 8) {
-    return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+    return res.status(400).json({
+      message: 'New password must be at least 8 characters long',
+    });
   }
 
   const user = await User.findById(userId);
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
-  }
+  if (!user) return res.status(404).json({ message: 'User not found' });
 
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
     return res.status(401).json({ message: 'Current password is incorrect' });
   }
 
-  user.password = newPassword; // will be hashed by pre('save') hook
+  user.password = newPassword;
   await user.save();
 
-  // Optional: issue a fresh token after password change
   const token = createToken(user._id);
   setTokenCookie(res, token);
 
@@ -189,16 +209,18 @@ exports.changePassword = asyncHandler(async (req, res) => {
   });
 });
 
-// =====================================================
-// DELETE ACCOUNT (CASCADE: Records, Receipts, Files, User)
-// =====================================================
+
+
+/* =====================================================
+   DELETE ACCOUNT — cascade delete
+===================================================== */
 exports.deleteMe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   // 1) Fetch receipts so we can delete underlying GridFS files
   const receipts = await Receipt.find({ user: userId });
 
-  // 2) Delete associated GridFS files (best-effort; log but continue on error)
+  // 2) Delete files from GridFS (continue on error)
   for (const receipt of receipts) {
     try {
       if (receipt.storedFileId) {
@@ -210,20 +232,19 @@ exports.deleteMe = asyncHandler(async (req, res) => {
         receipt._id.toString(),
         err
       );
-      // Do NOT throw here; we still want to clean up DB and user
     }
   }
 
-  // 3) Delete receipts from DB
+  // 3) Delete receipts
   await Receipt.deleteMany({ user: userId });
 
-  // 4) Delete financial records from DB
+  // 4) Delete records
   await Record.deleteMany({ user: userId });
 
-  // 5) Delete user account itself
+  // 5) Delete user
   await User.findByIdAndDelete(userId);
 
-  // 6) Clear auth cookie (log out)
+  // 6) Clear auth cookie
   res.cookie('token', '', {
     httpOnly: true,
     secure: true,

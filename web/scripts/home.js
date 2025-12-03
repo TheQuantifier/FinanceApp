@@ -298,7 +298,7 @@ import { api } from "./api.js";
   async function personalizeWelcome() {
     try {
       const { user } = await api.auth.me();
-      $("#welcomeTitle").textContent = `Welcome back, ${user.fullName}`;
+      $("#welcomeTitle").textContent = `Welcome back, ${user.fullName || user.username}`;
     } catch {
       $("#welcomeTitle").textContent = "Welcome back";
     }
