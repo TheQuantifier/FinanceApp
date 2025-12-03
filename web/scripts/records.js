@@ -25,21 +25,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnExportExpenses = document.getElementById("btnExportExpenses");
   const btnExportIncome = document.getElementById("btnExportIncome");
 
+  const deleteModal = document.getElementById("deleteRecordModal");
+  const confirmDeleteRecordBtn = document.getElementById("confirmDeleteRecordBtn");
+  const cancelDeleteRecordBtn = document.getElementById("cancelDeleteRecordBtn");
+
+  let deleteTargetId = null;
+
+  // NEW — Pagination state
+  let expensePage = 1;
+  let incomePage = 1;
+
   // ===============================
   // HELPERS
   // ===============================
   const showModal = modal => modal.classList.remove("hidden");
   const hideModal = modal => modal.classList.add("hidden");
-
-  const fmtDate = d =>
-    d ? new Date(d).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit"
-    }) : "—";
-
-  // Convert ISO → yyyy-mm-dd for input[type=date]
-  const isoToInputDate = iso => (iso ? iso.split("T")[0] : "");
+  const fmtDate = d => d ? new Date(d).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"2-digit" }) : "—";
 
   const createRow = record => {
     const tr = document.createElement("tr");
@@ -53,8 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="actions-menu-wrap">
           <button class="actions-btn" data-menu-btn="true">⋮</button>
           <div class="actions-dropdown hidden">
-            <button data-edit="${record._id}">Edit Record</button>
-            <button data-delete="${record._id}" style="color:#b91c1c;">Delete Record</button>
+            <button data-edit="${record.id}">Edit Record</button>
+            <button data-delete="${record.id}" style="color:#b91c1c;">Delete Record</button>
           </div>
         </div>
       </td>
@@ -63,88 +64,66 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===============================
-  // EVENT DELEGATION (3-dot menu)
+  // EVENT DELEGATION
   // ===============================
   document.addEventListener("click", async e => {
-
-    // ---- OPEN/CLOSE 3-dot menu ----
     const menuBtn = e.target.closest("[data-menu-btn]");
-    if (menuBtn) {
+    if(menuBtn){
       e.stopPropagation();
-      const dropdown = menuBtn.nextElementSibling;
-
-      // Close all others
-      document.querySelectorAll(".actions-dropdown").forEach(el => {
-        if (el !== dropdown) el.classList.add("hidden");
-      });
-
-      dropdown.classList.toggle("hidden");
+      const menu = menuBtn.nextElementSibling;
+      document.querySelectorAll(".actions-dropdown").forEach(m => { if(m!==menu) m.classList.add("hidden"); });
+      menu.classList.toggle("hidden");
       return;
     }
 
-    // ---- EDIT RECORD ----
     const editId = e.target.dataset.edit;
-    if (editId) {
-      const record = await api.records.getOne(editId);
-      if (!record) return;
+    if(editId){
+      const record = await api.records.getById(editId);
+      if(!record) return;
 
-      // Close menus
-      document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
-
-      if (record.type === "expense") {
-        document.getElementById("expenseDate").value = isoToInputDate(record.date);
+      if(record.type==="expense"){
+        document.getElementById("expenseDate").value = record.date;
         document.getElementById("expenseAmount").value = record.amount;
         document.getElementById("expenseCategory").value = record.category;
         document.getElementById("expenseNotes").value = record.note;
-
-        addExpenseModal.dataset.editId = record._id;
+        addExpenseModal.dataset.editId = record.id;
         showModal(addExpenseModal);
       } else {
-        document.getElementById("incomeDate").value = isoToInputDate(record.date);
+        document.getElementById("incomeDate").value = record.date;
         document.getElementById("incomeAmount").value = record.amount;
         document.getElementById("incomeCategory").value = record.category;
         document.getElementById("incomeNotes").value = record.note;
-
-        addIncomeModal.dataset.editId = record._id;
+        addIncomeModal.dataset.editId = record.id;
         showModal(addIncomeModal);
       }
-
       return;
     }
 
-    // ---- DELETE RECORD ----
-    const deleteId = e.target.dataset.delete;
-    if (deleteId) {
-      document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
-
-      if (confirm("Are you sure you want to delete this record?")) {
-        await api.records.remove(deleteId);
-        loadRecords();
-      }
+    const delId = e.target.dataset.delete;
+    if(delId){
+      deleteTargetId = delId;
+      showModal(deleteModal);
       return;
     }
 
-    // ---- CLICK OUTSIDE -> CLOSE ALL MENUS ----
     document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
   });
 
   // ===============================
   // LOAD RECORDS
   // ===============================
-  async function loadRecords() {
-    try {
+  async function loadRecords(){
+    try{
       expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
       incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
 
       const records = await api.records.getAll();
-
-      const expenses = records.filter(r => r.type === "expense");
-      const income = records.filter(r => r.type === "income");
+      const expenses = records.filter(r => r.type==="expense");
+      const income = records.filter(r => r.type==="income");
 
       renderTable(expenses, expenseTbody, filtersForm);
       renderTable(income, incomeTbody, filtersFormIncome);
-    }
-    catch (err) {
+    } catch(err){
       console.error(err);
       expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading expenses.</td></tr>`;
       incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading income.</td></tr>`;
@@ -152,71 +131,93 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===============================
-  // RENDER TABLE
+  // RENDER TABLE (WITH PAGINATION)
   // ===============================
   const renderTable = (records, tbody, form) => {
-
-    const q = form.querySelector("input[type=text]").value.toLowerCase();
+    const q = form.querySelector("input[type=search]").value.toLowerCase();
     const category = form.querySelector("select[id^=category]").value;
     const minDate = form.querySelector("input[id^=minDate]").value;
     const maxDate = form.querySelector("input[id^=maxDate]").value;
     const minAmt = parseFloat(form.querySelector("input[id^=minAmt]").value) || 0;
     const maxAmt = parseFloat(form.querySelector("input[id^=maxAmt]").value) || Infinity;
     const sort = form.querySelector("select[id^=sort]").value;
-    const pageSize = parseInt(form.querySelector("select[id^=pageSize]").value) || 10;
+    const pageSize = parseInt(form.querySelector("select[id^=pageSize]").value) || 25;
 
     let filtered = records.filter(r => {
-      const matchQ =
-        !q ||
-        (r.category && r.category.toLowerCase().includes(q)) ||
-        (r.note && r.note.toLowerCase().includes(q));
-
-      const matchCat = !category || r.category === category;
-      const matchDate = (!minDate || r.date >= minDate) && (!maxDate || r.date <= maxDate);
-      const matchAmt = r.amount >= minAmt && r.amount <= maxAmt;
-
+      const matchQ = !q || (r.category && r.category.toLowerCase().includes(q)) || (r.note && r.note.toLowerCase().includes(q));
+      const matchCat = !category || r.category===category;
+      const matchDate = (!minDate || r.date>=minDate) && (!maxDate || r.date<=maxDate);
+      const matchAmt = r.amount>=minAmt && r.amount<=maxAmt;
       return matchQ && matchCat && matchDate && matchAmt;
     });
 
-    filtered.sort((a, b) => {
-      switch (sort) {
-        case "date_asc": return (a.date || "").localeCompare(b.date || "");
-        case "date_desc": return (b.date || "").localeCompare(a.date || "");
-        case "amount_asc": return a.amount - b.amount;
-        case "amount_desc": return b.amount - a.amount;
-        case "category_asc": return (a.category || "").localeCompare(b.category || "");
-        case "category_desc": return (b.category || "").localeCompare(a.category || "");
+    filtered.sort((a,b)=>{
+      switch(sort){
+        case "date_asc": return (a.date||"").localeCompare(b.date||"");
+        case "date_desc": return (b.date||"").localeCompare(a.date||"");
+        case "amount_asc": return a.amount-b.amount;
+        case "amount_desc": return b.amount-a.amount;
+        case "category_asc": return (a.category||"").localeCompare(b.category||"");
+        case "category_desc": return (b.category||"").localeCompare(a.category||"");
         default: return 0;
       }
     });
 
-    const display = filtered.slice(0, pageSize);
-    tbody.innerHTML = "";
+    // -----------------------
+    // PAGINATION LOGIC
+    // -----------------------
+    let currentPage, pagerPrev, pagerNext, pagerInfo;
 
-    if (!display.length) {
+    if (tbody.id === "recordsTbody") {
+      currentPage = expensePage;
+      pagerPrev = document.getElementById("prevPage");
+      pagerNext = document.getElementById("nextPage");
+      pagerInfo = document.getElementById("pageInfo");
+    } else {
+      currentPage = incomePage;
+      pagerPrev = document.getElementById("prevPageIncome");
+      pagerNext = document.getElementById("nextPageIncome");
+      pagerInfo = document.getElementById("pageInfoIncome");
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    if (tbody.id === "recordsTbody") expensePage = currentPage;
+    if (tbody.id === "recordsTbodyIncome") incomePage = currentPage;
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const display = filtered.slice(start, end);
+
+    pagerInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    pagerPrev.disabled = currentPage === 1;
+    pagerNext.disabled = currentPage === totalPages;
+
+    // -----------------------
+
+    tbody.innerHTML = "";
+    if(!display.length){
       tbody.innerHTML = `<tr><td colspan="6" class="subtle">No matching records.</td></tr>`;
       return;
     }
 
-    display.forEach(r => tbody.appendChild(createRow(r)));
+    display.forEach(r=>tbody.appendChild(createRow(r)));
   };
 
   // ===============================
-  // MODALS — OPEN/CLOSE
+  // MODALS: ADD/EDIT
   // ===============================
-  btnAddExpense?.addEventListener("click", () => showModal(addExpenseModal));
-  cancelExpenseBtn?.addEventListener("click", () => hideModal(addExpenseModal));
+  btnAddExpense?.addEventListener("click", ()=>showModal(addExpenseModal));
+  cancelExpenseBtn?.addEventListener("click", ()=>hideModal(addExpenseModal));
 
-  btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
-  cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
+  btnAddIncome?.addEventListener("click", ()=>showModal(addIncomeModal));
+  cancelIncomeBtn?.addEventListener("click", ()=>hideModal(addIncomeModal));
 
-  // ===============================
-  // SUBMIT EXPENSE
-  // ===============================
-  expenseForm?.addEventListener("submit", async e => {
+  expenseForm?.addEventListener("submit", async e=>{
     e.preventDefault();
     const editId = addExpenseModal.dataset.editId;
-
     const payload = {
       type: "expense",
       date: document.getElementById("expenseDate").value,
@@ -224,28 +225,19 @@ document.addEventListener("DOMContentLoaded", () => {
       category: document.getElementById("expenseCategory").value,
       note: document.getElementById("expenseNotes").value
     };
-
-    try {
-      if (editId) await api.records.update(editId, payload);
+    try{
+      if(editId) await api.records.update(editId, payload);
       else await api.records.create(payload);
-
       hideModal(addExpenseModal);
       expenseForm.reset();
       delete addExpenseModal.dataset.editId;
       loadRecords();
-    }
-    catch (err) {
-      alert("Error saving expense: " + err.message);
-    }
+    }catch(err){ alert("Error saving expense: "+err.message); }
   });
 
-  // ===============================
-  // SUBMIT INCOME
-  // ===============================
-  incomeForm?.addEventListener("submit", async e => {
+  incomeForm?.addEventListener("submit", async e=>{
     e.preventDefault();
     const editId = addIncomeModal.dataset.editId;
-
     const payload = {
       type: "income",
       date: document.getElementById("incomeDate").value,
@@ -253,81 +245,122 @@ document.addEventListener("DOMContentLoaded", () => {
       category: document.getElementById("incomeCategory").value,
       note: document.getElementById("incomeNotes").value
     };
-
-    try {
-      if (editId) await api.records.update(editId, payload);
+    try{
+      if(editId) await api.records.update(editId, payload);
       else await api.records.create(payload);
-
       hideModal(addIncomeModal);
       incomeForm.reset();
       delete addIncomeModal.dataset.editId;
       loadRecords();
-    }
-    catch (err) {
-      alert("Error saving income: " + err.message);
-    }
+    }catch(err){ alert("Error saving income: "+err.message); }
+  });
+
+  // ===============================
+  // DELETE
+  // ===============================
+  cancelDeleteRecordBtn.addEventListener("click", ()=>{
+    deleteTargetId = null;
+    hideModal(deleteModal);
+  });
+
+  confirmDeleteRecordBtn.addEventListener("click", async ()=>{
+    if(!deleteTargetId) return;
+    try{
+      await api.records.delete(deleteTargetId);
+      deleteTargetId = null;
+      hideModal(deleteModal);
+      loadRecords();
+    }catch(err){ alert("Failed to delete: "+err.message); }
   });
 
   // ===============================
   // FILTERS
   // ===============================
-  filtersForm?.addEventListener("submit", e => {
+  filtersForm?.addEventListener("submit", e=>{
     e.preventDefault();
+    expensePage = 1;
     loadRecords();
   });
 
-  filtersFormIncome?.addEventListener("submit", e => {
+  filtersFormIncome?.addEventListener("submit", e=>{
     e.preventDefault();
+    incomePage = 1;
     loadRecords();
   });
 
-  document.getElementById("btnClear")?.addEventListener("click", () => {
+  document.getElementById("btnClear")?.addEventListener("click", ()=>{
     filtersForm.reset();
+    expensePage = 1;
     loadRecords();
   });
 
-  document.getElementById("btnClearIncome")?.addEventListener("click", () => {
+  document.getElementById("btnClearIncome")?.addEventListener("click", ()=>{
     filtersFormIncome.reset();
+    incomePage = 1;
     loadRecords();
   });
 
   // ===============================
   // CSV EXPORT
   // ===============================
-  btnExportExpenses?.addEventListener("click", async () => {
+  btnExportExpenses?.addEventListener("click", async ()=>{
     const records = await api.records.getAll();
-    exportToCSV(records.filter(r => r.type === "expense"), "expenses");
+    exportToCSV(records.filter(r=>r.type==="expense"), "expenses");
   });
 
-  btnExportIncome?.addEventListener("click", async () => {
+  btnExportIncome?.addEventListener("click", async ()=>{
     const records = await api.records.getAll();
-    exportToCSV(records.filter(r => r.type === "income"), "income");
+    exportToCSV(records.filter(r=>r.type==="income"), "income");
   });
 
-  const exportToCSV = (records, label) => {
-    if (!records.length) {
-      alert("No records to export.");
-      return;
-    }
-    const headers = ["Date", "Type", "Category", "Amount", "Notes"];
-    const rows = [headers.join(",")];
-
-    records.forEach(r => {
-      const date = r.date ? r.date.split("T")[0] : "";
-      const category = (r.category || "").replace(/,/g, ";");
-      const note = (r.note || "").replace(/,/g, ";");
-
-      rows.push([date, r.type, category, r.amount, note].join(","));
+  const exportToCSV = (records,label)=>{
+    if(!records.length){ alert("No records to export."); return; }
+    const headers=["Date","Type","Category","Amount","Notes"];
+    const rows=[headers.join(",")];
+    records.forEach(r=>{
+      const date=r.date?r.date.split("T")[0]:"";
+      const type=r.type||"";
+      const category=(r.category||"").replace(/,/g,";");
+      const amount=r.amount??"";
+      const notes=(r.note||"").replace(/,/g,";");
+      rows.push([date,type,category,amount,notes].join(","));
     });
-
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label}_records_${new Date().toISOString().slice(0, 10)}.csv`;
+    const blob=new Blob([rows.join("\n")],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=`${label}_records_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // ===============================
+  // PAGINATION BUTTONS
+  // ===============================
+
+  document.getElementById("prevPage")?.addEventListener("click", ()=>{
+    if (expensePage > 1) {
+      expensePage--;
+      loadRecords();
+    }
+  });
+
+  document.getElementById("nextPage")?.addEventListener("click", ()=>{
+    expensePage++;
+    loadRecords();
+  });
+
+  document.getElementById("prevPageIncome")?.addEventListener("click", ()=>{
+    if (incomePage > 1) {
+      incomePage--;
+      loadRecords();
+    }
+  });
+
+  document.getElementById("nextPageIncome")?.addEventListener("click", ()=>{
+    incomePage++;
+    loadRecords();
+  });
 
   // ===============================
   // INITIAL LOAD
