@@ -1,5 +1,5 @@
 // scripts/records.js
-// Fully aligned with backend Record model and simplified Records page.
+// Fully aligned with backend Record model & simplified Records page.
 
 import { api } from "./api.js";
 
@@ -17,26 +17,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const expensePageInfo = document.getElementById("pageInfo");
   const incomePageInfo = document.getElementById("pageInfoIncome");
 
-  // Modals + Forms
   const addExpenseModal = document.getElementById("addExpenseModal");
   const addIncomeModal = document.getElementById("addIncomeModal");
   const expenseForm = document.getElementById("expenseForm");
   const incomeForm = document.getElementById("incomeForm");
 
-  // Buttons
   const btnAddExpense = document.getElementById("btnAddExpense");
   const btnAddIncome = document.getElementById("btnAddIncome");
   const cancelExpenseBtn = document.getElementById("cancelExpenseBtn");
   const cancelIncomeBtn = document.getElementById("cancelIncomeBtn");
 
-  // EXPORT BUTTONS
   const btnExportExpenses = document.getElementById("btnExportExpenses");
   const btnExportIncome = document.getElementById("btnExportIncome");
 
+  // DELETE MODAL
+  const deleteModal = document.getElementById("deleteRecordModal");
+  const confirmDeleteRecordBtn = document.getElementById("confirmDeleteRecordBtn");
+  const cancelDeleteRecordBtn = document.getElementById("cancelDeleteRecordBtn");
 
-  // ======================================================
-  // HELPERS
-  // ======================================================
+  let deleteTargetId = null;   // record.id
+  let deleteTargetType = null; // "expense" | "income"
+
+
+  // Helpers
   function showModal(m) { m.classList.remove("hidden"); }
   function hideModal(m) { m.classList.add("hidden"); }
 
@@ -49,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Build row (INCLUDING DELETE BUTTON)
   function createRow(record) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -56,6 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${record.category || "—"}</td>
       <td class="num">${Number(record.amount).toFixed(2)}</td>
       <td>${record.note || "—"}</td>
+      <td>
+        <button class="btn btn--danger btn--sm" data-delete="${record.id}">
+          Delete
+        </button>
+      </td>
     `;
     return tr;
   }
@@ -66,8 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ======================================================
   async function loadRecords() {
     try {
-      expenseTbody.innerHTML = `<tr><td colspan="4" class="subtle">Loading…</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="4" class="subtle">Loading…</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="5" class="subtle">Loading…</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="5" class="subtle">Loading…</td></tr>`;
 
       const records = await api.records.getAll();
 
@@ -79,8 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error(err);
-      expenseTbody.innerHTML = `<tr><td colspan="4" class="subtle">Error loading expenses.</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="4" class="subtle">Error loading income.</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="5" class="subtle">Error loading expenses.</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="5" class="subtle">Error loading income.</td></tr>`;
     }
   }
 
@@ -111,8 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (!minDate || r.date >= minDate) &&
         (!maxDate || r.date <= maxDate);
 
-      const matchAmt =
-        r.amount >= minAmt && r.amount <= maxAmt;
+      const matchAmt = r.amount >= minAmt && r.amount <= maxAmt;
 
       return matchQ && matchCat && matchDate && matchAmt;
     });
@@ -134,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = "";
 
     if (display.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="subtle">No matching records.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="subtle">No matching records.</td></tr>`;
       if (pageInfo) pageInfo.textContent = "0 records";
       return;
     }
@@ -204,6 +212,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // ======================================================
+  // DELETE RECORD HANDLER
+  // ======================================================
+  document.addEventListener("click", e => {
+    const delId = e.target.dataset.delete;
+    if (!delId) return;
+
+    deleteTargetId = delId;
+    showModal(deleteModal);
+  });
+
+  cancelDeleteRecordBtn.addEventListener("click", () => {
+    deleteTargetId = null;
+    hideModal(deleteModal);
+  });
+
+  confirmDeleteRecordBtn.addEventListener("click", async () => {
+    if (!deleteTargetId) return;
+
+    try {
+      await api.records.delete(deleteTargetId);
+      hideModal(deleteModal);
+      deleteTargetId = null;
+      loadRecords();
+    } catch (err) {
+      alert("Failed to delete: " + err.message);
+    }
+  });
+
+
+  // ======================================================
   // FILTER FORMS
   // ======================================================
   filtersForm?.addEventListener("submit", e => {
@@ -228,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // ======================================================
-  // EXPORT EXPENSES ONLY
+  // EXPORT EXPENSES
   // ======================================================
   btnExportExpenses?.addEventListener("click", async () => {
     try {
@@ -246,8 +284,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+
   // ======================================================
-  // EXPORT INCOME ONLY
+  // EXPORT INCOME
   // ======================================================
   btnExportIncome?.addEventListener("click", async () => {
     try {
@@ -267,8 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // ======================================================
-  // CSV EXPORT HELPER
-  // (Matches Home Dashboard export function)
+  // CSV EXPORT
   // ======================================================
   function exportToCSV(records, label) {
     const headers = ["Date", "Type", "Category", "Amount", "Notes"];
@@ -296,9 +334,6 @@ document.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(url);
   }
 
-
-  // ======================================================
-  // INITIAL LOAD
-  // ======================================================
+  // Initial Load
   loadRecords();
 });

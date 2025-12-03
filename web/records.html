@@ -297,7 +297,18 @@
         </form>
       </div>
     </div>
+    <!-- Delete Record Modal -->
+    <div id="deleteRecordModal" class="modal hidden">
+      <div class="modal-content card">
+        <h2>Delete Record</h2>
+        <p>Are you sure you want to delete this transaction? This action cannot be undone.</p>
 
+        <div class="modal-actions">
+          <button class="btn btn--danger" id="confirmDeleteRecordBtn">Delete</button>
+          <button class="btn" id="cancelDeleteRecordBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- Footer -->
