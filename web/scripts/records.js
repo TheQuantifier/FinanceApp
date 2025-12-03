@@ -29,6 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelExpenseBtn = document.getElementById("cancelExpenseBtn");
   const cancelIncomeBtn = document.getElementById("cancelIncomeBtn");
 
+  // EXPORT BUTTONS
+  const btnExportExpenses = document.getElementById("btnExportExpenses");
+  const btnExportIncome = document.getElementById("btnExportIncome");
+
 
   // ======================================================
   // HELPERS
@@ -221,6 +225,76 @@ document.addEventListener("DOMContentLoaded", () => {
     filtersFormIncome.reset();
     loadRecords();
   });
+
+
+  // ======================================================
+  // EXPORT EXPENSES ONLY
+  // ======================================================
+  btnExportExpenses?.addEventListener("click", async () => {
+    try {
+      const records = await api.records.getAll();
+      const expensesOnly = records.filter(r => r.type === "expense");
+
+      if (!expensesOnly.length) {
+        alert("No expenses to export.");
+        return;
+      }
+
+      exportToCSV(expensesOnly, "expenses");
+    } catch (err) {
+      alert("Failed to export expenses: " + err.message);
+    }
+  });
+
+  // ======================================================
+  // EXPORT INCOME ONLY
+  // ======================================================
+  btnExportIncome?.addEventListener("click", async () => {
+    try {
+      const records = await api.records.getAll();
+      const incomeOnly = records.filter(r => r.type === "income");
+
+      if (!incomeOnly.length) {
+        alert("No income records to export.");
+        return;
+      }
+
+      exportToCSV(incomeOnly, "income");
+    } catch (err) {
+      alert("Failed to export income: " + err.message);
+    }
+  });
+
+
+  // ======================================================
+  // CSV EXPORT HELPER
+  // (Matches Home Dashboard export function)
+  // ======================================================
+  function exportToCSV(records, label) {
+    const headers = ["Date", "Type", "Category", "Amount", "Notes"];
+    const rows = [headers.join(",")];
+
+    records.forEach((r) => {
+      const date = r.date ? r.date.split("T")[0] : "";
+      const type = r.type || "";
+      const category = (r.category || "").replace(/,/g, ";");
+      const amount = r.amount ?? "";
+      const notes = (r.note || "").replace(/,/g, ";");
+
+      rows.push([date, type, category, amount, notes].join(","));
+    });
+
+    const csv = rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${label}_records_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
 
 
   // ======================================================
