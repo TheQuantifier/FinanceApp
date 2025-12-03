@@ -17,6 +17,11 @@ body {
   background: #eceff1;
 }
 
+.main--records {
+  padding-top: 100px; /* adjust to match your header height */
+}
+
+
 /* ==============================
    HERO SECTIONS
    ============================== */
