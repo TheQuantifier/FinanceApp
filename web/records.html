@@ -10,6 +10,12 @@
 
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/records.css" />
+
+  <script>
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  </script>
+  
 </head>
 
 <body>

@@ -1,20 +1,41 @@
 /* ===============================================
-   Finance App – default.js
-   Shared script for all pages.
-   Loads header/footer, sets active nav link,
-   manages account dropdown, updates auth state,
-   and renders initials avatar for logged-in users.
-   =============================================== */
+Finance App – default.js
+Shared script for all pages.
+Loads header/footer, sets active nav link,
+manages account dropdown, updates auth state,
+renders initials avatar, and applies global theme.
+=============================================== */
 
 import { api } from "./api.js";
+
+/* ===============================================
+  THEME LOADING — Global (runs on every page)
+  =============================================== */
+
+/**
+* Apply saved theme from localStorage.
+* Defaults to "light" if nothing is saved.
+*/
+export function applySavedTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+}
+
+// Apply theme immediately on script load
+applySavedTheme();
+
+
+/* ===============================================
+  HEADER + FOOTER LOADING
+  =============================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
   loadHeaderAndFooter();
 });
 
 /**
- * Fetch and inject header & footer, then init UI
- */
+* Fetch and inject header & footer, then init UI
+*/
 function loadHeaderAndFooter() {
   // --- Load Header ---
   fetch("components/header.html")
@@ -44,9 +65,11 @@ function loadHeaderAndFooter() {
     .catch((err) => console.error("Footer load failed:", err));
 }
 
-/**
- * Highlights the current page in the navigation menu
- */
+
+/* ===============================================
+  ACTIVE NAV LINK
+  =============================================== */
+
 function setActiveNavLink() {
   const currentPage = window.location.pathname.split("/").pop();
   const navLinks = document.querySelectorAll("#header nav a");
@@ -58,9 +81,11 @@ function setActiveNavLink() {
   });
 }
 
-/**
- * Controls the dropdown menu in the header
- */
+
+/* ===============================================
+  ACCOUNT MENU DROPDOWN
+  =============================================== */
+
 function initAccountMenu() {
   const icon = document.getElementById("account-icon");
   const menu = document.getElementById("account-menu");
@@ -89,9 +114,11 @@ function initAccountMenu() {
   });
 }
 
-/**
- * Converts a full name into initials ("John Hand" → "JH")
- */
+
+/* ===============================================
+  INITIALS HELPER
+  =============================================== */
+
 function getInitials(name) {
   if (!name) return "?";
   const parts = name.trim().split(" ");
@@ -99,10 +126,11 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/**
- * Updates header state based on authentication
- * (shows avatar, username, etc.)
- */
+
+/* ===============================================
+  AUTH STATE IN HEADER
+  =============================================== */
+
 async function updateHeaderAuthState() {
   try {
     const { user } = await api.auth.me();
@@ -137,9 +165,11 @@ async function updateHeaderAuthState() {
   }
 }
 
-/**
- * Handles logout click → backend logout → redirect
- */
+
+/* ===============================================
+  LOGOUT BUTTON
+  =============================================== */
+
 function wireLogoutButton() {
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#logoutBtn");

@@ -7,6 +7,12 @@
     <script>
         window.location.replace("register.html");
     </script>
+
+    <script>
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+    </script>
+    
 </head>
 <body>
     <p>Redirecting… If nothing happens, <a href="register.html">click here</a>.</p>
