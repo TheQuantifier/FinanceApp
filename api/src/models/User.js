@@ -4,9 +4,6 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
-    /* --------------------------------------------------
-       AUTH FIELDS
-    -------------------------------------------------- */
     username: {
       type: String,
       required: true,
@@ -29,9 +26,6 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
     },
 
-    /* --------------------------------------------------
-       PROFILE FIELDS
-    -------------------------------------------------- */
     fullName: {
       type: String,
       required: true,
@@ -66,13 +60,6 @@ const userSchema = new mongoose.Schema(
 );
 
 /* --------------------------------------------------
-   INDEXES (for faster login & uniqueness)
--------------------------------------------------- */
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-
-
-/* --------------------------------------------------
    PASSWORD HASHING
 -------------------------------------------------- */
 userSchema.pre('save', async function (next) {
@@ -87,14 +74,12 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-
 /* --------------------------------------------------
    CHECK PASSWORD
 -------------------------------------------------- */
 userSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
-
 
 /* --------------------------------------------------
    REMOVE PASSWORD WHEN RETURNING JSON
@@ -104,6 +89,5 @@ userSchema.methods.toJSON = function () {
   delete obj.password;
   return obj;
 };
-
 
 module.exports = mongoose.model('User', userSchema);
