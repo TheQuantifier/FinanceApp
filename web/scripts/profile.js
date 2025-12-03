@@ -76,7 +76,7 @@ async function loadUserProfile() {
     stats.twoFA.innerText = user.twoFA ? "Enabled" : "Disabled";
     stats.uploads.innerText = user.recordsUploaded ?? "—";
 
-    // FORM INPUTS
+    // EDIT FORM INPUTS
     input.fullName.value = user.fullName || "";
     input.username.value = user.username || "";
     input.email.value = user.email || "";
@@ -120,14 +120,15 @@ async function saveProfile(e) {
 // -------------------------------
 // COPY PROFILE LINK
 // -------------------------------
-document.getElementById("copyProfileLinkBtn")?.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(location.href);
-    alert("Profile link copied!");
-  } catch {
-    alert("Could not copy link.");
-  }
-});
+document.getElementById("copyProfileLinkBtn")
+  ?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      alert("Profile link copied!");
+    } catch {
+      alert("Could not copy link.");
+    }
+  });
 
 // =====================================================
 //              CHANGE PASSWORD MODAL
@@ -140,20 +141,17 @@ const changePasswordBtn = document.getElementById("changePasswordBtn");
 // OPEN modal
 changePasswordBtn?.addEventListener("click", () => {
   passwordModal.hidden = false;
-  passwordModal.classList.remove("hidden");
 });
 
 // CLOSE modal (Cancel button)
 closePasswordModal?.addEventListener("click", () => {
   passwordModal.hidden = true;
-  passwordModal.classList.add("hidden");
 });
 
 // CLOSE modal (click outside)
 passwordModal?.addEventListener("click", (e) => {
   if (e.target === passwordModal) {
     passwordModal.hidden = true;
-    passwordModal.classList.add("hidden");
   }
 });
 
@@ -178,7 +176,6 @@ passwordForm?.addEventListener("submit", async (e) => {
 
     alert("Password updated successfully!");
     passwordModal.hidden = true;
-    passwordModal.classList.add("hidden");
     passwordForm.reset();
   } catch (err) {
     alert("Password update failed: " + err.message);
@@ -188,21 +185,33 @@ passwordForm?.addEventListener("submit", async (e) => {
 // =====================================================
 //              SIGN OUT ALL SESSIONS
 // =====================================================
-document.getElementById("signOutAllBtn")?.addEventListener("click", async () => {
-  if (!confirm("Sign out all devices?")) return;
+document.getElementById("signOutAllBtn")
+  ?.addEventListener("click", async () => {
+    if (!confirm("Sign out all devices?")) return;
 
-  try {
-    await api.auth.signOutAll();
-    alert("All sessions have been signed out.");
-    window.location.href = "login.html";
-  } catch (err) {
-    alert("Failed to sign out all sessions: " + err.message);
-  }
-});
+    try {
+      await api.auth.signOutAll();
+      alert("All sessions have been signed out.");
+      window.location.href = "login.html";
+    } catch (err) {
+      alert("Failed to sign out all sessions: " + err.message);
+    }
+  });
+
+// =====================================================
+//              RESTORE EDIT PROFILE FUNCTIONALITY
+// =====================================================
+
+// Show form when clicking Edit Profile
+editBtn?.addEventListener("click", showForm);
+
+// Hide form when clicking Cancel
+cancelBtn?.addEventListener("click", hideForm);
+
+// Save Profile
+form?.addEventListener("submit", saveProfile);
 
 // -------------------------------
 // INIT
 // -------------------------------
 document.addEventListener("DOMContentLoaded", loadUserProfile);
-
-// END
