@@ -1,13 +1,11 @@
 // scripts/records.js
-// Fully aligned with backend Record model & simplified Records page.
-
 import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ======================================================
+  // ===============================
   // ELEMENTS
-  // ======================================================
+  // ===============================
   const expenseTbody = document.getElementById("recordsTbody");
   const incomeTbody = document.getElementById("recordsTbodyIncome");
 
@@ -35,13 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmDeleteRecordBtn = document.getElementById("confirmDeleteRecordBtn");
   const cancelDeleteRecordBtn = document.getElementById("cancelDeleteRecordBtn");
 
-  let deleteTargetId = null;   // record.id
-  let deleteTargetType = null; // "expense" | "income"
+  let deleteTargetId = null;
 
-
-  // Helpers
-  function showModal(m) { m.classList.remove("hidden"); }
-  function hideModal(m) { m.classList.add("hidden"); }
+  // ===============================
+  // HELPERS
+  // ===============================
+  function showModal(modal) { modal.classList.remove("hidden"); }
+  function hideModal(modal) { modal.classList.add("hidden"); }
 
   function fmtDate(d) {
     if (!d) return "—";
@@ -52,54 +50,106 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Build row (INCLUDING DELETE BUTTON)
   function createRow(record) {
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
       <td>${fmtDate(record.date)}</td>
+      <td>${record.type}</td>
       <td>${record.category || "—"}</td>
       <td class="num">${Number(record.amount).toFixed(2)}</td>
       <td>${record.note || "—"}</td>
-      <td>
-        <button class="btn btn--danger btn--sm" data-delete="${record.id}">
-          Delete
-        </button>
+      <td class="actions-col">
+        <div class="actions-menu-wrap">
+          <button class="actions-btn" data-menu-btn="true">⋮</button>
+          <div class="actions-dropdown hidden">
+            <button data-edit="${record.id}">Edit Record</button>
+            <button data-delete="${record.id}" style="color:#b91c1c;">Delete Record</button>
+          </div>
+        </div>
       </td>
     `;
     return tr;
   }
 
+  function wireActionMenus() {
+    document.querySelectorAll(".actions-menu-wrap").forEach(wrapper => {
+      const btn = wrapper.querySelector("[data-menu-btn]");
+      const menu = wrapper.querySelector(".actions-dropdown");
 
-  // ======================================================
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        document.querySelectorAll(".actions-dropdown").forEach(m => {
+          if (m !== menu) m.classList.add("hidden");
+        });
+        menu.classList.toggle("hidden");
+      });
+    });
+
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".actions-dropdown").forEach(m => m.classList.add("hidden"));
+    });
+  }
+
+  function wireRowActionEvents() {
+    document.addEventListener("click", async e => {
+      const editId = e.target.dataset.edit;
+      const delId = e.target.dataset.delete;
+
+      if (editId) {
+        const record = await api.records.getById(editId);
+        if (!record) return;
+
+        if (record.type === "expense") {
+          document.getElementById("expenseDate").value = record.date;
+          document.getElementById("expenseAmount").value = record.amount;
+          document.getElementById("expenseCategory").value = record.category;
+          document.getElementById("expenseNotes").value = record.note;
+          addExpenseModal.dataset.editId = record.id;
+          showModal(addExpenseModal);
+        } else {
+          document.getElementById("incomeDate").value = record.date;
+          document.getElementById("incomeAmount").value = record.amount;
+          document.getElementById("incomeCategory").value = record.category;
+          document.getElementById("incomeNotes").value = record.note;
+          addIncomeModal.dataset.editId = record.id;
+          showModal(addIncomeModal);
+        }
+      }
+
+      if (delId) {
+        deleteTargetId = delId;
+        showModal(deleteModal);
+      }
+    });
+  }
+
+  // ===============================
   // LOAD RECORDS
-  // ======================================================
+  // ===============================
   async function loadRecords() {
     try {
-      expenseTbody.innerHTML = `<tr><td colspan="5" class="subtle">Loading…</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="5" class="subtle">Loading…</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
 
       const records = await api.records.getAll();
-
       const expenses = records.filter(r => r.type === "expense");
       const income = records.filter(r => r.type === "income");
 
-      renderTable(expenses, expenseTbody, filtersForm, expensePageInfo);
-      renderTable(income, incomeTbody, filtersFormIncome, incomePageInfo);
+      renderTable(expenses, expenseTbody, filtersForm, "expense");
+      renderTable(income, incomeTbody, filtersFormIncome, "income");
 
     } catch (err) {
       console.error(err);
-      expenseTbody.innerHTML = `<tr><td colspan="5" class="subtle">Error loading expenses.</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="5" class="subtle">Error loading income.</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading expenses.</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Error loading income.</td></tr>`;
     }
   }
 
-
-  // ======================================================
+  // ===============================
   // TABLE RENDERING + FILTERS
-  // ======================================================
-  function renderTable(records, tbody, form, pageInfo) {
-    if (!tbody || !form) return;
-
+  // ===============================
+  function renderTable(records, tbody, form, type) {
     const q = form.querySelector("input[type=search]").value.toLowerCase();
     const category = form.querySelector("select[id^=category]").value;
     const minDate = form.querySelector("input[id^=minDate]").value;
@@ -114,14 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
         !q ||
         (r.category && r.category.toLowerCase().includes(q)) ||
         (r.note && r.note.toLowerCase().includes(q));
-
       const matchCat = !category || r.category === category;
       const matchDate =
         (!minDate || r.date >= minDate) &&
         (!maxDate || r.date <= maxDate);
-
       const matchAmt = r.amount >= minAmt && r.amount <= maxAmt;
-
       return matchQ && matchCat && matchDate && matchAmt;
     });
 
@@ -141,29 +188,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const display = filtered.slice(0, pageSize);
     tbody.innerHTML = "";
 
-    if (display.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="subtle">No matching records.</td></tr>`;
-      if (pageInfo) pageInfo.textContent = "0 records";
+    if (!display.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="subtle">No matching records.</td></tr>`;
       return;
     }
 
     display.forEach(r => tbody.appendChild(createRow(r)));
-
-    if (pageInfo) {
-      pageInfo.textContent = `Showing ${display.length} of ${filtered.length} record(s)`;
-    }
+    wireActionMenus();
   }
 
-
-  // ======================================================
-  // ADD EXPENSE
-  // ======================================================
+  // ===============================
+  // MODALS: ADD/EDIT
+  // ===============================
   btnAddExpense?.addEventListener("click", () => showModal(addExpenseModal));
   cancelExpenseBtn?.addEventListener("click", () => hideModal(addExpenseModal));
 
+  btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
+  cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
+
   expenseForm?.addEventListener("submit", async e => {
     e.preventDefault();
-
+    const editId = addExpenseModal.dataset.editId;
     const payload = {
       type: "expense",
       date: document.getElementById("expenseDate").value,
@@ -171,27 +216,21 @@ document.addEventListener("DOMContentLoaded", () => {
       category: document.getElementById("expenseCategory").value,
       note: document.getElementById("expenseNotes").value,
     };
-
     try {
-      await api.records.create(payload);
+      if (editId) await api.records.update(editId, payload);
+      else await api.records.create(payload);
       hideModal(addExpenseModal);
       expenseForm.reset();
+      delete addExpenseModal.dataset.editId;
       loadRecords();
     } catch (err) {
       alert("Error saving expense: " + err.message);
     }
   });
 
-
-  // ======================================================
-  // ADD INCOME
-  // ======================================================
-  btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
-  cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
-
   incomeForm?.addEventListener("submit", async e => {
     e.preventDefault();
-
+    const editId = addIncomeModal.dataset.editId;
     const payload = {
       type: "income",
       date: document.getElementById("incomeDate").value,
@@ -199,29 +238,21 @@ document.addEventListener("DOMContentLoaded", () => {
       category: document.getElementById("incomeCategory").value,
       note: document.getElementById("incomeNotes").value,
     };
-
     try {
-      await api.records.create(payload);
+      if (editId) await api.records.update(editId, payload);
+      else await api.records.create(payload);
       hideModal(addIncomeModal);
       incomeForm.reset();
+      delete addIncomeModal.dataset.editId;
       loadRecords();
     } catch (err) {
       alert("Error saving income: " + err.message);
     }
   });
 
-
-  // ======================================================
-  // DELETE RECORD HANDLER
-  // ======================================================
-  document.addEventListener("click", e => {
-    const delId = e.target.dataset.delete;
-    if (!delId) return;
-
-    deleteTargetId = delId;
-    showModal(deleteModal);
-  });
-
+  // ===============================
+  // DELETE RECORDS
+  // ===============================
   cancelDeleteRecordBtn.addEventListener("click", () => {
     deleteTargetId = null;
     hideModal(deleteModal);
@@ -229,30 +260,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   confirmDeleteRecordBtn.addEventListener("click", async () => {
     if (!deleteTargetId) return;
-
     try {
       await api.records.delete(deleteTargetId);
-      hideModal(deleteModal);
       deleteTargetId = null;
+      hideModal(deleteModal);
       loadRecords();
     } catch (err) {
       alert("Failed to delete: " + err.message);
     }
   });
 
-
-  // ======================================================
-  // FILTER FORMS
-  // ======================================================
-  filtersForm?.addEventListener("submit", e => {
-    e.preventDefault();
-    loadRecords();
-  });
-
-  filtersFormIncome?.addEventListener("submit", e => {
-    e.preventDefault();
-    loadRecords();
-  });
+  // ===============================
+  // FILTERS
+  // ===============================
+  filtersForm?.addEventListener("submit", e => { e.preventDefault(); loadRecords(); });
+  filtersFormIncome?.addEventListener("submit", e => { e.preventDefault(); loadRecords(); });
 
   document.getElementById("btnClear")?.addEventListener("click", () => {
     filtersForm.reset();
@@ -264,76 +286,46 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRecords();
   });
 
-
-  // ======================================================
-  // EXPORT EXPENSES
-  // ======================================================
-  btnExportExpenses?.addEventListener("click", async () => {
-    try {
-      const records = await api.records.getAll();
-      const expensesOnly = records.filter(r => r.type === "expense");
-
-      if (!expensesOnly.length) {
-        alert("No expenses to export.");
-        return;
-      }
-
-      exportToCSV(expensesOnly, "expenses");
-    } catch (err) {
-      alert("Failed to export expenses: " + err.message);
-    }
-  });
-
-
-  // ======================================================
-  // EXPORT INCOME
-  // ======================================================
-  btnExportIncome?.addEventListener("click", async () => {
-    try {
-      const records = await api.records.getAll();
-      const incomeOnly = records.filter(r => r.type === "income");
-
-      if (!incomeOnly.length) {
-        alert("No income records to export.");
-        return;
-      }
-
-      exportToCSV(incomeOnly, "income");
-    } catch (err) {
-      alert("Failed to export income: " + err.message);
-    }
-  });
-
-
-  // ======================================================
+  // ===============================
   // CSV EXPORT
-  // ======================================================
+  // ===============================
+  btnExportExpenses?.addEventListener("click", async () => {
+    const records = await api.records.getAll();
+    exportToCSV(records.filter(r => r.type === "expense"), "expenses");
+  });
+
+  btnExportIncome?.addEventListener("click", async () => {
+    const records = await api.records.getAll();
+    exportToCSV(records.filter(r => r.type === "income"), "income");
+  });
+
   function exportToCSV(records, label) {
+    if (!records.length) { alert("No records to export."); return; }
+
     const headers = ["Date", "Type", "Category", "Amount", "Notes"];
     const rows = [headers.join(",")];
 
-    records.forEach((r) => {
+    records.forEach(r => {
       const date = r.date ? r.date.split("T")[0] : "";
       const type = r.type || "";
       const category = (r.category || "").replace(/,/g, ";");
       const amount = r.amount ?? "";
       const notes = (r.note || "").replace(/,/g, ";");
-
       rows.push([date, type, category, amount, notes].join(","));
     });
 
-    const csv = rows.join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${label}_records_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${label}_records_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
-
     URL.revokeObjectURL(url);
   }
 
-  // Initial Load
+  // ===============================
+  // INITIAL LOAD
+  // ===============================
+  wireRowActionEvents();
   loadRecords();
 });

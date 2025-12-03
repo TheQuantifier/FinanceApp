@@ -96,7 +96,7 @@ export const records = {
     });
   },
 
-  // ✅ NEW UPDATE METHOD
+  //  NEW UPDATE METHOD
   async update(id, updates) {
     return request(`/records/${id}`, {
       method: "PUT",
