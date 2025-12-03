@@ -1,7 +1,9 @@
-// src/controllers/auth.controller.js
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Record = require('../models/Record');
+const Receipt = require('../models/Receipt');
 const asyncHandler = require('../middleware/async');
+const { deleteFromGridFS } = require('../lib/gridfs');
 const { jwtSecret, jwtExpiresIn } = require('../config/env');
 
 function createToken(id) {
@@ -146,4 +148,90 @@ exports.updateMe = asyncHandler(async (req, res) => {
   });
 
   res.json({ user: updated });
+});
+
+// =====================================================
+// CHANGE PASSWORD
+// =====================================================
+// Body: { currentPassword, newPassword }
+exports.changePassword = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current and new password are required' });
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    return res.status(401).json({ message: 'Current password is incorrect' });
+  }
+
+  user.password = newPassword; // will be hashed by pre('save') hook
+  await user.save();
+
+  // Optional: issue a fresh token after password change
+  const token = createToken(user._id);
+  setTokenCookie(res, token);
+
+  res.json({
+    message: 'Password updated successfully',
+    user,
+  });
+});
+
+// =====================================================
+// DELETE ACCOUNT (CASCADE: Records, Receipts, Files, User)
+// =====================================================
+exports.deleteMe = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  // 1) Fetch receipts so we can delete underlying GridFS files
+  const receipts = await Receipt.find({ user: userId });
+
+  // 2) Delete associated GridFS files (best-effort; log but continue on error)
+  for (const receipt of receipts) {
+    try {
+      if (receipt.storedFileId) {
+        await deleteFromGridFS(receipt.storedFileId);
+      }
+    } catch (err) {
+      console.error(
+        'Error deleting GridFS file for receipt',
+        receipt._id.toString(),
+        err
+      );
+      // Do NOT throw here; we still want to clean up DB and user
+    }
+  }
+
+  // 3) Delete receipts from DB
+  await Receipt.deleteMany({ user: userId });
+
+  // 4) Delete financial records from DB
+  await Record.deleteMany({ user: userId });
+
+  // 5) Delete user account itself
+  await User.findByIdAndDelete(userId);
+
+  // 6) Clear auth cookie (log out)
+  res.cookie('token', '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    expires: new Date(0),
+  });
+
+  res.json({
+    message: 'Account and all associated data have been deleted',
+  });
 });

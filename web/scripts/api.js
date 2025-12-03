@@ -63,7 +63,7 @@ export const auth = {
   },
 
   /**
-   * Update profile — supports updated user schema:
+   * Update profile — supports:
    * username, email, fullName, location,
    * role, phoneNumber, bio
    */
@@ -72,6 +72,29 @@ export const auth = {
       method: "PUT",
       body: JSON.stringify(updates),
     });
+  },
+
+  /**
+   * Change password for logged-in user
+   * Body: { currentPassword, newPassword }
+   */
+  async changePassword(currentPassword, newPassword) {
+    return request("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+
+  /**
+   * Permanently delete the current user
+   * DELETE /auth/me
+   * - Deletes user
+   * - Deletes all records
+   * - Deletes all receipts
+   * - Deletes all GridFS files
+   */
+  async deleteAccount() {
+    return request("/auth/me", { method: "DELETE" });
   },
 };
 

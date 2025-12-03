@@ -1,4 +1,3 @@
-// src/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
 
@@ -24,5 +23,12 @@ router.post('/logout', auth, controller.logout);
 // --------------------------------------------------
 router.get('/me', auth, controller.me);
 router.put('/me', auth, controller.updateMe);
+
+// NEW: Change password for current user
+// Body: { currentPassword, newPassword }
+router.post('/change-password', auth, controller.changePassword);
+
+// NEW: Delete current user account and all related data
+router.delete('/me', auth, controller.deleteMe);
 
 module.exports = router;
