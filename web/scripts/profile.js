@@ -4,21 +4,17 @@ import { api } from "./api.js";
    STUB FUNCTIONS FOR UNIMPLEMENTED AUTH FEATURES
 -------------------------------------------------- */
 if (!api.auth.toggle2FA) {
-  api.auth.toggle2FA = async () => {
-    return {
-      status: false,
-      message: "Two-factor authentication is not implemented yet.",
-    };
-  };
+  api.auth.toggle2FA = async () => ({
+    status: false,
+    message: "Two-factor authentication is not implemented yet.",
+  });
 }
 
 if (!api.auth.signOutAll) {
-  api.auth.signOutAll = async () => {
-    return {
-      status: false,
-      message: "Sign-out-from-all-devices is not implemented yet.",
-    };
-  };
+  api.auth.signOutAll = async () => ({
+    status: false,
+    message: "Sign-out-from-all-devices is not implemented yet.",
+  });
 }
 
 /* ----------------------------------------
@@ -51,12 +47,17 @@ const input = {
   bio: document.getElementById("input_bio"),
 };
 
-// SECURITY STATS (backend does not provide these)
+// SECURITY STATS
 const stats = {
   lastLogin: document.getElementById("stat_lastLogin"),
   twoFA: document.getElementById("stat_2FA"),
   uploads: document.getElementById("stat_uploads"),
 };
+
+// AVATAR ELEMENTS
+const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+const avatarBlock = document.querySelector(".avatar-block .avatar");
+let avatarFile = null;
 
 /* ----------------------------------------
    EDIT PROFILE FORM
@@ -78,7 +79,6 @@ async function loadUserProfile() {
   try {
     const { user } = await api.auth.me();
 
-    // FULLNAME WITH USERNAME FALLBACK
     f.fullName.innerText = user.fullName || user.username || "—";
     f.username.innerText = "@" + (user.username || "—");
     f.email.innerText = user.email || "—";
@@ -90,15 +90,23 @@ async function loadUserProfile() {
       : "—";
     f.bio.innerText = user.bio || "—";
 
-    // SAFE FALLBACKS FOR UNIMPLEMENTED FIELDS
     stats.lastLogin.innerText = "Not available";
     stats.twoFA.innerText = "Not available";
     stats.uploads.innerText = "Not available";
 
-    // Populate form fields
     Object.keys(input).forEach((k) => {
       input[k].value = user[k] || "";
     });
+
+    // Load avatar if exists
+    if (user.avatarUrl) {
+      avatarBlock.style.backgroundImage = `url(${user.avatarUrl})`;
+      avatarBlock.textContent = "";
+    } else {
+      // No avatar uploaded — keep circle blank
+      avatarBlock.style.backgroundImage = "";
+      avatarBlock.textContent = ""; // remove the default "A"
+    }
 
   } catch (err) {
     alert("You must be logged in.");
@@ -111,14 +119,21 @@ async function loadUserProfile() {
 ---------------------------------------- */
 async function saveProfile(e) {
   e.preventDefault();
-
   const updates = {};
   for (const key in input) {
     updates[key] = input[key].value.trim();
   }
 
   try {
+    // Save profile info
     await api.auth.updateProfile(updates);
+
+    // Upload avatar if selected
+    if (avatarFile) {
+      await api.auth.uploadAvatar(avatarFile);
+      avatarFile = null;
+    }
+
     hideForm();
     await loadUserProfile();
     alert("Profile updated successfully!");
@@ -126,6 +141,33 @@ async function saveProfile(e) {
     alert("Update failed: " + err.message);
   }
 }
+
+/* ----------------------------------------
+   CHANGE AVATAR
+---------------------------------------- */
+changeAvatarBtn.addEventListener("click", () => {
+  const inputFile = document.createElement("input");
+  inputFile.type = "file";
+  inputFile.accept = "image/*";
+
+  inputFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Preview avatar
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      avatarBlock.style.backgroundImage = `url(${event.target.result})`;
+      avatarBlock.textContent = "";
+    };
+    reader.readAsDataURL(file);
+
+    // Save for upload when form is submitted
+    avatarFile = file;
+  });
+
+  inputFile.click();
+});
 
 /* ----------------------------------------
    COPY PROFILE LINK
@@ -136,7 +178,7 @@ document.getElementById("copyProfileLinkBtn").addEventListener("click", async ()
 });
 
 /* ----------------------------------------
-   CHANGE PASSWORD — Works with backend
+   CHANGE PASSWORD
 ---------------------------------------- */
 const passwordModal = document.getElementById("passwordModal");
 const passwordForm = document.getElementById("passwordForm");
@@ -151,9 +193,7 @@ closePasswordModal.addEventListener("click", () => {
 });
 
 passwordModal.addEventListener("click", (e) => {
-  if (e.target === passwordModal) {
-    passwordModal.classList.add("hidden");
-  }
+  if (e.target === passwordModal) passwordModal.classList.add("hidden");
 });
 
 passwordForm.addEventListener("submit", async (e) => {
@@ -170,7 +210,6 @@ passwordForm.addEventListener("submit", async (e) => {
 
   try {
     await api.auth.changePassword(currentPassword, newPassword);
-
     alert("Password updated successfully!");
     passwordModal.classList.add("hidden");
     passwordForm.reset();
@@ -197,7 +236,6 @@ document.getElementById("toggle2FA").addEventListener("click", async () => {
 ---------------------------------------- */
 document.getElementById("signOutAllBtn").addEventListener("click", async () => {
   if (!confirm("Sign out all devices?")) return;
-
   try {
     const result = await api.auth.signOutAll();
     alert(result.message);
@@ -205,18 +243,6 @@ document.getElementById("signOutAllBtn").addEventListener("click", async () => {
     alert("Failed to sign out all sessions.");
   }
 });
-
-/* ----------------------------------------
-   LOGOUT
----------------------------------------- */
-const logoutBtn = document.getElementById("logoutFromProfile");
-
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    await api.auth.logout();
-    window.location.href = "login.html";
-  });
-}
 
 /* ----------------------------------------
    INIT
