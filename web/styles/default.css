@@ -527,12 +527,6 @@ textarea:focus {
   color: var(--text);
 }
 
-/* Headers / navbar background */
-:root[data-theme="dark"] header {
-  background: var(--card-bg);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-}
-
 /* Cards */
 :root[data-theme="dark"] .card {
   background: var(--card-bg);
