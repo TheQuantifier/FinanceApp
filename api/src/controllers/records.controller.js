@@ -3,6 +3,15 @@ const Record = require('../models/Record');
 const asyncHandler = require('../middleware/async');
 
 // ==========================================================
+// Helper — Parse YYYY-MM-DD into a LOCAL Date (fix timezone bug)
+// ==========================================================
+function parseDateOnly(dateStr) {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day); // local timezone midnight
+}
+
+// ==========================================================
 // GET /api/records/:id
 // ==========================================================
 exports.getOne = asyncHandler(async (req, res) => {
@@ -44,7 +53,7 @@ exports.create = asyncHandler(async (req, res) => {
     type,
     amount,
     category,
-    date,
+    date: parseDateOnly(date) || new Date(), // timezone-safe fix
     note,
   });
 
@@ -81,7 +90,7 @@ exports.update = asyncHandler(async (req, res) => {
   if (type !== undefined) record.type = type;
   if (amount !== undefined) record.amount = amount;
   if (category !== undefined) record.category = category;
-  if (date !== undefined) record.date = date;
+  if (date !== undefined) record.date = parseDateOnly(date); // timezone-safe fix
   if (note !== undefined) record.note = note;
 
   await record.save();
