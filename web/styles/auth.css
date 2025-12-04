@@ -363,6 +363,130 @@ body.landing-light {
 }
 
 /* =========================================================
+DARK MODE OVERRIDES (Landing, Login, Register ONLY)
+Matches Dashboard Theme
+========================================================= */
+
+:root[data-theme="dark"] .landing-light,
+:root[data-theme="dark"] body.landing-light {
+  background: #0f1115 !important;
+  color: #ffffff !important;
+}
+
+/* ---------- Header ---------- */
+:root[data-theme="dark"] .nf-header {
+  background: #111418 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
+}
+
+:root[data-theme="dark"] .nf-logo {
+  color: #3b82f6 !important; /* Keep your blue accent */
+}
+
+:root[data-theme="dark"] .nf-login {
+  color: #ffffff !important;
+  border-color: #2a2e35 !important;
+  background: #1c1f26 !important;
+}
+:root[data-theme="dark"] .nf-login:hover {
+  background: #3b82f6 !important;
+  color: #fff !important;
+}
+
+/* ---------- Hero Section ---------- */
+:root[data-theme="dark"] .nf-hero {
+  background: #0f1115 !important;
+}
+
+:root[data-theme="dark"] .nf-title {
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .nf-subtitle {
+  color: #cfcfcf !important;
+}
+
+/* ---------- Signup + Inputs ---------- */
+:root[data-theme="dark"] .nf-input {
+  background: #111418 !important;
+  border: 1px solid #2a2e35 !important;
+  color: #ffffff !important;
+}
+:root[data-theme="dark"] .nf-input::placeholder {
+  color: #9a9a9a !important;
+}
+:root[data-theme="dark"] .nf-input:focus {
+  background: #1c1f26 !important;
+  border-color: #3b82f6 !important;
+}
+
+:root[data-theme="dark"] .nf-btn {
+  background: #3b82f6 !important;
+  color: #fff !important;
+}
+
+/* ---------- About Section ---------- */
+:root[data-theme="dark"] .nf-about {
+  background: #111418 !important;
+  border-top: 1px solid #2a2e35 !important;
+}
+
+:root[data-theme="dark"] .nf-about h2 {
+  color: #3b82f6 !important;
+}
+
+:root[data-theme="dark"] .nf-about p {
+  color: #cfcfcf !important;
+}
+
+:root[data-theme="dark"] .nf-about-card {
+  background: #1c1f26 !important;
+  border: 1px solid #2a2e35 !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35) !important;
+}
+
+:root[data-theme="dark"] .nf-about-card h3 {
+  color: #3b82f6 !important;
+}
+
+:root[data-theme="dark"] .nf-about-card p {
+  color: #d5d5d5 !important;
+}
+
+/* ---------- Footer ---------- */
+:root[data-theme="dark"] .nf-footer {
+  background: #111418 !important;
+  color: #d6d6d6 !important;
+  border-top: 1px solid #2a2e35 !important;
+}
+
+:root[data-theme="dark"] .nf-footer-inner p,
+:root[data-theme="dark"] .nf-legal a {
+  color: #c0c0c0 !important;
+}
+
+/* =========================================================
+FIX AUTOFILL (keep dark background + white text)
+========================================================= */
+
+:root[data-theme="dark"] input:-webkit-autofill,
+:root[data-theme="dark"] input:-webkit-autofill:hover,
+:root[data-theme="dark"] input:-webkit-autofill:focus,
+:root[data-theme="dark"] textarea:-webkit-autofill,
+:root[data-theme="dark"] textarea:-webkit-autofill:hover,
+:root[data-theme="dark"] textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+
+  /* Force background to match your input theme */
+  box-shadow: 0 0 0 1000px #111418 inset !important;
+
+  /* Remove the yellow autofill glow */
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+
+/* =========================================================
    RESPONSIVE ADJUSTMENTS
    ========================================================= */
 @media (max-width: 640px) {
