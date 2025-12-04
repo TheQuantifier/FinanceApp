@@ -29,8 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmDeleteRecordBtn = document.getElementById("confirmDeleteRecordBtn");
   const cancelDeleteRecordBtn = document.getElementById("cancelDeleteRecordBtn");
 
-  let deleteTargetId = null;
-
   // Pagination state
   let expensePage = 1;
   let incomePage = 1;
@@ -50,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       : "—";
 
-  // Convert ISO → yyyy-mm-dd for input[type=date]
   const isoToInputDate = (iso) => (iso ? iso.split("T")[0] : "");
 
   const createRow = (record) => {
@@ -83,9 +80,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (menuBtn) {
       e.stopPropagation();
       const menu = menuBtn.nextElementSibling;
+
       document.querySelectorAll(".actions-dropdown").forEach((m) => {
         if (m !== menu) m.classList.add("hidden");
       });
+
       menu.classList.toggle("hidden");
       return;
     }
@@ -93,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Edit
     const editId = e.target.dataset.edit;
     if (editId) {
-      const record = await api.records.getOne(editId); // <- match old API
+      const record = await api.records.getOne(editId);
       if (!record) return;
 
       // Close menus
@@ -121,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Delete
+    // Delete (open modal)
     const delId = e.target.dataset.delete;
     if (delId) {
       // Close menus
@@ -129,8 +128,21 @@ document.addEventListener("DOMContentLoaded", () => {
         m.classList.add("hidden")
       );
 
-      deleteTargetId = delId;
-      showModal(deleteModal);
+      if (deleteModal) {
+        // Store the id on the modal itself
+        deleteModal.dataset.recordId = delId;
+        showModal(deleteModal);
+      } else {
+        // Fallback if modal missing
+        if (confirm("Are you sure you want to delete this record?")) {
+          try {
+            await api.records.remove(delId);
+            loadRecords();
+          } catch (err) {
+            alert("Failed to delete: " + err.message);
+          }
+        }
+      }
       return;
     }
 
@@ -167,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const renderTable = (records, tbody, form) => {
     if (!form) return;
 
-    // Support both search and text inputs, and avoid null.value crash
     const searchInput =
       form.querySelector("input[type=search]") ||
       form.querySelector("input[type=text]");
@@ -313,15 +324,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // DELETE
   // ===============================
   cancelDeleteRecordBtn?.addEventListener("click", () => {
-    deleteTargetId = null;
+    if (deleteModal) {
+      delete deleteModal.dataset.recordId;
+    }
     hideModal(deleteModal);
   });
 
   confirmDeleteRecordBtn?.addEventListener("click", async () => {
-    if (!deleteTargetId) return;
+    if (!deleteModal) return;
+
+    const id = deleteModal.dataset.recordId;
+    if (!id) {
+      hideModal(deleteModal);
+      return;
+    }
+
     try {
-      await api.records.remove(deleteTargetId); // <- match old API (.remove)
-      deleteTargetId = null;
+      await api.records.remove(id);
+      delete deleteModal.dataset.recordId;
       hideModal(deleteModal);
       loadRecords();
     } catch (err) {
