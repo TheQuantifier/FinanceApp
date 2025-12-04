@@ -742,3 +742,26 @@ textarea:focus {
 :root[data-theme="dark"] canvas {
   filter: brightness(0.85);
 }
+/* ============================================
+   LOGIN PAGE — FIELD & BUTTON ALIGNMENT
+   ============================================ */
+
+/* Make the inputs wider */
+.main--login .nf-signup .nf-input {
+  width: 100%;
+  max-width: 320px; /* adjust as preferred */
+}
+
+/* Center the form content */
+.main--login .nf-signup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Center the login button (but keep it narrower than inputs) */
+.main--login .nf-signup .nf-btn {
+  width: 180px; /* narrower than input width */
+  text-align: center;
+  margin-top: 0.75rem;
+}
