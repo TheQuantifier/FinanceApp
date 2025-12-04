@@ -765,3 +765,12 @@ textarea:focus {
   text-align: center;
   margin-top: 0.75rem;
 }
+
+.logo a {
+  text-decoration: none;
+  color: inherit;          /* keeps your existing text color */
+}
+
+.logo a:hover {
+  text-decoration: none;   /* prevents underline on hover */
+}
