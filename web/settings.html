@@ -36,7 +36,7 @@
 
         <div class="settings-row">
           <p>Language</p>
-          <select class="input">
+          <select class="input" id="languageSelect">
             <option>English</option>
             <option>Spanish</option>
             <option>French</option>
@@ -45,7 +45,7 @@
 
       </section>
 
-      <!-- GENERAL SETTINGS -->
+      <!-- FORMATTING -->
       <section class="card">
         <h2>Formatting</h2>
 
@@ -101,7 +101,6 @@
         </div>
       </section>
 
-
       <!-- NOTIFICATIONS -->
       <section class="card">
         <h2>Notifications</h2>
@@ -124,6 +123,13 @@
         <div class="settings-row">
           <p>Delete Account</p>
           <button class="btn btn--danger" id="deleteAccountBtn">Delete</button>
+        </div>
+      </section>
+
+      <!-- SAVE BUTTON -->
+      <section class="card">
+        <div class="settings-row">
+          <button class="btn btn--primary" id="saveSettingsBtn">Save Settings</button>
         </div>
       </section>
 
