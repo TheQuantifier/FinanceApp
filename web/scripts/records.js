@@ -29,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmDeleteRecordBtn = document.getElementById("confirmDeleteRecordBtn");
   const cancelDeleteRecordBtn = document.getElementById("cancelDeleteRecordBtn");
 
-  // Pagination state
   let expensePage = 1;
   let incomePage = 1;
 
@@ -50,10 +49,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Convert ISO -> YYYY-MM-DD for <input type="date">
+  // Convert ISO → YYYY-MM-DD for <input type="date"> WITHOUT timezone shifting
   const isoToInputDate = (iso) => {
     if (!iso) return "";
-    return new Date(iso).toISOString().slice(0, 10);
+    const d = new Date(iso); // Interpret in local timezone
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   const createRow = (record) => {
@@ -81,14 +84,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // EVENT DELEGATION
   // ===============================
   document.addEventListener("click", async (e) => {
-    // 3-dot menu
     const menuBtn = e.target.closest("[data-menu-btn]");
     if (menuBtn) {
       e.stopPropagation();
       const menu = menuBtn.nextElementSibling;
+
       document.querySelectorAll(".actions-dropdown").forEach((m) => {
         if (m !== menu) m.classList.add("hidden");
       });
+
       menu.classList.toggle("hidden");
       return;
     }
@@ -123,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Delete (open modal)
+    // Delete
     const delId = e.target.dataset.delete;
     if (delId) {
       document.querySelectorAll(".actions-dropdown").forEach((m) =>
@@ -168,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===============================
-  // RENDER TABLE (FIXED DATE FILTERS)
+  // RENDER TABLE W/ DATE FILTERS
   // ===============================
   const renderTable = (records, tbody, form) => {
     if (!form) return;
@@ -182,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const minDateStr = form.querySelector("input[id^=minDate]")?.value || "";
     const maxDateStr = form.querySelector("input[id^=maxDate]")?.value || "";
 
-    // Fix: Convert filter date strings to actual Date objects
     const minDate = minDateStr ? new Date(minDateStr) : null;
     const maxDate = maxDateStr ? new Date(maxDateStr) : null;
 
@@ -210,7 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return matchQ && matchCat && matchDate && matchAmt;
     });
 
-    // Fix sorting to compare dates properly
     filtered.sort((a, b) => {
       const da = a.date ? new Date(a.date) : null;
       const db = b.date ? new Date(b.date) : null;
@@ -233,7 +235,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Pagination
     let currentPage, pagerPrev, pagerNext, pagerInfo;
 
     if (tbody.id === "recordsTbody") {
@@ -258,9 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const end = start + pageSize;
     const display = filtered.slice(start, end);
 
-    if (pagerInfo) {
-      pagerInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-    }
+    if (pagerInfo) pagerInfo.textContent = `Page ${currentPage} of ${totalPages}`;
     if (pagerPrev) pagerPrev.disabled = currentPage === 1;
     if (pagerNext) pagerNext.disabled = currentPage === totalPages;
 
@@ -274,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===============================
-  // MODALS: ADD/EDIT
+  // ADD/EDIT FORMS
   // ===============================
   btnAddExpense?.addEventListener("click", () => showModal(addExpenseModal));
   cancelExpenseBtn?.addEventListener("click", () => hideModal(addExpenseModal));
@@ -282,14 +281,13 @@ document.addEventListener("DOMContentLoaded", () => {
   btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
   cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
 
-  // EXPENSE FORM
   expenseForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const editId = addExpenseModal.dataset.editId;
 
     const payload = {
       type: "expense",
-      date: document.getElementById("expenseDate").value, // raw YYYY-MM-DD
+      date: document.getElementById("expenseDate").value,
       amount: parseFloat(document.getElementById("expenseAmount").value),
       category: document.getElementById("expenseCategory").value,
       note: document.getElementById("expenseNotes").value,
@@ -308,14 +306,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // INCOME FORM
   incomeForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const editId = addIncomeModal.dataset.editId;
 
     const payload = {
       type: "income",
-      date: document.getElementById("incomeDate").value, // raw YYYY-MM-DD
+      date: document.getElementById("incomeDate").value,
       amount: parseFloat(document.getElementById("incomeAmount").value),
       category: document.getElementById("incomeCategory").value,
       note: document.getElementById("incomeNotes").value,
@@ -447,8 +444,5 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRecords();
   });
 
-  // ===============================
-  // INITIAL LOAD
-  // ===============================
   loadRecords();
 });

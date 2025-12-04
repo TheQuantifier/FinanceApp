@@ -3,12 +3,16 @@ const Record = require('../models/Record');
 const asyncHandler = require('../middleware/async');
 
 // ==========================================================
-// Helper — Parse YYYY-MM-DD into a LOCAL Date (fix timezone bug)
+// Helper — Parse YYYY-MM-DD into a UTC "noon" Date
+// This prevents timezone shifts from showing the previous day
 // ==========================================================
 function parseDateOnly(dateStr) {
   if (!dateStr) return null;
   const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day); // local timezone midnight
+
+  // Store as 12:00 UTC so any negative timezone (like EST)
+  // still sees the same calendar date.
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
 // ==========================================================
@@ -53,7 +57,7 @@ exports.create = asyncHandler(async (req, res) => {
     type,
     amount,
     category,
-    date: parseDateOnly(date) || new Date(), // timezone-safe fix
+    date: parseDateOnly(date) || new Date(), // stored as noon UTC
     note,
   });
 
@@ -90,7 +94,7 @@ exports.update = asyncHandler(async (req, res) => {
   if (type !== undefined) record.type = type;
   if (amount !== undefined) record.amount = amount;
   if (category !== undefined) record.category = category;
-  if (date !== undefined) record.date = parseDateOnly(date); // timezone-safe fix
+  if (date !== undefined) record.date = parseDateOnly(date);
   if (note !== undefined) record.note = note;
 
   await record.save();
