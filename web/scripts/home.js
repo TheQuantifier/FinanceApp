@@ -75,10 +75,13 @@ import { api } from "./api.js";
       ctx.fillStyle = palette[i % palette.length];
       ctx.fillRect(x, y, barW, h);
 
-      ctx.fillStyle = "#111827";
+      // 🔥 Dynamic color for bar numbers based on theme
+      const isDarkTheme = document.documentElement.getAttribute("data-theme") === "dark";
+      ctx.fillStyle = isDarkTheme ? "#ffffff" : "#111827";
       ctx.font = "12px system-ui";
       ctx.textAlign = "center";
       ctx.fillText(String(v.toFixed(2)), x + barW / 2, y - 6);
+
 
       ctx.fillStyle = "#6b7280";
       ctx.save();
