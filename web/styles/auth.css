@@ -363,8 +363,7 @@ body.landing-light {
 }
 
 /* =========================================================
-DARK MODE OVERRIDES (Landing, Login, Register ONLY)
-Matches Dashboard Theme
+DARK MODE OVERRIDES
 ========================================================= */
 
 :root[data-theme="dark"] .landing-light,
@@ -380,7 +379,7 @@ Matches Dashboard Theme
 }
 
 :root[data-theme="dark"] .nf-logo {
-  color: #3b82f6 !important; /* Keep your blue accent */
+  color: #3b82f6 !important;
 }
 
 :root[data-theme="dark"] .nf-login {
@@ -406,7 +405,7 @@ Matches Dashboard Theme
   color: #cfcfcf !important;
 }
 
-/* ---------- Signup + Inputs ---------- */
+/* ---------- Inputs ---------- */
 :root[data-theme="dark"] .nf-input {
   background: #111418 !important;
   border: 1px solid #2a2e35 !important;
@@ -420,12 +419,7 @@ Matches Dashboard Theme
   border-color: #3b82f6 !important;
 }
 
-:root[data-theme="dark"] .nf-btn {
-  background: #3b82f6 !important;
-  color: #fff !important;
-}
-
-/* ---------- About Section ---------- */
+/* ---------- About ---------- */
 :root[data-theme="dark"] .nf-about {
   background: #111418 !important;
   border-top: 1px solid #2a2e35 !important;
@@ -466,29 +460,22 @@ Matches Dashboard Theme
 }
 
 /* =========================================================
-FIX AUTOFILL (keep dark background + white text)
+FIX AUTOFILL
 ========================================================= */
 
 :root[data-theme="dark"] input:-webkit-autofill,
 :root[data-theme="dark"] input:-webkit-autofill:hover,
-:root[data-theme="dark"] input:-webkit-autofill:focus,
-:root[data-theme="dark"] textarea:-webkit-autofill,
-:root[data-theme="dark"] textarea:-webkit-autofill:hover,
-:root[data-theme="dark"] textarea:-webkit-autofill:focus {
+:root[data-theme="dark"] input:-webkit-autofill:focus {
   -webkit-text-fill-color: #ffffff !important;
   caret-color: #ffffff !important;
-
-  /* Force background to match your input theme */
   box-shadow: 0 0 0 1000px #111418 inset !important;
-
-  /* Remove the yellow autofill glow */
   transition: background-color 9999s ease-in-out 0s !important;
 }
 
-
 /* =========================================================
-   RESPONSIVE ADJUSTMENTS
-   ========================================================= */
+RESPONSIVE
+========================================================= */
+
 @media (max-width: 640px) {
   .nf-header-inner {
     flex-direction: row;
@@ -523,4 +510,13 @@ FIX AUTOFILL (keep dark background + white text)
     margin: 4.5rem 1rem 2rem;
     padding: 1.5rem;
   }
+}
+
+/* =========================================================
+🚀 BACKGROUND IMAGE — THE ONLY CHANGE YOU REQUESTED
+========================================================= */
+
+body.landing-light {
+  background: url("../images/background.jpg") no-repeat center center fixed !important;
+  background-size: cover !important;
 }

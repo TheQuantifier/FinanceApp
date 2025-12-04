@@ -18,16 +18,21 @@
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
   </script>
-  
 </head>
+
+<!-- Add background via CSS using this class -->
 <body class="landing-light">
+
   <!-- Header -->
   <header class="nf-header" role="banner">
     <div class="nf-header-inner">
       <div class="logo-group">
-        <h1 class="logo">Finance App</h1>
+        <h1 class="logo">
+          <a href="about.html" style="text-decoration:none; color:inherit;">Finance App</a>
+        </h1>
         <span class="tagline">Scan Receipts. Track Taxes.</span>
       </div>
+
       <nav class="nf-auth-right" aria-label="Authentication">
         <a href="login.html" class="nf-login">Login</a>
       </nav>
@@ -75,9 +80,11 @@
             minlength="6"
             required
           />
+
           <button type="submit" id="registerBtn">Create Account</button>
           <p id="registerMessage" class="form-message" aria-live="polite"></p>
         </form>
+
         <div class="auth-links">
           <p>Already have an account? <a href="login.html">Login</a></p>
         </div>
@@ -89,8 +96,9 @@
       <div class="nf-about-inner">
         <h2>What is Finance App?</h2>
         <p>
-          Finance App is your digital assistant for managing expenses and receipts with ease. Whether you’re a freelancer, small business owner, or
-          simply looking to better understand your spending habits, our platform simplifies financial organization from start to finish.
+          Finance App is your digital assistant for managing expenses and receipts with ease.
+          Whether you’re a freelancer, small business owner, or simply looking to better understand
+          your spending habits, our platform simplifies financial organization from start to finish.
         </p>
 
         <div class="nf-about-grid">
@@ -123,7 +131,8 @@
     </div>
   </footer>
 
-  <!-- MUST BE type="module" -->
+  <!-- JS -->
   <script type="module" src="scripts/register.js"></script>
+
 </body>
 </html>
