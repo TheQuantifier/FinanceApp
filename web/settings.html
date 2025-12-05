@@ -6,14 +6,14 @@
   <title>Finance App — Settings</title>
 
   <link rel="stylesheet" href="styles/default.css" />
-  <link rel="stylesheet" href="styles/profile.css" />
+  <link rel="stylesheet" href="styles/settings.css" />
 </head>
 
 <body>
 
   <div id="header"></div>
 
-  <main class="main main--profile">
+  <main class="main main--profile settings-container">
 
     <!-- HERO -->
     <section class="profile-hero">
@@ -26,17 +26,17 @@
     <div class="profile-grid">
 
       <!-- GENERAL -->
-      <section class="card">
+      <section class="settings-card">
         <h2>General</h2>
 
         <div class="settings-row">
-          <p>Dark Mode</p>
-          <button class="btn" id="toggleDarkMode">Toggle</button>
+          <label>Dark Mode</label>
+          <button class="settings-save-btn" id="toggleDarkMode">Toggle</button>
         </div>
 
         <div class="settings-row">
-          <p>Language</p>
-          <select class="input" id="languageSelect">
+          <label>Language</label>
+          <select class="settings-input" id="languageSelect">
             <option>English</option>
             <option>Spanish</option>
             <option>French</option>
@@ -46,12 +46,12 @@
       </section>
 
       <!-- FORMATTING -->
-      <section class="card">
+      <section class="settings-card">
         <h2>Formatting</h2>
 
         <div class="settings-row">
-          <p>Time Zone</p>
-          <select class="input" id="timezoneSelect">
+          <label>Time Zone</label>
+          <select class="settings-input" id="timezoneSelect">
             <option value="UTC-12:00">(UTC-12:00) Baker Island</option>
             <option value="UTC-11:00">(UTC-11:00) Niue, Samoa</option>
             <option value="UTC-10:00">(UTC-10:00) Hawaii</option>
@@ -71,8 +71,8 @@
         </div>
 
         <div class="settings-row">
-          <p>Currency Format</p>
-          <select class="input" id="currencySelect">
+          <label>Currency Format</label>
+          <select class="settings-input" id="currencySelect">
             <option value="USD">USD ($)</option>
             <option value="EUR">EUR (€)</option>
             <option value="GBP">GBP (£)</option>
@@ -84,16 +84,16 @@
         </div>
 
         <div class="settings-row">
-          <p>Number Format</p>
-          <select class="input" id="numberFormatSelect">
+          <label>Number Format</label>
+          <select class="settings-input" id="numberFormatSelect">
             <option value="US">1,000.00</option>
             <option value="EU">1.000,00</option>
           </select>
         </div>
 
         <div class="settings-row">
-          <p>Default Dashboard View</p>
-          <select class="input" id="dashboardViewSelect">
+          <label>Default Dashboard View</label>
+          <select class="settings-input" id="dashboardViewSelect">
             <option value="Monthly">Monthly</option>
             <option value="Weekly">Weekly</option>
             <option value="Yearly">Yearly</option>
@@ -102,34 +102,38 @@
       </section>
 
       <!-- NOTIFICATIONS -->
-      <section class="card">
+      <section class="settings-card">
         <h2>Notifications</h2>
 
-        <label class="settings-row">
-          <span>Email Notifications</span>
-          <input type="checkbox" id="notif_email" />
-        </label>
+        <div class="settings-row">
+          <label>
+            Email Notifications
+            <input type="checkbox" id="notif_email" />
+          </label>
+        </div>
 
-        <label class="settings-row">
-          <span>SMS Alerts</span>
-          <input type="checkbox" id="notif_sms" />
-        </label>
+        <div class="settings-row">
+          <label>
+            SMS Alerts
+            <input type="checkbox" id="notif_sms" />
+          </label>
+        </div>
       </section>
 
       <!-- ACCOUNT -->
-      <section class="card">
+      <section class="settings-card">
         <h2>Account</h2>
 
         <div class="settings-row">
-          <p>Delete Account</p>
-          <button class="btn btn--danger" id="deleteAccountBtn">Delete</button>
+          <label>Delete Account</label>
+          <button class="settings-save-btn btn--danger" id="deleteAccountBtn">Delete</button>
         </div>
       </section>
 
       <!-- SAVE BUTTON -->
-      <section class="card">
+      <section class="settings-card">
         <div class="settings-row">
-          <button class="btn btn--primary" id="saveSettingsBtn">Save Settings</button>
+          <button class="settings-save-btn btn--primary" id="saveSettingsBtn">Save Settings</button>
         </div>
       </section>
 
