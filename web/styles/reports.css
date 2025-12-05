@@ -1,5 +1,6 @@
 /* ========== REPORTS PAGE STYLES — page-specific only ========== */
 
+/* ===== SUMMARY CARDS ===== */
 .summary {
   text-align: center;
   margin-bottom: 2rem;
@@ -12,28 +13,36 @@
   gap: 1rem;
 }
 
-/* Uses global .card */
 .card {
   width: 220px;
   text-align: center;
+  background-color: var(--card-bg);
+  color: var(--text);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
+
 .card h3 {
   color: var(--primary);
   margin-bottom: 0.5rem;
 }
+
 .card p {
   font-size: 1.25rem;
   font-weight: bold;
   color: var(--text);
 }
 
-/* Chart sections */
+/* ===== CHART SECTIONS ===== */
 .chart-section {
-  background: #fff;
+  background-color: var(--card-bg);
   border-radius: var(--radius);
   padding: 2rem;
   margin: 2rem 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  color: var(--text);
 }
 
 .chart-section h2 {
@@ -43,7 +52,7 @@
   font-size: 1.3rem;
 }
 
-/* Toggle header for line chart */
+/* ===== TOGGLE HEADER FOR LINE CHART ===== */
 .section-head {
   display: flex;
   align-items: center;
@@ -52,6 +61,7 @@
   flex-wrap: wrap;
   margin-bottom: 0.5rem;
 }
+
 .section-head h2 {
   margin: 0;
 }
@@ -62,19 +72,22 @@
   gap: 0.75rem;
   font-size: 0.95rem;
 }
+
 .toggles label {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   cursor: pointer;
+  color: var(--text);
 }
+
 .toggles input[type="checkbox"] {
   width: 16px;
   height: 16px;
   accent-color: var(--primary);
 }
 
-/* Canvas sizing */
+/* ===== CANVAS SIZING ===== */
 #categoryChart {
   display: block;
   margin: 0 auto;
@@ -82,6 +95,7 @@
   height: 420px;
   max-width: 95%;
 }
+
 #monthlyChart {
   display: block;
   margin: 0 auto;
@@ -90,7 +104,7 @@
   height: 320px;
 }
 
-/* Datalabels plugin styling */
+/* ===== DATLABELS PLUGIN STYLING ===== */
 .chartjs-datalabels {
   font-family: system-ui, sans-serif;
   font-weight: 700 !important;
@@ -99,7 +113,7 @@
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Medium screens */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   #categoryChart {
     width: 360px;
@@ -111,7 +125,6 @@
   }
 }
 
-/* Small screens */
 @media (max-width: 640px) {
   .cards {
     flex-direction: column;
@@ -131,4 +144,22 @@
     justify-content: center;
     text-align: center;
   }
+}
+
+/* ===== DARK MODE OVERRIDES ===== */
+[data-theme="dark"] .card,
+[data-theme="dark"] .chart-section {
+  background-color: var(--card-bg);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+[data-theme="dark"] .toggles label {
+  color: var(--text);
+}
+
+[data-theme="dark"] #categoryChart,
+[data-theme="dark"] #monthlyChart {
+  background-color: transparent;
 }

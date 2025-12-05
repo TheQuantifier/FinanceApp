@@ -1,4 +1,11 @@
-/* ===== HERO (mirror of Records hero) ===== */
+/* ===== GLOBAL ===== */
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+/* ===== HERO ===== */
 .profile-hero {
   display: flex;
   align-items: center;
@@ -6,11 +13,13 @@
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
+
 .profile-hero .title-wrap h1 {
   font-size: 1.8rem;
   line-height: 1.25;
   font-weight: 700;
 }
+
 .profile-hero .actions {
   display: flex;
   gap: 0.6rem;
@@ -27,32 +36,45 @@
 .profile-card,
 .quick-stats,
 .security,
-.activity {
+.activity,
+.modal-content {
   padding: 1.25rem;
+  background-color: var(--card-bg);
+  color: var(--text);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
 }
 
-/* ===== PROFILE SUMMARY (merged with Details) ===== */
+/* ===== PROFILE SUMMARY ===== */
 .profile-card .actions {
   display: flex;
   gap: 0.6rem;
   margin-top: 0.75rem;
 }
+
 .avatar-block {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   margin-bottom: 0.9rem;
 }
+
 .avatar {
   width: 72px;
   height: 72px;
   border-radius: 50%;
   background: linear-gradient(180deg, #dbeafe, #bfdbfe);
   border: 2px solid var(--border);
+  flex-shrink: 0;
 }
+
 .identity .name {
   font-size: 1.15rem;
   font-weight: 700;
+}
+
+.identity .subtle {
+  color: var(--muted);
 }
 
 /* ===== META LIST ===== */
@@ -61,10 +83,12 @@
   grid-template-columns: 1fr;
   gap: 0.5rem;
 }
+
 .meta dt {
   font-size: 0.82rem;
   color: var(--muted);
 }
+
 .meta dd {
   font-weight: 600;
   margin: 0;
@@ -75,6 +99,7 @@
   font-size: 1.1rem;
   margin-bottom: 0.6rem;
 }
+
 .stats-list {
   display: grid;
   gap: 0.6rem;
@@ -82,30 +107,36 @@
   padding: 0;
   margin: 0;
 }
+
 .stats-list .stat-label {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
 .stats-list .stat-value {
   font-weight: 700;
 }
 
-/* ===== EDIT FORM (now inside summary card) ===== */
+/* ===== EDIT FORM ===== */
 .edit-form {
   margin-top: 0.6rem;
 }
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem 1rem;
 }
+
 .form-grid label {
   display: grid;
   gap: 0.35rem;
 }
+
 .form-grid .span-2 {
   grid-column: 1 / -1;
 }
+
 input[type="text"],
 input[type="email"],
 input[type="tel"],
@@ -114,11 +145,14 @@ textarea {
   padding: 0.6rem 0.7rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fff;
+  background-color: var(--card-bg);
+  color: var(--text);
 }
+
 textarea {
   resize: vertical;
 }
+
 .form-actions {
   display: flex;
   gap: 0.6rem;
@@ -131,22 +165,30 @@ textarea {
   font-size: 1.1rem;
   margin-bottom: 0.6rem;
 }
+
 .security-rows {
   display: grid;
   gap: 0.6rem;
 }
+
 .security-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem;
-  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fff;
+  border: 1px solid var(--border);
+  background-color: var(--card-bg);
+  color: var(--text);
 }
+
 .sr-left .label {
   font-weight: 700;
+}
+
+.sr-left .subtle {
+  color: var(--muted);
 }
 
 .sr-right {
@@ -158,6 +200,26 @@ textarea {
 
 .align-right {
   justify-content: flex-end;
+}
+
+.security .btn {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.security .btn.btn--link {
+  background: none;
+  color: var(--primary);
+  padding: 0;
+}
+
+[data-theme="dark"] .security .btn {
+  background-color: var(--accent);
+  color: #fff;
 }
 
 /* ===== MODAL ===== */
@@ -174,18 +236,38 @@ textarea {
 .modal-content {
   width: 100%;
   max-width: 420px;
-  background: #fff;
   padding: 1.5rem;
+  background-color: var(--card-bg);
+  color: var(--text);
 }
-
 
 /* ===== ACTIVITY ===== */
 .activity {
-  grid-column: 1 / -1; /* span full width */
+  grid-column: 1 / -1;
 }
+
 .activity h2 {
   font-size: 1.1rem;
   margin-bottom: 0.6rem;
+}
+
+/* ===== BUTTONS BASE ===== */
+.btn {
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: none;
+  padding: 0.5rem 0.9rem;
+}
+
+.btn--primary {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.btn--link {
+  background: none;
+  color: var(--primary);
+  padding: 0;
 }
 
 /* ===== RESPONSIVE ===== */

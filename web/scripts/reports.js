@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // ======================================================
 async function loadReports() {
   try {
-    // Replace static JSON with live backend call
     const all = await api.records.getAll();
 
     const expenses = all.filter(r => r.type === "expense");
@@ -36,11 +35,10 @@ async function loadReports() {
 // ======================================================
 // SUMMARY FROM RAW RECORDS
 // ======================================================
-
 function computeSummaryFromRaw(expenses, income) {
-  const currency = "USD"; // No currency stored per record yet
+  const currency = "USD";
 
-  // 1) Expense categories & total spending
+  // Expense categories & total spending
   const categories = {};
   let total_spending = 0;
 
@@ -51,29 +49,21 @@ function computeSummaryFromRaw(expenses, income) {
     categories[cat] = (categories[cat] || 0) + amt;
   }
 
-  // 2) Monthly spending average (months that contain expenses)
+  // Monthly spending average (months with expenses)
   const months = new Set(expenses.map(e => yyyymm(e.date)).filter(Boolean));
   const monthCount = Math.max(1, months.size);
   const monthly_average = total_spending / monthCount;
 
-  // 3) Top category
   const topCategory = getTopCategory(categories);
 
-  return {
-    currency,
-    total_spending,
-    monthly_average,
-    categories,
-    topCategory,
-  };
+  return { currency, total_spending, monthly_average, categories, topCategory };
 }
 
 // ======================================================
 // SUMMARY CARDS
 // ======================================================
-
 function updateSummary({ currency, total_spending, monthly_average, topCategory }) {
-  const fmt = (n) => `$${toNumber(n).toFixed(2)} ${currency}`;
+  const fmt = n => `$${toNumber(n).toFixed(2)} ${currency}`;
   const $ = id => document.getElementById(id);
 
   $("total-expenses").textContent = fmt(total_spending);
@@ -84,23 +74,53 @@ function updateSummary({ currency, total_spending, monthly_average, topCategory 
 function getTopCategory(categories) {
   let top = "N/A";
   let max = 0;
-  for (const [category, amount] of Object.entries(categories || {})) {
-    if (amount > max) {
-      max = amount;
-      top = category;
+  for (const [cat, amt] of Object.entries(categories || {})) {
+    if (amt > max) {
+      max = amt;
+      top = cat;
     }
   }
   return top;
 }
 
 // ======================================================
+// CHART COLORS BASED ON THEME
+// ======================================================
+function getChartColors() {
+  const theme = document.documentElement.getAttribute("data-theme") || "light";
+  if (theme === "dark") {
+    return {
+      primary: "#0d6efd",
+      success: "#198754",
+      warning: "#ffc107",
+      danger: "#dc3545",
+      info: "#0dcaf0",
+      muted: "#adb5bd",
+      background: "#212529",
+      text: "#f8f9fa"
+    };
+  }
+  // Light theme defaults
+  return {
+    primary: "#007BFF",
+    success: "#28A745",
+    warning: "#FFC107",
+    danger: "#DC3545",
+    info: "#17A2B8",
+    muted: "#6c757d",
+    background: "#ffffff",
+    text: "#212529"
+  };
+}
+
+// ======================================================
 // CHART 1 — Category Doughnut Chart
 // ======================================================
-
 function renderCategoryChart(categories) {
   const ctx = document.getElementById("categoryChart");
   if (!ctx) return;
 
+  const colors = getChartColors();
   const labels = Object.keys(categories || {});
   const values = Object.values(categories || {});
 
@@ -113,15 +133,15 @@ function renderCategoryChart(categories) {
           label: "Spending by Category",
           data: values,
           backgroundColor: [
-            "#007BFF", "#28A745", "#FFC107", "#DC3545",
-            "#6F42C1", "#17A2B8", "#6610f2", "#6c757d"
+            colors.primary, colors.success, colors.warning, colors.danger,
+            colors.muted, colors.info, "#6610f2", "#6c757d"
           ],
         },
       ],
     },
     options: {
       plugins: {
-        legend: { position: "bottom" },
+        legend: { position: "bottom", labels: { color: colors.text } },
         datalabels: {
           color: "#fff",
           font: { weight: "bold", size: 13 },
@@ -141,15 +161,14 @@ function renderCategoryChart(categories) {
 // ======================================================
 // CHART 2 — Income & Expenses Over Time
 // ======================================================
-
 function renderIncomeExpenseOverTime(expenses, income) {
   const ctx = document.getElementById("monthlyChart");
   if (!ctx) return;
 
+  const colors = getChartColors();
   const expenseByDate = sumByDate(expenses);
   const incomeByDate = sumByDate(income);
 
-  // Combine all dates into a sorted list
   const labels = Array.from(new Set([
     ...Object.keys(expenseByDate),
     ...Object.keys(incomeByDate),
@@ -166,16 +185,16 @@ function renderIncomeExpenseOverTime(expenses, income) {
         {
           label: "Expenses ($)",
           data: expenseData,
-          borderColor: "#DC3545",
-          backgroundColor: "rgba(220, 53, 69, 0.2)",
+          borderColor: colors.danger,
+          backgroundColor: "rgba(220,53,69,0.2)",
           tension: 0.3,
           fill: true,
         },
         {
           label: "Income ($)",
           data: incomeData,
-          borderColor: "#28A745",
-          backgroundColor: "rgba(40, 167, 69, 0.2)",
+          borderColor: colors.success,
+          backgroundColor: "rgba(40,167,69,0.2)",
           tension: 0.3,
           fill: true,
         },
@@ -183,20 +202,24 @@ function renderIncomeExpenseOverTime(expenses, income) {
     },
     options: {
       scales: {
-        y: { beginAtZero: true },
+        y: {
+          beginAtZero: true,
+          ticks: { color: colors.text }
+        },
+        x: { ticks: { color: colors.text } }
       },
       plugins: {
-        legend: { position: "top" },
+        legend: { position: "top", labels: { color: colors.text } },
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: $${toNumber(ctx.parsed.y).toFixed(2)}`
+            label: ctx => `${ctx.dataset.label}: $${toNumber(ctx.parsed.y).toFixed(2)}`
           }
         }
       },
     },
   });
 
-  // Toggle switches
+  // Toggle series visibility
   const expToggle = document.getElementById("toggle-expenses");
   const incToggle = document.getElementById("toggle-income");
 
@@ -220,7 +243,6 @@ function renderIncomeExpenseOverTime(expenses, income) {
 // ======================================================
 // HELPERS
 // ======================================================
-
 function toNumber(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n : 0;

@@ -60,17 +60,38 @@ const avatarBlock = document.querySelector(".avatar-block .avatar");
 let avatarFile = null;
 
 /* ----------------------------------------
-   EDIT PROFILE FORM
+   DARK MODE SUPPORT
 ---------------------------------------- */
-function showForm() {
-  form.hidden = false;
-  editBtn.disabled = true;
+const themeToggleBtn = document.getElementById("toggleDarkMode");
+
+const setTheme = (theme) => {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+};
+
+// Initialize theme
+setTheme(localStorage.getItem("theme") || "light");
+
+// Optional toggle button
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    setTheme(current === "light" ? "dark" : "light");
+  });
 }
 
-function hideForm() {
+/* ----------------------------------------
+   EDIT PROFILE FORM
+---------------------------------------- */
+const showForm = () => {
+  form.hidden = false;
+  editBtn.disabled = true;
+};
+
+const hideForm = () => {
   form.hidden = true;
   editBtn.disabled = false;
-}
+};
 
 /* ----------------------------------------
    LOAD USER PROFILE
@@ -103,11 +124,9 @@ async function loadUserProfile() {
       avatarBlock.style.backgroundImage = `url(${user.avatarUrl})`;
       avatarBlock.textContent = "";
     } else {
-      // No avatar uploaded — keep circle blank
       avatarBlock.style.backgroundImage = "";
-      avatarBlock.textContent = ""; // remove the default "A"
+      avatarBlock.textContent = "";
     }
-
   } catch (err) {
     alert("You must be logged in.");
     window.location.href = "login.html";
@@ -125,10 +144,8 @@ async function saveProfile(e) {
   }
 
   try {
-    // Save profile info
     await api.auth.updateProfile(updates);
 
-    // Upload avatar if selected
     if (avatarFile) {
       await api.auth.uploadAvatar(avatarFile);
       avatarFile = null;
@@ -154,7 +171,6 @@ changeAvatarBtn.addEventListener("click", () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview avatar
     const reader = new FileReader();
     reader.onload = (event) => {
       avatarBlock.style.backgroundImage = `url(${event.target.result})`;
@@ -162,7 +178,6 @@ changeAvatarBtn.addEventListener("click", () => {
     };
     reader.readAsDataURL(file);
 
-    // Save for upload when form is submitted
     avatarFile = file;
   });
 
