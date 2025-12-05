@@ -3,7 +3,8 @@ Finance App – default.js
 Shared script for all pages.
 Loads header/footer, sets active nav link,
 manages account dropdown, updates auth state,
-renders initials avatar, and applies global theme.
+renders initials avatar, applies global theme,
+and manages dashboard view preference.
 =============================================== */
 
 import { api } from "./api.js";
@@ -50,6 +51,7 @@ function loadHeaderAndFooter() {
       initAccountMenu();
       updateHeaderAuthState();
       wireLogoutButton();
+      wireDashboardViewSelector(); // NEW: Wire dashboard view selector
     })
     .catch((err) => console.error("Header load failed:", err));
 
@@ -184,3 +186,34 @@ function wireLogoutButton() {
     }
   });
 }
+
+
+/* ===============================================
+  DASHBOARD VIEW SELECTOR (NEW)
+  =============================================== */
+
+/**
+* If the page has a dashboard view selector, wire it to update localStorage
+* and trigger an optional callback to refresh the home page dynamically.
+*/
+function wireDashboardViewSelector() {
+  const selector = document.getElementById("dashboardViewSelect");
+  if (!selector) return;
+
+  // Load saved setting
+  const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {};
+  selector.value = savedSettings.dashboardView || "Monthly";
+
+  // Listen for changes
+  selector.addEventListener("change", async () => {
+    const newView = selector.value;
+    savedSettings.dashboardView = newView;
+    localStorage.setItem("userSettings", JSON.stringify(savedSettings));
+
+    // Dispatch custom event to notify home.js
+    document.dispatchEvent(new CustomEvent("dashboardViewChanged", {
+      detail: { newView }
+    }));
+  });
+}
+

@@ -1,4 +1,4 @@
-// ========== HOME DASHBOARD LOGIC (now using backend API) ==========
+// ========== HOME DASHBOARD LOGIC (with dynamic dashboard view) ==========
 import { api } from "./api.js";
 
 (() => {
@@ -18,6 +18,34 @@ import { api } from "./api.js";
         month: "short",
         day: "2-digit",
       });
+
+  // ============================================================
+  //  HELPER: FILTER RECORDS BY DASHBOARD VIEW
+  // ============================================================
+  function filterRecordsByView(records, view) {
+    const now = new Date();
+    return records.filter((r) => {
+      if (!r.date) return false;
+      const d = new Date(r.date);
+      switch (view) {
+        case "Weekly": {
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+          startOfWeek.setHours(0, 0, 0, 0);
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(endOfWeek.getDate() + 6);
+          endOfWeek.setHours(23, 59, 59, 999);
+          return d >= startOfWeek && d <= endOfWeek;
+        }
+        case "Monthly":
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        case "Yearly":
+          return d.getFullYear() === now.getFullYear();
+        default:
+          return true;
+      }
+    });
+  }
 
   // ============================================================
   //  SIMPLE BAR CHART
@@ -59,13 +87,7 @@ import { api } from "./api.js";
       (innerW - gap * (values.length + 1)) / Math.max(values.length, 1)
     );
     const palette = [
-      "#0057b8",
-      "#00a3e0",
-      "#1e3a8a",
-      "#0ea5e9",
-      "#2563eb",
-      "#0891b2",
-      "#3b82f6",
+      "#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
     ];
 
     values.forEach((v, i) => {
@@ -75,13 +97,11 @@ import { api } from "./api.js";
       ctx.fillStyle = palette[i % palette.length];
       ctx.fillRect(x, y, barW, h);
 
-      // 🔥 Dynamic color for bar numbers based on theme
       const isDarkTheme = document.documentElement.getAttribute("data-theme") === "dark";
       ctx.fillStyle = isDarkTheme ? "#ffffff" : "#111827";
       ctx.font = "12px system-ui";
       ctx.textAlign = "center";
       ctx.fillText(String(v.toFixed(2)), x + barW / 2, y - 6);
-
 
       ctx.fillStyle = "#6b7280";
       ctx.save();
@@ -99,13 +119,7 @@ import { api } from "./api.js";
     if (!container) return;
     container.innerHTML = "";
     const palette = [
-      "#0057b8",
-      "#00a3e0",
-      "#1e3a8a",
-      "#0ea5e9",
-      "#2563eb",
-      "#0891b2",
-      "#3b82f6",
+      "#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
     ];
     Object.keys(categories || {}).forEach((name, i) => {
       const chip = document.createElement("span");
@@ -126,10 +140,7 @@ import { api } from "./api.js";
       .forEach(([name, amt]) => {
         const li = document.createElement("li");
         const pct = total ? Math.round((amt / total) * 100) : 0;
-        li.innerHTML = `<span>${name}</span><span>${fmtMoney(
-          amt,
-          currency
-        )} (${pct}%)</span>`;
+        li.innerHTML = `<span>${name}</span><span>${fmtMoney(amt, currency)} (${pct}%)</span>`;
         listEl.appendChild(li);
       });
   }
@@ -156,22 +167,19 @@ import { api } from "./api.js";
     const dates = records.map((r) => r.date).filter(Boolean);
     const latestISO = dates.length ? dates.sort().slice(-1)[0] : null;
 
-    return {
-      total_spending,
-      total_income,
-      net_balance,
-      categories,
-      currency,
-      last_updated: latestISO || new Date().toISOString(),
-    };
+    return { total_spending, total_income, net_balance, categories, currency, last_updated: latestISO || new Date().toISOString() };
   }
 
-  function renderKpis(comp) {
+  function renderKpis(comp, viewLabel) {
     $("#kpiIncome").textContent = fmtMoney(comp.total_income, comp.currency);
     $("#kpiSpending").textContent = fmtMoney(comp.total_spending, comp.currency);
     $("#kpiBalance").textContent = fmtMoney(comp.net_balance, comp.currency);
-    $("#lastUpdated").textContent =
-      "Data updated " + new Date(comp.last_updated).toLocaleString();
+
+    $("#kpiPeriodIncome").textContent = viewLabel;
+    $("#kpiPeriodSpending").textContent = viewLabel;
+    $("#kpiPeriodBalance").textContent = viewLabel === "Income − Spending" ? "Income − Spending" : viewLabel;
+
+    $("#lastUpdated").textContent = "Data updated " + new Date(comp.last_updated).toLocaleString();
   }
 
   // ============================================================
@@ -221,7 +229,6 @@ import { api } from "./api.js";
       const category = (r.category || "").replace(/,/g, ";");
       const amount = r.amount ?? "";
       const notes = (r.note || "").replace(/,/g, ";");
-
       rows.push([date, type, category, amount, notes].join(","));
     });
 
@@ -252,12 +259,10 @@ import { api } from "./api.js";
     const form = $("#txnForm");
     const btnCancel = $("#btnCancelModal");
 
-    // Upload Receipt button
     $("#btnUpload")?.addEventListener("click", () => {
       window.location.href = "upload.html";
     });
 
-    // CSV Export
     $("#btnExport")?.addEventListener("click", async () => {
       try {
         const records = await api.records.getAll();
@@ -316,10 +321,20 @@ import { api } from "./api.js";
 
     try {
       const records = await loadFromAPI();
-      const computed = computeOverview(records);
 
-      renderKpis(computed);
-      renderExpensesTable($("#txnTbody"), records, computed.currency);
+      // Load dashboard view from settings
+      const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {};
+      const dashboardView = savedSettings.dashboardView || "Monthly";
+      const viewLabel = dashboardView === "Weekly" ? "This week" :
+                        dashboardView === "Monthly" ? "This month" :
+                        dashboardView === "Yearly" ? "This year" : "This month";
+
+      const filteredRecords = filterRecordsByView(records, dashboardView);
+
+      const computed = computeOverview(filteredRecords);
+
+      renderKpis(computed, viewLabel);
+      renderExpensesTable($("#txnTbody"), filteredRecords, computed.currency);
 
       const canvas = $("#categoriesChart");
       drawBarChart(canvas, computed.categories);
@@ -332,8 +347,7 @@ import { api } from "./api.js";
     } catch (err) {
       console.error(err);
       $("#lastUpdated").textContent = "Could not load data.";
-      $("#txnTbody").innerHTML =
-        `<tr><td colspan="4" class="subtle">Failed to load records.</td></tr>`;
+      $("#txnTbody").innerHTML = `<tr><td colspan="4" class="subtle">Failed to load records.</td></tr>`;
     }
   }
 

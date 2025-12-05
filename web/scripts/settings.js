@@ -63,9 +63,7 @@ if (dateFormatSelect) dateFormatSelect.value = savedSettings.dateFormat;
 if (currencySelect) currencySelect.value = savedSettings.currency;
 if (numberFormatSelect) numberFormatSelect.value = savedSettings.numberFormat;
 
-// If timezoneSelect uses UTC offsets, fallback to closest option
 if (timezoneSelect) timezoneSelect.value = savedSettings.timezone || userDeviceTimezone;
-
 if (dashboardViewSelect) dashboardViewSelect.value = savedSettings.dashboardView;
 if (languageSelect) languageSelect.value = savedSettings.language;
 if (notifEmail) notifEmail.checked = savedSettings.notifEmail;
@@ -82,8 +80,7 @@ saveSettingsBtn.addEventListener("click", () => {
     currency: currencySelect?.value || savedSettings.currency,
     numberFormat: numberFormatSelect?.value || savedSettings.numberFormat,
     timezone: timezoneSelect?.value || userDeviceTimezone,
-    dashboardView:
-      dashboardViewSelect?.value || savedSettings.dashboardView,
+    dashboardView: dashboardViewSelect?.value || savedSettings.dashboardView, // <--- save dashboard view
     language: languageSelect?.value || savedSettings.language,
     notifEmail: notifEmail?.checked || false,
     notifSMS: notifSMS?.checked || false,
@@ -91,6 +88,9 @@ saveSettingsBtn.addEventListener("click", () => {
 
   // Save to localStorage
   localStorage.setItem("userSettings", JSON.stringify(newSettings));
+
+  // Save default dashboard view separately for easy access on home page
+  localStorage.setItem("defaultDashboardView", newSettings.dashboardView);
 
   alert("Settings saved!");
 
