@@ -372,7 +372,6 @@ DARK MODE OVERRIDES
   color: #ffffff !important;
 }
 
-/* ---------- Header ---------- */
 :root[data-theme="dark"] .nf-header {
   background: #111418 !important;
   box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
@@ -392,7 +391,6 @@ DARK MODE OVERRIDES
   color: #fff !important;
 }
 
-/* ---------- Hero Section ---------- */
 :root[data-theme="dark"] .nf-hero {
   background: #0f1115 !important;
 }
@@ -405,7 +403,6 @@ DARK MODE OVERRIDES
   color: #cfcfcf !important;
 }
 
-/* ---------- Inputs ---------- */
 :root[data-theme="dark"] .nf-input {
   background: #111418 !important;
   border: 1px solid #2a2e35 !important;
@@ -419,7 +416,6 @@ DARK MODE OVERRIDES
   border-color: #3b82f6 !important;
 }
 
-/* ---------- About ---------- */
 :root[data-theme="dark"] .nf-about {
   background: #111418 !important;
   border-top: 1px solid #2a2e35 !important;
@@ -447,7 +443,6 @@ DARK MODE OVERRIDES
   color: #d5d5d5 !important;
 }
 
-/* ---------- Footer ---------- */
 :root[data-theme="dark"] .nf-footer {
   background: #111418 !important;
   color: #d6d6d6 !important;
@@ -513,10 +508,17 @@ RESPONSIVE
 }
 
 /* =========================================================
-🚀 BACKGROUND IMAGE — THE ONLY CHANGE YOU REQUESTED
+🚀 BACKGROUND IMAGE — NOW ON BOTH LIGHT & DARK THEMES
 ========================================================= */
 
 body.landing-light {
   background: url("../images/background.jpg") no-repeat center center fixed !important;
   background-size: cover !important;
+}
+
+/* Dark theme uses the same image */
+:root[data-theme="dark"] body.landing-light {
+  background: url("../images/background.jpg") no-repeat center center fixed !important;
+  background-size: cover !important;
+  color: #ffffff !important;
 }
