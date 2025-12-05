@@ -325,7 +325,7 @@ body.landing-light {
   outline: none;
 }
 
-/* BUTTON */
+/* BUTTON — RESTORED ORIGINAL VERSION */
 .auth-form button {
   background: var(--primary);
   color: white;
@@ -342,6 +342,7 @@ body.landing-light {
   background: var(--accent);
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
+
 .auth-form button:active {
   transform: translateY(1px);
 }
@@ -372,6 +373,7 @@ DARK MODE OVERRIDES
   color: #ffffff !important;
 }
 
+/* ---------- Header ---------- */
 :root[data-theme="dark"] .nf-header {
   background: #111418 !important;
   box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
@@ -387,10 +389,11 @@ DARK MODE OVERRIDES
   background: #1c1f26 !important;
 }
 :root[data-theme="dark"] .nf-login:hover {
-  background: #3b82f6 !important;
+  background: #3b82f6 !important; 
   color: #fff !important;
 }
 
+/* ---------- Hero Section ---------- */
 :root[data-theme="dark"] .nf-hero {
   background: #0f1115 !important;
 }
@@ -403,6 +406,7 @@ DARK MODE OVERRIDES
   color: #cfcfcf !important;
 }
 
+/* ---------- Inputs ---------- */
 :root[data-theme="dark"] .nf-input {
   background: #111418 !important;
   border: 1px solid #2a2e35 !important;
@@ -416,6 +420,7 @@ DARK MODE OVERRIDES
   border-color: #3b82f6 !important;
 }
 
+/* ---------- About ---------- */
 :root[data-theme="dark"] .nf-about {
   background: #111418 !important;
   border-top: 1px solid #2a2e35 !important;
@@ -443,6 +448,7 @@ DARK MODE OVERRIDES
   color: #d5d5d5 !important;
 }
 
+/* ---------- Footer ---------- */
 :root[data-theme="dark"] .nf-footer {
   background: #111418 !important;
   color: #d6d6d6 !important;
@@ -508,7 +514,7 @@ RESPONSIVE
 }
 
 /* =========================================================
-🚀 BACKGROUND IMAGE — NOW ON BOTH LIGHT & DARK THEMES
+🚀 BACKGROUND IMAGE (LIGHT + DARK)
 ========================================================= */
 
 body.landing-light {
@@ -516,9 +522,7 @@ body.landing-light {
   background-size: cover !important;
 }
 
-/* Dark theme uses the same image */
 :root[data-theme="dark"] body.landing-light {
   background: url("../images/background.jpg") no-repeat center center fixed !important;
   background-size: cover !important;
-  color: #ffffff !important;
 }
