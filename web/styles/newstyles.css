@@ -1,0 +1,381 @@
+/* =========================================================
+   IMPORT COMPONENT LAYOUT (header + footer)
+========================================================= */
+@import url("components.css");
+
+/* =========================================================
+   GLOBAL DESIGN TOKENS
+========================================================= */
+
+:root {
+  --primary: #0057b8;
+  --accent: #00a3e0;
+
+  --bg: #f8f9fa;
+  --text: #222;
+  --muted: #6b7280;
+
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+
+  --radius: 10px;
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.08);
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+}
+
+
+/* =========================================================
+   RESET + BASE
+========================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding-top: var(--space-6);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--space-2);
+  font-weight: 700;
+}
+
+p { margin: 0 0 var(--space-2); }
+.subtle { color: var(--muted); }
+
+
+/* =========================================================
+   GLOBAL SPACING UTILITIES
+========================================================= */
+
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-5 { margin-top: var(--space-5); }
+
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-5 { margin-bottom: var(--space-5); }
+
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+
+
+/* =========================================================
+   LAYOUT HELPERS
+========================================================= */
+
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.grid { display: grid; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 var(--space-4); }
+
+/* Universal card style */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+}
+
+
+/* =========================================================
+   GLOBAL BUTTONS
+========================================================= */
+
+/* Regular (white) button */
+.regbutton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.55rem 1.1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s;
+}
+.regbutton:hover { background: #f0f0f0; }
+.regbutton:active { transform: translateY(1px); }
+
+/* Accent (primary blue) button */
+.accbutton {
+  padding: 0.55rem 1.1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary);
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
+}
+.accbutton:hover { filter: brightness(0.95); }
+.accbutton:active { transform: translateY(1px); }
+
+/* Invisible link-style button */
+.invbutton {
+  background: transparent;
+  border: none;
+  padding: 0.55rem 0.7rem;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+.invbutton:hover { text-decoration: underline; }
+
+
+/* =========================================================
+   GLOBAL UNIFIED HOVER CLASS
+========================================================= */
+
+.hover-ghost:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .hover-ghost:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+
+/* =========================================================
+   INPUTS + SELECTS
+========================================================= */
+
+.input, input, select, textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,163,224,0.15);
+  outline: none;
+}
+
+
+/* =========================================================
+   DROPDOWNS
+========================================================= */
+
+.dropdown {
+  position: absolute;
+  min-width: 160px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 6px 0;
+  z-index: 1000;
+  display: none;
+}
+
+.dropdown.show { display: flex; flex-direction: column; }
+
+.dropdown-item {
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.dropdown-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.dropdown--right { right: 0; }
+.dropdown--left { left: 0; }
+
+
+/* =========================================================
+   TABLES
+========================================================= */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f3f5;
+  white-space: nowrap;
+}
+
+.table th {
+  text-align: left;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.table tbody tr:hover {
+  background: #fafafa;
+}
+
+.table .num { text-align: right; }
+
+
+/* =========================================================
+   MODALS
+========================================================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(17,24,39,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal.show { display: flex; }
+
+.modal-content {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+
+/* =========================================================
+   DARK MODE — TOKENS
+========================================================= */
+
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --primary: #4ea3ff;
+  --accent: #77c2ff;
+
+  --bg: #1a1c1f;
+  --text: #f1f3f5;
+  --muted: #b0b8c3;
+
+  --card-bg: #25282c;
+  --border: #3a3d42;
+
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+
+/* =========================================================
+   DARK MODE — BUTTONS
+========================================================= */
+
+[data-theme="dark"] .regbutton {
+  background: #2a2d30;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+}
+[data-theme="dark"] .regbutton:hover {
+  background: #323538;
+}
+
+[data-theme="dark"] .accbutton:hover,
+[data-theme="dark"] .accbutton:active {
+  background: #2a2d30 !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+  filter: none !important;
+}
+
+
+/* =========================================================
+   DARK MODE — INPUTS
+========================================================= */
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .input {
+  background: #1f2124;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(119,194,255,0.25);
+}
+
+
+/* =========================================================
+   DARK MODE — DROPDOWNS
+========================================================= */
+
+[data-theme="dark"] .dropdown {
+  background: #2a2d30;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: #fff;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+
+/* =========================================================
+   DARK MODE — TABLES
+========================================================= */
+
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #f1f3f5;
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+  background: rgba(255,255,255,0.04);
+}

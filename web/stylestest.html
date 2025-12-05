@@ -1,0 +1,185 @@
+<!-- stylestest.html: test html page for testing all global styles; DO NOT DELETE! -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UI Component Preview — Light & Dark Side-by-Side</title>
+  <link rel="stylesheet" href="styles/newstyles.css" />
+
+  <style>
+    body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      padding: 0;
+    }
+
+    .panel {
+      padding: 2rem;
+      overflow-y: auto;
+      height: 100vh;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .panel h1 {
+      margin-bottom: 1rem;
+    }
+
+    .panel h2 {
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .panel + .panel {
+      border-left: 1px solid #ddd;
+    }
+
+    [data-theme="dark"] {
+      background: var(--bg) !important;
+      color: var(--text);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Left: Light Theme -->
+  <div class="panel">
+
+    <h1>Light Mode Preview</h1>
+    <p class="subtle">Default light theme components</p>
+
+    <!-- Buttons -->
+    <h2>Buttons</h2>
+    <button class="regbutton">Regular</button>
+    <button class="accbutton">Accent</button>
+    <button class="invbutton">Invisible</button>
+
+    <!-- Inputs -->
+    <h2>Inputs</h2>
+    <input class="input mb-2" type="text" placeholder="Sample input" />
+    <select class="input mb-2">
+      <option>Option 1</option>
+      <option>Option 2</option>
+    </select>
+
+    <!-- Dropdown -->
+    <h2>Dropdown</h2>
+    <div style="position: relative; width: 200px;">
+      <button class="regbutton" onclick="dd1.classList.toggle('show')">Toggle</button>
+      <div id="dd1" class="dropdown dropdown--right">
+        <button class="dropdown-item">Item One</button>
+        <button class="dropdown-item">Item Two</button>
+        <button class="dropdown-item">Logout</button>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <h2>Card</h2>
+    <div class="card">
+      <p>This is a card component.</p>
+    </div>
+
+    <!-- Table -->
+    <h2>Table</h2>
+    <table class="table card">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th class="num">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Example A</td><td class="num">$120</td></tr>
+        <tr><td>Example B</td><td class="num">$340</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Modal -->
+    <h2>Modal</h2>
+    <button class="accbutton" onclick="modal1.classList.add('show')">Open Modal</button>
+    <div id="modal1" class="modal">
+      <div class="modal-content">
+        <h3>Modal Title</h3>
+        <p>This is a demo modal.</p>
+        <div class="modal-actions">
+          <button class="invbutton" onclick="modal1.classList.remove('show')">Cancel</button>
+          <button class="accbutton">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Dark Theme -->
+  <div class="panel" data-theme="dark">
+
+    <h1>Dark Mode Preview</h1>
+    <p class="subtle">Forced dark theme (panel only)</p>
+
+    <!-- Buttons -->
+    <h2>Buttons</h2>
+    <button class="regbutton">Regular</button>
+    <button class="accbutton">Accent</button>
+    <button class="invbutton">Invisible</button>
+
+    <!-- Inputs -->
+    <h2>Inputs</h2>
+    <input class="input mb-2" type="text" placeholder="Sample input" />
+    <select class="input mb-2">
+      <option>Option 1</option>
+      <option>Option 2</option>
+    </select>
+
+    <!-- Dropdown -->
+    <h2>Dropdown</h2>
+    <div style="position: relative; width: 200px;">
+      <button class="regbutton" onclick="dd2.classList.toggle('show')">Toggle</button>
+      <div id="dd2" class="dropdown dropdown--right">
+        <button class="dropdown-item">Item One</button>
+        <button class="dropdown-item">Item Two</button>
+        <button class="dropdown-item">Logout</button>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <h2>Card</h2>
+    <div class="card">
+      <p>This is a card component in dark mode.</p>
+    </div>
+
+    <!-- Table -->
+    <h2>Table</h2>
+    <table class="table card">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th class="num">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Example A</td><td class="num">$120</td></tr>
+        <tr><td>Example B</td><td class="num">$340</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Modal -->
+    <h2>Modal</h2>
+    <button class="accbutton" onclick="modal2.classList.add('show')">Open Modal</button>
+    <div id="modal2" class="modal">
+      <div class="modal-content">
+        <h3>Modal Title</h3>
+        <p>This is a demo modal.</p>
+        <div class="modal-actions">
+          <button class="invbutton" onclick="modal2.classList.remove('show')">Cancel</button>
+          <button class="accbutton">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
