@@ -29,7 +29,7 @@ body.landing-light {
   right: 0;
   width: 100%;
   z-index: 1000;
-  background: #fff;
+  background: #e6f4ff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -221,7 +221,7 @@ body.landing-light {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #fff;
+  background: #e6f4ff;
   color: #555;
   text-align: center;
   border-top: 1px solid #ddd;
