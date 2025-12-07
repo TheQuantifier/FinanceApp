@@ -10,7 +10,42 @@ and manages dashboard view preference.
 import { api } from "./api.js";
 
 /* ===============================================
-  THEME LOADING — Global (runs on every page)
+  DEVELOPMENT AUTH GUARD TOGGLE
+  =============================================== */
+
+// Set to false while developing pages to bypass login requirement
+const AUTH_GUARD_ENABLED = true;
+
+/**
+ * Pages that do NOT require authentication
+ */
+const PUBLIC_PAGES = ["index.html", "login.html", "register.html", ""];
+
+/**
+ * If the page is not public, check login status BEFORE loading anything else.
+ * Redirect to index.html if the user is not authenticated.
+ */
+async function runAuthGuard() {
+  if (!AUTH_GUARD_ENABLED) return;
+
+  const currentPage = window.location.pathname.split("/").pop();
+
+  if (PUBLIC_PAGES.includes(currentPage)) return;
+
+  try {
+    await api.auth.me(); // succeeds if logged in
+  } catch {
+    console.warn("User not authenticated. Redirecting to index.html");
+    window.location.href = "index.html";
+  }
+}
+
+// Run immediately (before DOMContentLoaded)
+runAuthGuard();
+
+
+/* ===============================================
+  THEME LOADING — Global
   =============================================== */
 
 /**
@@ -192,10 +227,6 @@ function wireLogoutButton() {
   DASHBOARD VIEW SELECTOR (NEW)
   =============================================== */
 
-/**
-* If the page has a dashboard view selector, wire it to update localStorage
-* and trigger an optional callback to refresh the home page dynamically.
-*/
 function wireDashboardViewSelector() {
   const selector = document.getElementById("dashboardViewSelect");
   if (!selector) return;
@@ -216,4 +247,3 @@ function wireDashboardViewSelector() {
     }));
   });
 }
-
