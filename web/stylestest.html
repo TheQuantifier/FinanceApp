@@ -4,7 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>UI Component Preview — Light & Dark Side-by-Side</title>
-  <link rel="stylesheet" href="styles/newstyles.css" />
+
+  <!-- Use your new default.css -->
+  <link rel="stylesheet" href="styles/default.css" />
 
   <style>
     body {
@@ -36,9 +38,10 @@
       border-left: 1px solid #ddd;
     }
 
-    [data-theme="dark"] {
+    /* Force dark theme inside second panel only */
+    .panel[data-theme="dark"] {
       background: var(--bg) !important;
-      color: var(--text);
+      color: var(--text) !important;
     }
   </style>
 </head>
@@ -53,14 +56,15 @@
 
     <!-- Buttons -->
     <h2>Buttons</h2>
-    <button class="regbutton">Regular</button>
-    <button class="accbutton">Accent</button>
-    <button class="invbutton">Invisible</button>
+    <button class="regbtn">Regular</button>
+    <button class="accbtn">Accent</button>
+    <button class="invbtn">Invisible</button>
 
     <!-- Inputs -->
     <h2>Inputs</h2>
-    <input class="input mb-2" type="text" placeholder="Sample input" />
-    <select class="input mb-2">
+    <input type="text" placeholder="Sample input" />
+    <br/><br/>
+    <select>
       <option>Option 1</option>
       <option>Option 2</option>
     </select>
@@ -68,23 +72,24 @@
     <!-- Dropdown -->
     <h2>Dropdown</h2>
     <div style="position: relative; width: 200px;">
-      <button class="regbutton" onclick="dd1.classList.toggle('show')">Toggle</button>
-      <div id="dd1" class="dropdown dropdown--right">
-        <button class="dropdown-item">Item One</button>
-        <button class="dropdown-item">Item Two</button>
-        <button class="dropdown-item">Logout</button>
+      <button class="regbtn" onclick="dd1.classList.toggle('show')">Toggle</button>
+
+      <div id="dd1" class="account-menu show" style="position:absolute;">
+        <button class="menu-btn">Item One</button>
+        <button class="menu-btn">Item Two</button>
+        <button class="menu-btn logout">Logout</button>
       </div>
     </div>
 
-    <!-- Cards -->
+    <!-- Card -->
     <h2>Card</h2>
-    <div class="card">
+    <div class="card" style="padding: 1rem;">
       <p>This is a card component.</p>
     </div>
 
     <!-- Table -->
     <h2>Table</h2>
-    <table class="table card">
+    <table class="txn-table card">
       <thead>
         <tr>
           <th>Name</th>
@@ -99,14 +104,15 @@
 
     <!-- Modal -->
     <h2>Modal</h2>
-    <button class="accbutton" onclick="modal1.classList.add('show')">Open Modal</button>
-    <div id="modal1" class="modal">
+    <button class="accbtn" onclick="modal1.classList.add('show')">Open Modal</button>
+
+    <div id="modal1" class="modal" style="display:none;">
       <div class="modal-content">
         <h3>Modal Title</h3>
         <p>This is a demo modal.</p>
-        <div class="modal-actions">
-          <button class="invbutton" onclick="modal1.classList.remove('show')">Cancel</button>
-          <button class="accbutton">Confirm</button>
+        <div style="display:flex; gap:1rem;">
+          <button class="invbtn" onclick="modal1.style.display='none'">Cancel</button>
+          <button class="accbtn">Confirm</button>
         </div>
       </div>
     </div>
@@ -121,14 +127,15 @@
 
     <!-- Buttons -->
     <h2>Buttons</h2>
-    <button class="regbutton">Regular</button>
-    <button class="accbutton">Accent</button>
-    <button class="invbutton">Invisible</button>
+    <button class="regbtn">Regular</button>
+    <button class="accbtn">Accent</button>
+    <button class="invbtn">Invisible</button>
 
     <!-- Inputs -->
     <h2>Inputs</h2>
-    <input class="input mb-2" type="text" placeholder="Sample input" />
-    <select class="input mb-2">
+    <input type="text" placeholder="Sample input" />
+    <br/><br/>
+    <select>
       <option>Option 1</option>
       <option>Option 2</option>
     </select>
@@ -136,23 +143,24 @@
     <!-- Dropdown -->
     <h2>Dropdown</h2>
     <div style="position: relative; width: 200px;">
-      <button class="regbutton" onclick="dd2.classList.toggle('show')">Toggle</button>
-      <div id="dd2" class="dropdown dropdown--right">
-        <button class="dropdown-item">Item One</button>
-        <button class="dropdown-item">Item Two</button>
-        <button class="dropdown-item">Logout</button>
+      <button class="regbtn" onclick="dd2.classList.toggle('show')">Toggle</button>
+
+      <div id="dd2" class="account-menu show" style="position:absolute;">
+        <button class="menu-btn">Item One</button>
+        <button class="menu-btn">Item Two</button>
+        <button class="menu-btn logout">Logout</button>
       </div>
     </div>
 
-    <!-- Cards -->
+    <!-- Card -->
     <h2>Card</h2>
-    <div class="card">
+    <div class="card" style="padding: 1rem;">
       <p>This is a card component in dark mode.</p>
     </div>
 
     <!-- Table -->
     <h2>Table</h2>
-    <table class="table card">
+    <table class="txn-table card">
       <thead>
         <tr>
           <th>Name</th>
@@ -167,14 +175,15 @@
 
     <!-- Modal -->
     <h2>Modal</h2>
-    <button class="accbutton" onclick="modal2.classList.add('show')">Open Modal</button>
-    <div id="modal2" class="modal">
+    <button class="accbtn" onclick="modal2.classList.add('show')">Open Modal</button>
+
+    <div id="modal2" class="modal" style="display:none;">
       <div class="modal-content">
         <h3>Modal Title</h3>
         <p>This is a demo modal.</p>
-        <div class="modal-actions">
-          <button class="invbutton" onclick="modal2.classList.remove('show')">Cancel</button>
-          <button class="accbutton">Confirm</button>
+        <div style="display:flex; gap:1rem;">
+          <button class="invbtn" onclick="modal2.style.display='none'">Cancel</button>
+          <button class="accbtn">Confirm</button>
         </div>
       </div>
     </div>
