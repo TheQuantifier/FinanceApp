@@ -326,7 +326,7 @@ textarea,
   padding: 0.55rem 0.7rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: var(--reg-accent);;
+  background: var(--reg-accent);
   transition: border-color 0.15s, box-shadow 0.15s;
   font-size: var(--space-4);
 }
@@ -419,6 +419,7 @@ textarea:focus,
    ========================================================= */
 
 :root[data-theme="dark"] {
+  
   --primary: #4ea3ff;
   --primary-accent: #66c7ff;
 
@@ -432,6 +433,7 @@ textarea:focus,
 
   --good: #1dbf68;
   --bad: #ff6b6b;
+
 }
 
 :root[data-theme="dark"] body {
