@@ -8,7 +8,9 @@ import { api } from "./api.js";
   const ACCEPTED = ["application/pdf", "image/png", "image/jpeg"];
   const MAX_MB = 50;
 
+  // ----------------------------------------
   // DOM elements
+  // ----------------------------------------
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   const fileList = document.getElementById("fileList");
@@ -31,7 +33,7 @@ import { api } from "./api.js";
   const setStatus = (msg, isError = false) => {
     if (!statusMsg) return;
     statusMsg.textContent = msg;
-    statusMsg.classList.toggle("error", !!isError);
+    statusMsg.classList.toggle("error", isError);
   };
 
   const bytesToSize = (bytes = 0) => {
@@ -57,7 +59,6 @@ import { api } from "./api.js";
   // ----------------------------------------
   // Recent Uploads Table
   // ----------------------------------------
-
   const trashIcon = `<img src="images/trash.png" alt="Delete" class="icon-trash" />`;
   const downloadIcon = `<img src="images/download.png" alt="Download" class="icon-trash" />`;
 
@@ -72,25 +73,25 @@ import { api } from "./api.js";
 
     for (const r of rows) {
       const id = r._id;
+      const filename = r.originalFilename || "receipt.pdf";
       const created = r.createdAt
         ? new Date(r.createdAt).toLocaleString()
         : "—";
-      const filename = r.originalFilename || "receipt";
+
+      const parsed = r.parsedData || {};
+      const hasAI = Object.keys(parsed).length > 0;
 
       const tr = document.createElement("tr");
       tr.dataset.id = id;
 
       tr.innerHTML = `
         <td>${filename}</td>
-        
-        <!-- ⭐ CORRECT FIELD (was r.mimetype) -->
         <td>${r.fileType || "—"}</td>
-
-        <!-- ⭐ CORRECT FIELD (was r.sizeBytes) -->
         <td class="num">${bytesToSize(r.fileSize || 0)}</td>
 
         <td>${created}</td>
-        <td>${r.ocrText ? "parsed" : "raw"}</td>
+
+        <td>${hasAI ? "parsed" : "raw"}</td>
 
         <td class="num actions-col">
           <button class="icon-btn js-download" data-id="${id}" data-filename="${filename}">
@@ -109,8 +110,8 @@ import { api } from "./api.js";
 
   async function refreshRecent() {
     try {
-      const rows = await api.receipts.getAll();
-      renderRecentRows(rows || []);
+      const receipts = await api.receipts.getAll();
+      renderRecentRows(receipts || []);
     } catch (err) {
       console.error("Failed to refresh uploads:", err);
       recentTableBody.innerHTML =
@@ -125,7 +126,7 @@ import { api } from "./api.js";
     const downloadBtn = e.target.closest(".js-download");
     const deleteBtn = e.target.closest(".js-delete");
 
-    // ========= DOWNLOAD =========
+    // DOWNLOAD
     if (downloadBtn) {
       const id = downloadBtn.dataset.id;
       const filename = downloadBtn.dataset.filename || "receipt";
@@ -133,28 +134,46 @@ import { api } from "./api.js";
       try {
         setStatus("Downloading...");
         await api.receipts.downloadToFile(id, filename);
-        setStatus("Download complete.");
+        setStatus("Download complete");
       } catch (err) {
-        console.error("Download error:", err);
+        console.error(err);
         setStatus(`Download failed: ${err.message}`, true);
       }
       return;
     }
 
-    // ========= DELETE =========
+    // DELETE RECEIPT
     if (deleteBtn) {
       const id = deleteBtn.dataset.id;
       if (!id) return;
 
-      if (!confirm("Delete this receipt?")) return;
+      // STEP 1 — Confirm deleting the receipt
+      const confirmReceipt = confirm("Delete this receipt?");
+      if (!confirmReceipt) return;
+
+      // STEP 2 — Ask about deleting the associated record
+      const confirmRecord = confirm(
+        "This receipt may have a linked record.\n\nDelete the record as well?"
+      );
+
+      // User chooses YES → deleteRecord = true
+      // User chooses NO  → deleteRecord = false
+      const deleteRecord = confirmRecord;
 
       try {
         deleteBtn.disabled = true;
-        await api.receipts.remove(id);
-        setStatus("Receipt deleted.");
+
+        await api.receipts.remove(id, deleteRecord);
+
+        setStatus(
+          deleteRecord
+            ? "Receipt and linked record deleted."
+            : "Receipt deleted (record retained)."
+        );
+
         await refreshRecent();
       } catch (err) {
-        console.error("Delete error:", err);
+        console.error(err);
         setStatus(`Delete failed: ${err.message}`, true);
         deleteBtn.disabled = false;
       }
@@ -162,12 +181,11 @@ import { api } from "./api.js";
   });
 
   // ----------------------------------------
-  // Queue Rendering + Local List
+  // Queue Rendering
   // ----------------------------------------
   function renderQueue() {
     fileList.innerHTML = "";
-    const hasItems = queue.length > 0;
-    uploadBtn.disabled = !hasItems;
+    uploadBtn.disabled = queue.length === 0;
 
     queue.forEach((file, idx) => {
       const item = document.createElement("div");
@@ -177,7 +195,7 @@ import { api } from "./api.js";
       const thumb = document.createElement("div");
       thumb.className = "file-thumb";
 
-      if ((file.type || "").startsWith("image/")) {
+      if (file.type.startsWith("image/")) {
         const img = document.createElement("img");
         img.alt = "";
         img.style.width = "100%";
@@ -187,6 +205,7 @@ import { api } from "./api.js";
         const reader = new FileReader();
         reader.onload = (e) => (img.src = e.target.result);
         reader.readAsDataURL(file);
+
         thumb.appendChild(img);
       } else {
         thumb.textContent = extFromName(file.name) || "FILE";
@@ -200,7 +219,7 @@ import { api } from "./api.js";
         <div class="file-subtle">${file.type || "Unknown"} • ${bytesToSize(file.size)}</div>
       `;
 
-      // Remove from queue
+      // Remove
       const removeBtn = document.createElement("button");
       removeBtn.className = "file-remove";
       removeBtn.textContent = "✕";
@@ -221,15 +240,18 @@ import { api } from "./api.js";
     });
   }
 
+  // ----------------------------------------
+  // File Intake
+  // ----------------------------------------
   function addFiles(files) {
     const incoming = Array.from(files || []);
     const accepted = [];
     let rejected = 0;
 
-    incoming.forEach((f) => {
+    for (const f of incoming) {
       if (!isAccepted(f) || overLimit(f)) rejected++;
       else accepted.push(f);
-    });
+    }
 
     if (accepted.length) {
       queue = queue.concat(accepted);
@@ -246,7 +268,7 @@ import { api } from "./api.js";
   }
 
   // ----------------------------------------
-  // File Picker + Dropzone
+  // File Picker & Drag-Drop
   // ----------------------------------------
   function openPickerOnce() {
     if (!fileInput || pickerArmed) return;
@@ -305,6 +327,7 @@ import { api } from "./api.js";
     queue = [];
     fileInput.value = "";
     renderQueue();
+
     setStatus("Cleared selection.");
   });
 
@@ -321,6 +344,7 @@ import { api } from "./api.js";
 
       try {
         await api.receipts.upload(file);
+
         setStatus(`Uploaded: ${file.name}`);
         queue.shift();
         renderQueue();

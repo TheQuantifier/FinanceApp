@@ -29,27 +29,89 @@ const receiptSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // Raw OCR text from the OCR worker
+    // Raw OCR text from Google's OCR pipeline
     ocrText: {
       type: String,
       default: "",
     },
 
-    // Gemini-extracted structured data:
-    // {
-    //   vendor: "...",
-    //   date: "YYYY-MM-DD",
-    //   total: 12.34,
-    //   tax: 0.98,
-    //   items: [{ name, price }],
-    //   paymentMethod: "Visa ****1234"
-    // }
+    // -------------------------------
+    // NEW — Final structured fields
+    // -------------------------------
+
+    // Date of purchase (from receipt)
+    date: {
+      type: Date,
+      default: null,
+    },
+
+    // Auto filled date when added to system
+    dateAdded: {
+      type: Date,
+      default: () => new Date(),
+    },
+
+    // Store, venue, location, vendor name
+    source: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    // Amount before tax
+    subAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Total after tax
+    amount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Tax amount
+    taxAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Payment method
+    payMethod: {
+      type: String,
+      enum: [
+        "Cash",
+        "Check",
+        "Credit Card",
+        "Debit Card",
+        "Gift Card",
+        "Multiple",
+        "Other",
+      ],
+      default: "Other",
+    },
+
+    // Itemized list: [{ name, price }]
+    items: {
+      type: [
+        {
+          name: { type: String, trim: true },
+          price: { type: Number, min: 0 },
+        },
+      ],
+      default: [],
+    },
+
+    // Raw gemini output (useful for debugging)
     parsedData: {
       type: Object,
       default: {},
     },
 
-    // The auto-created financial record linked to this receipt
+    // Auto-linked Record ID
     linkedRecordId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Record",

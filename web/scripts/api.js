@@ -78,21 +78,12 @@ export const auth = {
     return request("/auth/me", { method: "DELETE" });
   },
 
-  // --------------------------------------
-  // STAND-IN FEATURES (NOT IMPLEMENTED)
-  // --------------------------------------
   async toggle2FA() {
-    return {
-      status: false,
-      message: "Two-Factor Authentication is not implemented yet.",
-    };
+    return { status: false, message: "Two-Factor Authentication is not implemented yet." };
   },
 
   async signOutAll() {
-    return {
-      status: false,
-      message: "Sign-out-from-all-devices is not implemented yet.",
-    };
+    return { status: false, message: "Sign-out-from-all-devices is not implemented yet." };
   },
 };
 
@@ -183,8 +174,21 @@ export const receipts = {
     URL.revokeObjectURL(url);
   },
 
-  async remove(id) {
-    return request(`/receipts/${id}`, { method: "DELETE" });
+  /**
+   * DELETE receipt
+   * deleteRecord options:
+   *   true  → delete linked record also
+   *   false → keep record, unlink
+   *   undefined → safe default: keep record, unlink
+   */
+  async remove(id, deleteRecord) {
+    // If deleteRecord is undefined, omit the query param entirely
+    const query =
+      deleteRecord === undefined
+        ? ""
+        : `?deleteRecord=${deleteRecord}`;
+
+    return request(`/receipts/${id}${query}`, { method: "DELETE" });
   },
 };
 
@@ -195,7 +199,42 @@ function getUploadType(record) {
   return record?.linkedReceiptId ? "Receipt" : "Manual";
 }
 
+function getPayMethodLabel(method) {
+  const map = {
+    Cash: "Cash",
+    Check: "Check",
+    "Credit Card": "Credit Card",
+    "Debit Card": "Debit Card",
+    "Gift Card": "Gift Card",
+    Multiple: "Multiple Methods",
+    Other: "Other / Unknown",
+  };
+  return map[method] || "Unknown";
+}
+
+function getReceiptSummary(receipt) {
+  const p = receipt?.parsedData || {};
+
+  return {
+    date: p.date || "",
+    dateAdded: receipt.createdAt || "",
+    source: p.source || receipt.originalFilename,
+    subAmount: Number(p.subAmount || 0),
+    amount: Number(p.amount || 0),
+    taxAmount: Number(p.taxAmount || 0),
+    payMethod: getPayMethodLabel(p.payMethod),
+    items: Array.isArray(p.items) ? p.items : [],
+  };
+}
+
 // --------------------------------------
 // EXPORTED API OBJECT
 // --------------------------------------
-export const api = { auth, records, receipts, getUploadType };
+export const api = {
+  auth,
+  records,
+  receipts,
+  getUploadType,
+  getReceiptSummary,
+  getPayMethodLabel,
+};

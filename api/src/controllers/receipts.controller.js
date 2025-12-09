@@ -28,7 +28,7 @@ exports.upload = asyncHandler(async (req, res) => {
   const buffer = req.file.buffer;
 
   // ---------------------------------------
-  // 1. Save raw uploaded file to GridFS
+  // 1. Save raw file → GridFS
   // ---------------------------------------
   const fileId = await uploadBufferToGridFS(
     req.file.originalname,
@@ -65,7 +65,7 @@ exports.upload = asyncHandler(async (req, res) => {
   console.log("🧠 Gemini Parsed Result:", parsed || "(none)");
 
   // ---------------------------------------
-  // 4. Save receipt record in DB
+  // 4. Save receipt metadata
   // ---------------------------------------
   const receipt = await Receipt.create({
     user: req.user.id,
@@ -74,22 +74,21 @@ exports.upload = asyncHandler(async (req, res) => {
     fileType: req.file.mimetype,
     fileSize: req.file.size,
     ocrText,
-    parsedData: parsed || {}, // always an object
+    parsedData: parsed || {},
   });
 
   // ---------------------------------------
-  // 5. Auto-create Record from Gemini results
+  // 5. Auto-create Record from parsed receipt
   // ---------------------------------------
   let linkedRecord = null;
 
   if (parsed && parsed.total && parsed.total > 0) {
     console.log("🧾 Creating auto-record from parsed receipt...");
 
-    // Try AI date → fallback to today
     const recordDate =
       parseDateOnly(parsed.date) ||
       (() => {
-        console.log("⚠️ Invalid or missing AI date — using current date.");
+        console.log("⚠️ Invalid or missing AI date — using today.");
         return new Date();
       })();
 
@@ -108,7 +107,7 @@ exports.upload = asyncHandler(async (req, res) => {
     receipt.linkedRecordId = linkedRecord._id;
     await receipt.save();
   } else {
-    console.log("ℹ️ Gemini did not provide a usable total — skipping auto-record.");
+    console.log("ℹ️ No usable total — skipping auto-record.");
   }
 
   res.status(201).json({
@@ -170,9 +169,11 @@ exports.download = asyncHandler(async (req, res) => {
 
 
 // ==========================================================
-// DELETE RECEIPT + FILE
+// DELETE RECEIPT (+ optional record delete or unlink)
 // ==========================================================
 exports.remove = asyncHandler(async (req, res) => {
+  const deleteRecord = req.query.deleteRecord === "true";
+
   const receipt = await Receipt.findOne({
     _id: req.params.id,
     user: req.user.id,
@@ -182,11 +183,40 @@ exports.remove = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Receipt not found" });
   }
 
-  // Delete physical file
+  const linkedRecordId = receipt.linkedRecordId;
+
+  // -------------------------------------------------------
+  // 1. Delete GridFS file
+  // -------------------------------------------------------
   await deleteFromGridFS(receipt.storedFileId);
 
-  // Delete metadata
+  // -------------------------------------------------------
+  // 2. Delete the receipt itself
+  // -------------------------------------------------------
   await Receipt.deleteOne({ _id: receipt._id });
 
-  res.json({ message: "Receipt deleted successfully" });
+  // -------------------------------------------------------
+  // 3. Handle linked record logic
+  // -------------------------------------------------------
+  if (linkedRecordId) {
+    if (deleteRecord) {
+      // Delete record entirely
+      await Record.deleteOne({
+        _id: linkedRecordId,
+        user: req.user._id,
+      });
+
+    } else {
+      // Keep record, but unlink receipt from it
+      await Record.updateOne(
+        { _id: linkedRecordId },
+        { $set: { linkedReceiptId: null } }
+      );
+    }
+  }
+
+  res.json({
+    message: "Receipt deleted",
+    recordDeleted: deleteRecord,
+  });
 });
