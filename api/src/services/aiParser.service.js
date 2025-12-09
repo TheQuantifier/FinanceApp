@@ -1,12 +1,11 @@
 // src/services/aiParser.service.js
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 
 const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 
-// Enable Gemini if env says so
+// Enable Gemini provider
 const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
 
-// System prompt for parsing receipts
 const PARSE_PROMPT = `
 You are a financial receipt extraction system.
 
@@ -14,11 +13,11 @@ Extract the following fields from the text:
 - vendor (string)
 - date (YYYY-MM-DD)
 - total amount (number)
-- tax amount (number if present)
+- tax amount (number)
 - items array: [{ "name": string, "price": number }]
-- payment method (string if detected)
+- paymentMethod (string, optional)
 
-Return **JSON ONLY** and nothing else:
+Return JSON ONLY:
 {
   "vendor": "",
   "date": "",
@@ -30,82 +29,55 @@ Return **JSON ONLY** and nothing else:
 `;
 
 exports.parseReceiptText = async function (ocrText) {
-  if (!ocrText || ocrText.trim().length < 5) {
-    console.warn("Gemini Parser: OCR text too short, skipping.");
-    return null;
-  }
+  if (!ocrText || ocrText.trim().length < 5) return null;
 
-  // Truncate long OCR input
+  // Truncate overly long OCR
   let text = ocrText;
   if (text.length > MAX_CHARS) {
-    console.warn(`Gemini Parser: OCR truncated ${text.length} → ${MAX_CHARS}`);
+    console.warn(`Gemini: OCR truncated ${text.length} -> ${MAX_CHARS}`);
     text = text.slice(0, MAX_CHARS);
   }
 
-  // ==================================================
-  // GEMINI PARSING PIPELINE
-  // ==================================================
+  // =====================================================
+  // GEMINI (NEW SDK): @google/genai
+  // =====================================================
   if (USE_GEMINI) {
     try {
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const ai = new GoogleGenAI({}); // auto-picks GEMINI_API_KEY
 
-      // IMPORTANT: Use the correct stable model name
       const modelName =
-        process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
+        process.env.GEMINI_MODEL || "gemini-2.5-flash"; // recommended default
 
-      console.log(`🤖 Using Gemini model: ${modelName}`);
+      console.log("🤖 Using Gemini model:", modelName);
 
-      const model = genAI.getGenerativeModel({
+      const response = await ai.models.generateContent({
         model: modelName,
-        generationConfig: {
-          temperature: 0,
-        },
+        contents: [
+          { role: "system", text: PARSE_PROMPT },
+          { role: "user", text }
+        ],
       });
 
-      console.log("🧠 Sending OCR text to Gemini...");
+      const raw = response.text || "";
 
-      const result = await model.generateContent([
-        { text: PARSE_PROMPT },
-        { text },
-      ]);
-
-      const raw = result.response.text() || "";
-
-      // Extract JSON only
+      // Extract JSON content only
       const start = raw.indexOf("{");
       const end = raw.lastIndexOf("}");
-
       if (start === -1 || end === -1) {
-        console.warn("Gemini Parser: No JSON found in AI response.");
+        console.warn("Gemini returned no JSON.");
         return null;
       }
 
       const jsonString = raw.slice(start, end + 1);
 
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonString);
-      } catch (err) {
-        console.error("❌ JSON parsing failed:", err);
-        console.log("Raw returned text:", raw);
-        return null;
-      }
-
-      console.log("🧠 Gemini Parsed Result:", parsed);
-      return parsed;
+      return JSON.parse(jsonString);
     }
 
     catch (err) {
-      if (err?.message?.includes("quota")) {
-        console.warn("⚠️ Gemini quota exceeded — skipping parsing.");
-        return null;
-      }
-
-      console.error("Gemini Parsing Error:", err);
+      console.error("Gemini Parsing Error:", err.message || err);
       return null;
     }
   }
 
-  // No providers active
   return null;
 };
