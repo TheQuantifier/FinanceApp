@@ -1,6 +1,6 @@
 // scripts/upload.js
 // FinanceApp — Receipt Uploads, Downloads, and Deletion
-// Fully aligned with your updated backend & API module
+// Fully aligned with backend logic & optional deleteRecord parameter
 
 import { api } from "./api.js";
 
@@ -84,21 +84,25 @@ import { api } from "./api.js";
       const tr = document.createElement("tr");
       tr.dataset.id = id;
 
+      // ADDING linkedRecordId to row dataset
+      tr.dataset.linkedRecordId = r.linkedRecordId || "";
+
       tr.innerHTML = `
         <td>${filename}</td>
         <td>${r.fileType || "—"}</td>
         <td class="num">${bytesToSize(r.fileSize || 0)}</td>
-
         <td>${created}</td>
-
         <td>${hasAI ? "parsed" : "raw"}</td>
 
         <td class="num actions-col">
-          <button class="icon-btn js-download" data-id="${id}" data-filename="${filename}">
+          <button class="icon-btn js-download"
+                  data-id="${id}"
+                  data-filename="${filename}">
             ${downloadIcon}
           </button>
 
-          <button class="icon-btn js-delete" data-id="${id}">
+          <button class="icon-btn js-delete"
+                  data-id="${id}">
             ${trashIcon}
           </button>
         </td>
@@ -147,18 +151,21 @@ import { api } from "./api.js";
       const id = deleteBtn.dataset.id;
       if (!id) return;
 
+      const row = deleteBtn.closest("tr");
+      const linkedRecordId = row?.dataset?.linkedRecordId || "";
+
       // STEP 1 — Confirm deleting the receipt
       const confirmReceipt = confirm("Delete this receipt?");
       if (!confirmReceipt) return;
 
-      // STEP 2 — Ask about deleting the associated record
-      const confirmRecord = confirm(
-        "This receipt may have a linked record.\n\nDelete the record as well?"
-      );
+      let deleteRecord = false;
 
-      // User chooses YES → deleteRecord = true
-      // User chooses NO  → deleteRecord = false
-      const deleteRecord = confirmRecord;
+      // STEP 2 — Ask about record *only if a linked record exists*
+      if (linkedRecordId) {
+        deleteRecord = confirm(
+          "This receipt has a linked financial record.\n\nDelete the record as well?"
+        );
+      }
 
       try {
         deleteBtn.disabled = true;
@@ -166,9 +173,11 @@ import { api } from "./api.js";
         await api.receipts.remove(id, deleteRecord);
 
         setStatus(
-          deleteRecord
-            ? "Receipt and linked record deleted."
-            : "Receipt deleted (record retained)."
+          linkedRecordId
+            ? (deleteRecord
+                ? "Receipt and linked record deleted."
+                : "Receipt deleted (record retained).")
+            : "Receipt deleted."
         );
 
         await refreshRecent();
@@ -191,7 +200,6 @@ import { api } from "./api.js";
       const item = document.createElement("div");
       item.className = "file-item";
 
-      // Thumbnail
       const thumb = document.createElement("div");
       thumb.className = "file-thumb";
 
@@ -211,15 +219,15 @@ import { api } from "./api.js";
         thumb.textContent = extFromName(file.name) || "FILE";
       }
 
-      // Metadata
       const meta = document.createElement("div");
       meta.className = "file-meta";
       meta.innerHTML = `
         <div class="file-name">${file.name}</div>
-        <div class="file-subtle">${file.type || "Unknown"} • ${bytesToSize(file.size)}</div>
+        <div class="file-subtle">${file.type || "Unknown"} • ${bytesToSize(
+        file.size
+      )}</div>
       `;
 
-      // Remove
       const removeBtn = document.createElement("button");
       removeBtn.className = "file-remove";
       removeBtn.textContent = "✕";
