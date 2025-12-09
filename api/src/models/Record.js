@@ -38,6 +38,12 @@ const recordSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    linkedReceiptId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Receipt",
+      default: null,
+    },
   },
   { timestamps: true }
 );

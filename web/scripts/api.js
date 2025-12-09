@@ -38,7 +38,6 @@ async function request(path, options = {}) {
 // AUTH MODULE
 // --------------------------------------
 export const auth = {
-  // Registration — corrected to pass fullName
   async register(email, password, fullName) {
     return request("/auth/register", {
       method: "POST",
@@ -46,7 +45,6 @@ export const auth = {
     });
   },
 
-  // Login uses "identifier"
   async login(identifier, password) {
     return request("/auth/login", {
       method: "POST",
@@ -192,6 +190,16 @@ export const receipts = {
 };
 
 // --------------------------------------
+// HELPERS
+// --------------------------------------
+
+// Determines whether a record was auto-created from a receipt
+// or manually entered by the user.
+function getUploadType(record) {
+  return record?.linkedReceiptId ? "Receipt" : "Manual";
+}
+
+// --------------------------------------
 // EXPORTED API OBJECT
 // --------------------------------------
-export const api = { auth, records, receipts };
+export const api = { auth, records, receipts, getUploadType };

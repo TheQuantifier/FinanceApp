@@ -19,13 +19,11 @@ const receiptSchema = new mongoose.Schema(
       required: true,
     },
 
-    // NEW: file MIME type, e.g. "application/pdf", "image/png"
     fileType: {
       type: String,
       default: "",
     },
 
-    // NEW: size of original uploaded file in bytes
     fileSize: {
       type: Number,
       default: 0,
@@ -34,6 +32,19 @@ const receiptSchema = new mongoose.Schema(
     ocrText: {
       type: String,
       default: '',
+    },
+
+    // NEW — AI parsed results (vendor, date, total, items)
+    parsedData: {
+      type: Object,
+      default: {},
+    },
+
+    // NEW — auto-created Record linked to this receipt
+    linkedRecordId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Record',
+      default: null,
     },
   },
   { timestamps: true }

@@ -67,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${record.category || "—"}</td>
       <td class="num">${Number(record.amount).toFixed(2)}</td>
       <td>${record.note || "—"}</td>
+      <td>${api.getUploadType(record)}</td>
       <td class="actions-col">
         <div class="actions-menu-wrap">
           <button class="actions-btn" data-menu-btn="true">⋮</button>
@@ -157,8 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   async function loadRecords() {
     try {
-      expenseTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
-      incomeTbody.innerHTML = `<tr><td colspan="6" class="subtle">Loading…</td></tr>`;
+      expenseTbody.innerHTML = `<tr><td colspan="7" class="subtle">Loading…</td></tr>`;
+      incomeTbody.innerHTML = `<tr><td colspan="7" class="subtle">Loading…</td></tr>`;
 
       const records = await api.records.getAll();
       const expenses = records.filter((r) => r.type === "expense");
@@ -265,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tbody.innerHTML = "";
     if (!display.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="subtle">No matching records.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="subtle">No matching records.</td></tr>`;
       return;
     }
 

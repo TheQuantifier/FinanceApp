@@ -1,6 +1,10 @@
 // src/controllers/receipts.controller.js
 const Receipt = require('../models/Receipt');
 const asyncHandler = require('../middleware/async');
+const { parseReceiptText } = require('../services/aiParser.service');
+const Record = require('../models/Record');
+const { parseDateOnly } = require('./records.controller'); // import helper
+
 
 const {
   uploadBufferToGridFS,
@@ -21,14 +25,14 @@ exports.upload = asyncHandler(async (req, res) => {
 
   const buffer = req.file.buffer;
 
-  // 1. Upload to GridFS
+  // 1. Upload raw file → GridFS
   const fileId = await uploadBufferToGridFS(
     req.file.originalname,
     buffer,
     req.file.mimetype
   );
 
-  // 2. OCR
+  // 2. OCR → text extraction
   let ocrText = '';
   try {
     const result = await runOcrBuffer(buffer);
@@ -37,18 +41,43 @@ exports.upload = asyncHandler(async (req, res) => {
     console.error('OCR failed:', err);
   }
 
-  // 3. Store metadata
+  // 3. AI Parsing
+  const parsed = await parseReceiptText(ocrText);
+
+  // 4. Save receipt
   const receipt = await Receipt.create({
     user: req.user.id,
     originalFilename: req.file.originalname,
     storedFileId: fileId,
-    fileType: req.file.mimetype,   // ex: "application/pdf"
-    fileSize: req.file.size,       // ex: 84211 bytes
-
+    fileType: req.file.mimetype,
+    fileSize: req.file.size,
     ocrText,
+    parsedData: parsed || {}
   });
 
-  res.status(201).json(receipt);
+  // 5. Auto-create Record if AI found a total + date
+  let linkedRecord = null;
+
+  if (parsed && parsed.total && parsed.total > 0) {
+    linkedRecord = await Record.create({
+      user: req.user.id,
+      type: "expense",
+      amount: parsed.total,
+      category: "Uncategorized",
+      date: parseDateOnly(parsed.date) || new Date(),
+      note: parsed.vendor || "Receipt",
+      linkedReceiptId: receipt._id
+    });
+
+    // Update receipt to store link
+    receipt.linkedRecordId = linkedRecord._id;
+    await receipt.save();
+  }
+
+  res.status(201).json({
+    receipt,
+    autoRecord: linkedRecord
+  });
 });
 
 // ==========================================================
