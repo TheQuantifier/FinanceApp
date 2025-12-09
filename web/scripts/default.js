@@ -14,7 +14,7 @@ import { api } from "./api.js";
   =============================================== */
 
 // Set to false while developing pages to bypass login requirement
-const AUTH_GUARD_ENABLED = false;
+const AUTH_GUARD_ENABLED = true;
 
 /**
  * Pages that do NOT require authentication
