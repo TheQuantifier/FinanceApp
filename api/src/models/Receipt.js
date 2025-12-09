@@ -1,12 +1,12 @@
-// src/models/Receipt.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const receiptSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
+      index: true,
     },
 
     originalFilename: {
@@ -29,25 +29,34 @@ const receiptSchema = new mongoose.Schema(
       default: 0,
     },
 
+    // Raw OCR text from the OCR worker
     ocrText: {
       type: String,
-      default: '',
+      default: "",
     },
 
-    // NEW — AI parsed results (vendor, date, total, items)
+    // Gemini-extracted structured data:
+    // {
+    //   vendor: "...",
+    //   date: "YYYY-MM-DD",
+    //   total: 12.34,
+    //   tax: 0.98,
+    //   items: [{ name, price }],
+    //   paymentMethod: "Visa ****1234"
+    // }
     parsedData: {
       type: Object,
       default: {},
     },
 
-    // NEW — auto-created Record linked to this receipt
+    // The auto-created financial record linked to this receipt
     linkedRecordId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Record',
+      ref: "Record",
       default: null,
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Receipt', receiptSchema);
+module.exports = mongoose.model("Receipt", receiptSchema);

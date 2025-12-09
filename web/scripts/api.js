@@ -15,7 +15,7 @@ async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...(options.headers || {})
     },
     ...options,
@@ -81,7 +81,6 @@ export const auth = {
   // --------------------------------------
   // STAND-IN FEATURES (NOT IMPLEMENTED)
   // --------------------------------------
-
   async toggle2FA() {
     return {
       status: false,
@@ -192,9 +191,6 @@ export const receipts = {
 // --------------------------------------
 // HELPERS
 // --------------------------------------
-
-// Determines whether a record was auto-created from a receipt
-// or manually entered by the user.
 function getUploadType(record) {
   return record?.linkedReceiptId ? "Receipt" : "Manual";
 }

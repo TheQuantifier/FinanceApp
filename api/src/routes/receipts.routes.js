@@ -1,34 +1,47 @@
 // src/routes/receipts.routes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const controller = require('../controllers/receipts.controller');
-const auth = require('../middleware/auth');
-const upload = require('../lib/multer');
+const controller = require("../controllers/receipts.controller");
+const auth = require("../middleware/auth");
+const upload = require("../lib/multer");
 
-// --------------------------------------------------
-// Upload a receipt (GridFS + OCR)
-// --------------------------------------------------
-router.post('/upload', auth, upload.single('file'), controller.upload);
+/*
+|--------------------------------------------------------------------------
+| Receipt Upload (GridFS → OCR → AI Parsing)
+|--------------------------------------------------------------------------
+| Upload a single file under form field name "file"
+| This matches: formData.append("file", file)
+*/
+router.post("/upload", auth, upload.single("file"), controller.upload);
 
-// --------------------------------------------------
-// Get all receipts for the logged-in user
-// --------------------------------------------------
-router.get('/', auth, controller.getAll);
+/*
+|--------------------------------------------------------------------------
+| GET All Receipts for Authenticated User
+|--------------------------------------------------------------------------
+*/
+router.get("/", auth, controller.getAll);
 
-// --------------------------------------------------
-// Get a single receipt by ID
-// --------------------------------------------------
-router.get('/:id', auth, controller.getOne);
+/*
+|--------------------------------------------------------------------------
+| IMPORTANT: Download Route BEFORE :id Route
+|--------------------------------------------------------------------------
+| Otherwise "/:id" would catch "/:id/download" and treat "download" as the ID.
+*/
+router.get("/:id/download", auth, controller.download);
 
-// --------------------------------------------------
-// Download the raw file from GridFS
-// --------------------------------------------------
-router.get('/:id/download', auth, controller.download);
+/*
+|--------------------------------------------------------------------------
+| GET Single Receipt by ID
+|--------------------------------------------------------------------------
+*/
+router.get("/:id", auth, controller.getOne);
 
-// --------------------------------------------------
-// Delete receipt + associated GridFS file
-// --------------------------------------------------
-router.delete('/:id', auth, controller.remove);
+/*
+|--------------------------------------------------------------------------
+| DELETE Receipt + GridFS File
+|--------------------------------------------------------------------------
+*/
+router.delete("/:id", auth, controller.remove);
 
 module.exports = router;
