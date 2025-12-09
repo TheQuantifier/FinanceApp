@@ -3,9 +3,10 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 
-// Use Gemini only (you can add providers later if needed)
+// Enable Gemini if env says so
 const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
 
+// System prompt for parsing receipts
 const PARSE_PROMPT = `
 You are a financial receipt extraction system.
 
@@ -29,54 +30,74 @@ Return **JSON ONLY** and nothing else:
 `;
 
 exports.parseReceiptText = async function (ocrText) {
-  if (!ocrText || ocrText.trim().length < 5) return null;
+  if (!ocrText || ocrText.trim().length < 5) {
+    console.warn("Gemini Parser: OCR text too short, skipping.");
+    return null;
+  }
 
-  // Truncate if text is too long
+  // Truncate long OCR input
   let text = ocrText;
   if (text.length > MAX_CHARS) {
-    console.warn(`Gemini: OCR truncated from ${text.length} -> ${MAX_CHARS}`);
+    console.warn(`Gemini Parser: OCR truncated ${text.length} → ${MAX_CHARS}`);
     text = text.slice(0, MAX_CHARS);
   }
 
-  // ============================================
-  // GEMINI 1.5 FLASH PARSER
-  // ============================================
+  // ==================================================
+  // GEMINI PARSING PIPELINE
+  // ==================================================
   if (USE_GEMINI) {
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-      const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+      // IMPORTANT: Use the correct stable model name
+      const modelName =
+        process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
+
+      console.log(`🤖 Using Gemini model: ${modelName}`);
 
       const model = genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
           temperature: 0,
-        }
+        },
       });
+
+      console.log("🧠 Sending OCR text to Gemini...");
 
       const result = await model.generateContent([
         { text: PARSE_PROMPT },
-        { text }
+        { text },
       ]);
 
       const raw = result.response.text() || "";
 
-      // Extract only JSON between outermost {}
+      // Extract JSON only
       const start = raw.indexOf("{");
       const end = raw.lastIndexOf("}");
+
       if (start === -1 || end === -1) {
-        console.warn("Gemini returned no JSON.");
+        console.warn("Gemini Parser: No JSON found in AI response.");
         return null;
       }
 
-      const json = raw.slice(start, end + 1);
+      const jsonString = raw.slice(start, end + 1);
 
-      return JSON.parse(json);
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonString);
+      } catch (err) {
+        console.error("❌ JSON parsing failed:", err);
+        console.log("Raw returned text:", raw);
+        return null;
+      }
+
+      console.log("🧠 Gemini Parsed Result:", parsed);
+      return parsed;
     }
 
     catch (err) {
       if (err?.message?.includes("quota")) {
-        console.warn("Gemini quota exceeded — skipping AI parsing.");
+        console.warn("⚠️ Gemini quota exceeded — skipping parsing.");
         return null;
       }
 
@@ -85,5 +106,6 @@ exports.parseReceiptText = async function (ocrText) {
     }
   }
 
+  // No providers active
   return null;
 };
