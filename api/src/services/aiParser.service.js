@@ -5,7 +5,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000"); // fallback
+const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 
 const PARSE_PROMPT = `
 You are a financial receipt extraction system.
@@ -29,17 +29,23 @@ Return JSON ONLY:
 }
 `;
 
-exports.parseReceiptText = async function(ocrText) {
+exports.parseReceiptText = async function (ocrText) {
   if (!ocrText || ocrText.trim().length < 5) {
+    console.log("⚠️ AI Parser: OCR text empty or too short. Skipping AI.");
     return null;
   }
 
-  // 🔥 TRUNCATION SAFETY STEP
+  // Safety truncation
   let textToSend = ocrText;
   if (ocrText.length > MAX_CHARS) {
-    console.warn(`AI Parser: OCR text truncated from ${ocrText.length} → ${MAX_CHARS} characters.`);
+    console.warn(
+      `⚠️ AI Parser: OCR text truncated from ${ocrText.length} → ${MAX_CHARS}`
+    );
     textToSend = ocrText.substring(0, MAX_CHARS);
   }
+
+  console.log("🤖 Sending OCR text to OpenAI...");
+  console.log("📝 Preview:", textToSend.slice(0, 300));
 
   try {
     const response = await client.chat.completions.create({
@@ -47,27 +53,40 @@ exports.parseReceiptText = async function(ocrText) {
       temperature: 0,
       messages: [
         { role: "system", content: PARSE_PROMPT },
-        { role: "user", content: textToSend }
-      ]
+        { role: "user", content: textToSend },
+      ],
     });
 
-    const raw = response.choices?.[0]?.message?.content || "{}";
+    const raw = response.choices?.[0]?.message?.content || "";
+    console.log("🤖 AI Raw Response:", raw);
 
-    // Safe JSON extraction
-    const jsonStart = raw.indexOf("{");
-    const jsonEnd = raw.lastIndexOf("}");
-    if (jsonStart === -1 || jsonEnd === -1) return null;
-
-    return JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
-  }
-
-  catch (err) {
-    if (err?.error?.type === "insufficient_quota") {
-      console.warn("AI quota exceeded — skipping parsing.");
+    // Extract JSON safely
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start === -1 || end === -1) {
+      console.warn("⚠️ AI Parsing: No JSON detected in AI response.");
       return null;
     }
 
-    console.error("AI Parsing Error:", err);
+    const jsonString = raw.substring(start, end + 1);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (jsonErr) {
+      console.warn("⚠️ AI Parsing: Failed to parse JSON.", jsonErr);
+      return null;
+    }
+
+    console.log("✅ AI Parsed JSON:", parsed);
+    return parsed;
+  } catch (err) {
+    if (err?.error?.type === "insufficient_quota") {
+      console.warn("❌ AI quota exceeded — skipping parsing.");
+      return null;
+    }
+
+    console.error("❌ AI Parsing Error:", err);
     return null;
   }
 };
