@@ -1,7 +1,7 @@
 {
   "name": "financeapp-api",
   "version": "1.0.0",
-  "description": "Backend API for FinanceApp (Render + MongoDB + OCR worker)",
+  "description": "Backend API for FinanceApp (Render + MongoDB + OCR + Gemini AI Parser)",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
