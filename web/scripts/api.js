@@ -16,7 +16,7 @@ async function request(path, options = {}) {
     credentials: "include",
     headers: {
       ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {})
+      ...(options.headers || {}),
     },
     ...options,
   });
@@ -113,8 +113,20 @@ export const records = {
     return request(`/records/${id}`);
   },
 
-  async remove(id) {
-    return request(`/records/${id}`, { method: "DELETE" });
+  /**
+   * DELETE record
+   * deleteReceipt:
+   *   true  → delete linked receipt also
+   *   false → keep receipt, unlink
+   *   undefined → omit param (safe default)
+   */
+  async remove(id, deleteReceipt) {
+    const query =
+      deleteReceipt === undefined
+        ? ""
+        : `?deleteReceipt=${deleteReceipt}`;
+
+    return request(`/records/${id}${query}`, { method: "DELETE" });
   },
 };
 
@@ -176,13 +188,12 @@ export const receipts = {
 
   /**
    * DELETE receipt
-   * deleteRecord options:
+   * deleteRecord:
    *   true  → delete linked record also
    *   false → keep record, unlink
-   *   undefined → safe default: keep record, unlink
+   *   undefined → omit param (safe default)
    */
   async remove(id, deleteRecord) {
-    // If deleteRecord is undefined, omit the query param entirely
     const query =
       deleteRecord === undefined
         ? ""

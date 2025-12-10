@@ -13,10 +13,9 @@ const {
 
 const { runOcrBuffer } = require("../services/ocr.service");
 
-
 /* ============================================================
    POST /api/receipts/upload
-   Upload → OCR → Gemini parsing → Save receipt → Auto-record
+   Upload → OCR → AI parsing → Save receipt → Auto-record
    ============================================================ */
 exports.upload = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -24,9 +23,10 @@ exports.upload = asyncHandler(async (req, res) => {
   }
 
   console.log("📦 Uploading receipt:", req.file.originalname);
+
   const buffer = req.file.buffer;
 
-  // 1. Save raw file to GridFS
+  // 1. Save file to GridFS
   const fileId = await uploadBufferToGridFS(
     req.file.originalname,
     buffer,
@@ -38,7 +38,7 @@ exports.upload = asyncHandler(async (req, res) => {
   try {
     const result = await runOcrBuffer(buffer);
     ocrText = result?.text || "";
-    console.log("📄 OCR Result (preview):", ocrText.slice(0, 250));
+    console.log("📄 OCR Preview:", ocrText.slice(0, 250));
   } catch (err) {
     console.error("❌ OCR failed:", err);
   }
@@ -46,13 +46,13 @@ exports.upload = asyncHandler(async (req, res) => {
   // 3. AI parsing
   let parsed = null;
   if (ocrText.trim().length > 5) {
-    console.log("🤖 Sending text to Gemini parser...");
+    console.log("🤖 Sending to AI parser...");
     parsed = await parseReceiptText(ocrText);
   }
 
-  console.log("🧠 Parsed:", parsed);
+  console.log("🧠 Parsed result:", parsed);
 
-  // 4. Save receipt
+  // 4. Save receipt to DB
   const receipt = await Receipt.create({
     user: req.user.id,
     originalFilename: req.file.originalname,
@@ -63,7 +63,7 @@ exports.upload = asyncHandler(async (req, res) => {
     parsedData: parsed || {},
   });
 
-  // 5. Auto-create record (FIXED: uses parsed.amount, not parsed.total)
+  // 5. Auto-create record (if amount found)
   let autoRecord = null;
 
   if (parsed && parsed.amount && parsed.amount > 0) {
@@ -72,26 +72,27 @@ exports.upload = asyncHandler(async (req, res) => {
     const recordDate =
       parseDateOnly(parsed.date) ||
       (() => {
-        console.log("⚠️ Invalid AI date — using today instead.");
+        console.log("⚠️ Invalid AI date → using today.");
         return new Date();
       })();
 
     autoRecord = await Record.create({
       user: req.user.id,
       type: "expense",
-      amount: parsed.amount, // FIXED
+      amount: parsed.amount,
       category: "Uncategorized",
       date: recordDate,
       note: parsed.source || "Receipt",
       linkedReceiptId: receipt._id,
     });
 
+    // Cross-link record → receipt
     receipt.linkedRecordId = autoRecord._id;
     await receipt.save();
 
     console.log("✅ Auto-record created:", autoRecord._id);
   } else {
-    console.log("ℹ️ No usable amount found — skipping auto-record.");
+    console.log("ℹ️ No valid amount detected → no auto-record created.");
   }
 
   res.status(201).json({
@@ -99,7 +100,6 @@ exports.upload = asyncHandler(async (req, res) => {
     autoRecord,
   });
 });
-
 
 /* ============================================================
    GET /api/receipts
@@ -111,7 +111,6 @@ exports.getAll = asyncHandler(async (req, res) => {
 
   res.json(receipts);
 });
-
 
 /* ============================================================
    GET /api/receipts/:id
@@ -128,7 +127,6 @@ exports.getOne = asyncHandler(async (req, res) => {
 
   res.json(receipt);
 });
-
 
 /* ============================================================
    DOWNLOAD original receipt file
@@ -151,10 +149,9 @@ exports.download = asyncHandler(async (req, res) => {
   streamFromGridFS(receipt.storedFileId, res);
 });
 
-
 /* ============================================================
    DELETE receipt
-   Query param: ?deleteRecord=true|false
+   ?deleteRecord=true|false
    ============================================================ */
 exports.remove = asyncHandler(async (req, res) => {
   const deleteRecord = req.query.deleteRecord === "true";
@@ -176,20 +173,29 @@ exports.remove = asyncHandler(async (req, res) => {
   // 2. Delete receipt entry
   await Receipt.deleteOne({ _id: receipt._id });
 
-  // 3. Delete or unlink associated record
+  // 3. Handle linked record
   if (linkedRecordId) {
-    if (deleteRecord) {
-      await Record.deleteOne({ _id: linkedRecordId, user: req.user._id });
-    } else {
-      await Record.updateOne(
-        { _id: linkedRecordId },
-        { $set: { linkedReceiptId: null } }
-      );
+    const record = await Record.findOne({
+      _id: linkedRecordId,
+      user: req.user.id,
+    });
+
+    if (record) {
+      if (deleteRecord) {
+        // delete record fully
+        await Record.deleteOne({ _id: linkedRecordId });
+      } else {
+        // keep record but unlink
+        await Record.updateOne(
+          { _id: linkedRecordId },
+          { $set: { linkedReceiptId: null } }
+        );
+      }
     }
   }
 
   res.json({
     message: "Receipt deleted",
-    recordDeleted: deleteRecord,
+    deletedRecord: deleteRecord,
   });
 });

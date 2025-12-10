@@ -2,17 +2,18 @@
 const Record = require("../models/Record");
 const Receipt = require("../models/Receipt");
 const asyncHandler = require("../middleware/async");
+const { deleteFromGridFS } = require("../lib/gridfs");
 
 // ==========================================================
 // Helper: Parse YYYY-MM-DD into a stable UTC-noon Date
-// Prevents timezone shifting issues (EST → previous day problem)
+// Prevents timezone shifting issues
 // ==========================================================
 function parseDateOnly(dateStr) {
   if (!dateStr) return null;
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
-exports.parseDateOnly = parseDateOnly; // exported for receipts.controller.js
+exports.parseDateOnly = parseDateOnly;
 
 
 // ==========================================================
@@ -31,7 +32,6 @@ exports.getOne = asyncHandler(async (req, res) => {
   res.json(record);
 });
 
-
 // ==========================================================
 // GET /api/records
 // ==========================================================
@@ -42,7 +42,6 @@ exports.getAll = asyncHandler(async (req, res) => {
 
   res.json(records);
 });
-
 
 // ==========================================================
 // POST /api/records
@@ -63,16 +62,15 @@ exports.create = asyncHandler(async (req, res) => {
     category,
     date: parseDateOnly(date) || new Date(),
     note,
-    linkedReceiptId: null, // manual records always null
+    linkedReceiptId: null,
   });
 
   res.status(201).json(record);
 });
 
-
 // ==========================================================
 // PUT /api/records/:id
-// Prevent editing records that were auto-created from receipts
+// FULL EDIT SUPPORT (even for receipt-linked records)
 // ==========================================================
 exports.update = asyncHandler(async (req, res) => {
   const { type, amount, category, date, note } = req.body;
@@ -84,14 +82,6 @@ exports.update = asyncHandler(async (req, res) => {
 
   if (!record) {
     return res.status(404).json({ message: "Record not found" });
-  }
-
-  // 🚫 Prevent editing auto-created receipt-linked records
-  if (record.linkedReceiptId) {
-    return res.status(403).json({
-      message:
-        "This record was auto-created from a receipt and cannot be edited. Modify the receipt instead.",
-    });
   }
 
   // Validation
@@ -114,12 +104,14 @@ exports.update = asyncHandler(async (req, res) => {
   res.json({ message: "Record updated", record });
 });
 
-
 // ==========================================================
 // DELETE /api/records/:id
-// Prevent deleting records linked to receipts
+// Supports optional deletion of linked receipt
+// deleteReceipt=true|false
 // ==========================================================
 exports.remove = asyncHandler(async (req, res) => {
+  const deleteReceipt = req.query.deleteReceipt === "true";
+
   const record = await Record.findOne({
     _id: req.params.id,
     user: req.user.id,
@@ -129,15 +121,35 @@ exports.remove = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Record not found" });
   }
 
-  // 🚫 Prevent deleting auto-created Gemini receipt records manually
-  if (record.linkedReceiptId) {
-    return res.status(403).json({
-      message:
-        "This record is linked to a receipt and cannot be deleted directly. Delete the receipt instead.",
-    });
-  }
+  const linkedReceiptId = record.linkedReceiptId;
 
+  // 1. Delete the record itself
   await Record.deleteOne({ _id: record._id });
 
-  res.json({ message: "Record deleted" });
+  // 2. Handle linked receipt logic
+  if (linkedReceiptId) {
+    const receipt = await Receipt.findOne({
+      _id: linkedReceiptId,
+      user: req.user.id,
+    });
+
+    if (receipt) {
+      if (deleteReceipt) {
+        // Delete receipt + gridfs file
+        await Receipt.deleteOne({ _id: linkedReceiptId });
+        await deleteFromGridFS(receipt.storedFileId);
+      } else {
+        // Keep receipt but unlink
+        await Receipt.updateOne(
+          { _id: linkedReceiptId },
+          { $set: { linkedRecordId: null } }
+        );
+      }
+    }
+  }
+
+  res.json({
+    message: "Record deleted",
+    deletedReceipt: deleteReceipt,
+  });
 });

@@ -83,8 +83,6 @@ import { api } from "./api.js";
 
       const tr = document.createElement("tr");
       tr.dataset.id = id;
-
-      // ADDING linkedRecordId to row dataset
       tr.dataset.linkedRecordId = r.linkedRecordId || "";
 
       tr.innerHTML = `
@@ -146,26 +144,29 @@ import { api } from "./api.js";
       return;
     }
 
-    // DELETE RECEIPT
+    // DELETE RECEIPT (TWO-POPUP LOGIC)
     if (deleteBtn) {
       const id = deleteBtn.dataset.id;
-      if (!id) return;
-
       const row = deleteBtn.closest("tr");
       const linkedRecordId = row?.dataset?.linkedRecordId || "";
 
-      // STEP 1 — Confirm deleting the receipt
-      const confirmReceipt = confirm("Delete this receipt?");
-      if (!confirmReceipt) return;
-
       let deleteRecord = false;
 
-      // STEP 2 — Ask about record *only if a linked record exists*
+      // POPUP #1 — Ask ONLY if user wants to delete the linked record
       if (linkedRecordId) {
         deleteRecord = confirm(
-          "This receipt has a linked financial record.\n\nDelete the record as well?"
+          "This receipt is linked to a financial record.\n\nDo you also want to delete the linked record?"
         );
       }
+
+      // POPUP #2 — Final confirmation
+      const finalConfirm = confirm(
+        deleteRecord
+          ? "Final confirmation:\nDelete BOTH the receipt and the linked record?"
+          : "Final confirmation:\nDelete ONLY the receipt?"
+      );
+
+      if (!finalConfirm) return;
 
       try {
         deleteBtn.disabled = true;
@@ -184,6 +185,7 @@ import { api } from "./api.js";
       } catch (err) {
         console.error(err);
         setStatus(`Delete failed: ${err.message}`, true);
+      } finally {
         deleteBtn.disabled = false;
       }
     }
@@ -335,7 +337,6 @@ import { api } from "./api.js";
     queue = [];
     fileInput.value = "";
     renderQueue();
-
     setStatus("Cleared selection.");
   });
 
