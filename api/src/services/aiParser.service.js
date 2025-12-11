@@ -5,7 +5,7 @@ const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
 
 // ---------------------------------------------------------
-// Receipt Parsing Prompt — aligned with YOUR schema
+// Receipt Parsing Prompt — aligned with your Receipt schema
 // ---------------------------------------------------------
 const PARSE_PROMPT = `
 You are a financial receipt extraction system.
@@ -17,11 +17,11 @@ From the receipt text, extract ONLY the following fields:
 - subAmount: Subtotal before tax (number)
 - amount: Final total charged including tax (number)
 - taxAmount: Tax charged (number)
-- payMethod: One of the following values (if possible):
+- payMethod: One of:
     Cash, Check, Credit Card, Debit Card, Gift Card, Multiple, Other
 - items: Array of objects [{ "name": string, "price": number }]
 
-Return JSON ONLY in this exact format:
+Return JSON ONLY in this exact structure:
 
 {
   "date": "",
@@ -33,87 +33,101 @@ Return JSON ONLY in this exact format:
   "items": []
 }
 
-- If information is missing, leave fields blank or 0.
-- DO NOT return explanations.
-- DO NOT return markdown.
-- DO NOT include any text outside the JSON.
+No explanations. No markdown. Only JSON.
 `;
 
+// ---------------------------------------------------------
+// Helper: Extract JSON from Gemini output safely
+// ---------------------------------------------------------
+function extractJson(raw) {
+  if (!raw || typeof raw !== "string") return null;
+
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+
+  if (start === -1 || end === -1) return null;
+
+  try {
+    return JSON.parse(raw.slice(start, end + 1).trim());
+  } catch (e) {
+    console.warn("⚠️ Failed to parse JSON from model output.");
+    return null;
+  }
+}
+
+// ---------------------------------------------------------
+// Helper: Normalize parsed fields to match schema
+// ---------------------------------------------------------
+function normalize(parsed = {}) {
+  return {
+    date: parsed.date || "",
+    source: parsed.source || "",
+    subAmount: Number(parsed.subAmount) || 0,
+    amount: Number(parsed.amount) || 0,
+    taxAmount: Number(parsed.taxAmount) || 0,
+    payMethod: parsed.payMethod || "Other",
+    items: Array.isArray(parsed.items) ? parsed.items : [],
+  };
+}
+
+// ---------------------------------------------------------
+// Gemini Request with retry support
+// ---------------------------------------------------------
+async function runGeminiWithRetry(ai, modelName, contents, retries = 2) {
+  try {
+    return await ai.models.generateContent({ model: modelName, contents });
+  } catch (err) {
+    if (retries > 0 && err?.status === 503) {
+      console.warn("🔁 Gemini overloaded. Retrying...");
+      await new Promise((res) => setTimeout(res, 300)); // small delay
+      return runGeminiWithRetry(ai, modelName, contents, retries - 1);
+    }
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------
+// Main Receipt Parsing Function
+// ---------------------------------------------------------
 exports.parseReceiptText = async function (ocrText) {
   if (!ocrText || ocrText.trim().length < 5) return null;
 
-  // Safety truncate long OCR text
+  // Truncate long OCR input
   let text = ocrText;
   if (text.length > MAX_CHARS) {
     console.warn(`Gemini: OCR truncated ${text.length} -> ${MAX_CHARS}`);
     text = text.slice(0, MAX_CHARS);
   }
 
-  // -----------------------------------------------------
-  // GEMINI Provider
-  // -----------------------------------------------------
-  if (USE_GEMINI) {
-    try {
-      const ai = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY
-      });
+  if (!USE_GEMINI) return null;
 
-      const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-      console.log("🤖 Using Gemini model:", modelName);
+  try {
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
 
-      // Generate content
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: [
-          { role: "system", text: PARSE_PROMPT },
-          { role: "user", text }
-        ]
-      });
+    const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    console.log("🤖 Using Gemini model:", modelName);
 
-      // Gemini 2.0+ returns text via response.text()
-      const raw = await response.text();
+    const contents = [
+      { role: "system", text: PARSE_PROMPT },
+      { role: "user", text }
+    ];
 
-      if (!raw || typeof raw !== "string") {
-        console.warn("⚠️ Gemini returned no text.");
-        return null;
-      }
+    // Run with retry support
+    const response = await runGeminiWithRetry(ai, modelName, contents);
 
-      // Extract JSON from model output
-      const start = raw.indexOf("{");
-      const end = raw.lastIndexOf("}");
+    // Gemini SDK v1+ → text is obtained via response.text()
+    const raw = await response.text();
 
-      if (start === -1 || end === -1) {
-        console.warn("⚠️ Gemini did not return valid JSON.");
-        return null;
-      }
+    const parsed = extractJson(raw);
+    if (!parsed) return null;
 
-      const jsonString = raw.slice(start, end + 1).trim();
-
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonString);
-      } catch (err) {
-        console.warn("⚠️ Could not parse Gemini JSON:", jsonString);
-        return null;
-      }
-
-      // Normalize to protect backend
-      return {
-        date: parsed.date || "",
-        source: parsed.source || "",
-        subAmount: Number(parsed.subAmount) || 0,
-        amount: Number(parsed.amount) || 0,
-        taxAmount: Number(parsed.taxAmount) || 0,
-        payMethod: parsed.payMethod || "Other",
-        items: Array.isArray(parsed.items) ? parsed.items : [],
-      };
-    }
-
-    catch (err) {
-      console.error("❌ Gemini Parsing Error:", err);
-      return null;
-    }
+    return normalize(parsed);
   }
 
-  return null; // Provider disabled
+  catch (err) {
+    console.error("❌ Gemini Parsing Error:", err);
+    return null;
+  }
 };
