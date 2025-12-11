@@ -13,6 +13,21 @@
   font-size: 1.6rem;
 }
 
+/* ======================
+   QUICK ACTIONS FIX
+   ====================== */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;            /* NEW: ensures each flex row spans full width */
+}
+
+.quick-actions > * {
+  flex-shrink: 0;         /* NEW: prevents button squishing / collapsing */
+}
+
 /* KPIs */
 .kpis {
   display: grid;
