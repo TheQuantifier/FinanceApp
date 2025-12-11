@@ -17,15 +17,15 @@ All functions return Promises:
 ============================================================
 
 ------------------------------------------------------------
- auth.register(email, password, userName)
+ auth.register(email, password, fullName)
 ------------------------------------------------------------
 DESCRIPTION:
   Creates a new user account and logs them in automatically.
 
 ARGUMENTS:
-  email (string)
-  password (string)
-  userName (string)
+  email     (string)
+  password  (string)
+  fullName  (string)
 
 RETURNS:
   { user }
@@ -38,7 +38,7 @@ EXAMPLE:
  auth.login(identifier, password)
 ------------------------------------------------------------
 DESCRIPTION:
-  Logs in a user using email OR username.
+  Logs in a user using *email OR username*.
 
 ARGUMENTS:
   identifier (string)
@@ -55,7 +55,7 @@ EXAMPLE:
  auth.logout()
 ------------------------------------------------------------
 DESCRIPTION:
-  Logs the user out by clearing their JWT cookie.
+  Logs the user out by clearing their secure cookie.
 
 EXAMPLE:
   await api.auth.logout();
@@ -75,7 +75,7 @@ EXAMPLE:
  auth.updateProfile(updates)
 ------------------------------------------------------------
 DESCRIPTION:
-  Updates any subset of user profile fields.
+  Updates editable user profile fields.
 
 ARGUMENTS:
   updates (object)
@@ -84,14 +84,14 @@ RETURNS:
   { user }
 
 EXAMPLE:
-  await api.auth.updateProfile({ fullName: "John Hand" });
+  await api.auth.updateProfile({ fullName: "John A. Hand" });
 
 
 ------------------------------------------------------------
  auth.changePassword(currentPassword, newPassword)
 ------------------------------------------------------------
 DESCRIPTION:
-  Change the authenticated user’s password.
+  Changes the authenticated user’s password.
 
 EXAMPLE:
   await api.auth.changePassword("oldPass", "newPass");
@@ -117,10 +117,14 @@ EXAMPLE:
 ============================================================
 
 ------------------------------------------------------------
- records.getAll()
+ records.getAll(params?)
 ------------------------------------------------------------
 DESCRIPTION:
-  Returns all financial records of the logged-in user.
+  Returns all financial records belonging to the user.
+  Future-proofed: supports query params (filters, pagination).
+
+ARGUMENTS:
+  params (object) — optional
 
 EXAMPLE:
   const list = await api.records.getAll();
@@ -130,7 +134,7 @@ EXAMPLE:
  records.getOne(recordId)
 ------------------------------------------------------------
 DESCRIPTION:
-  Fetch a single record by ID.
+  Fetch a single record.
 
 ARGUMENTS:
   recordId (string)
@@ -143,13 +147,13 @@ EXAMPLE:
  records.create({ type, amount, category, date, note })
 ------------------------------------------------------------
 DESCRIPTION:
-  Creates a new financial record.
+  Creates a new manual financial record.
 
 ARGUMENTS:
   type      ("income" | "expense")
   amount    (number)
   category  (string)
-  date      (string or ISO date)
+  date      ("YYYY-MM-DD" optional)
   note      (string)
 
 EXAMPLE:
@@ -166,7 +170,8 @@ EXAMPLE:
  records.update(recordId, updates)
 ------------------------------------------------------------
 DESCRIPTION:
-  Updates any subset of fields for an existing record.
+  Updates fields on an existing record, including those created
+  automatically by receipt uploads.
 
 ARGUMENTS:
   recordId (string)
@@ -179,18 +184,30 @@ EXAMPLE:
   await api.records.update("675ab92f19c9fd7fd050cb92", {
     amount: 40,
     category: "Dining",
-    note: "Updated record"
+    note: "Updated entry"
   });
 
 
 ------------------------------------------------------------
- records.remove(recordId)
+ records.remove(recordId, deleteReceipt)
 ------------------------------------------------------------
 DESCRIPTION:
-  Deletes a financial record.
+  Deletes a record AND optionally deletes its linked receipt.
 
-EXAMPLE:
-  await api.records.remove("675ab92f19c9fd7fd050cb92");
+deleteReceipt values:
+  true  → Deletes the linked receipt AND its GridFS file.
+  false → Unlinks from receipt but keeps the receipt.
+  undefined → Deletes only the record (default).
+
+EXAMPLES:
+  // Delete the record only
+  await api.records.remove(id);
+
+  // Delete record AND its linked receipt
+  await api.records.remove(id, true);
+
+  // Delete record but keep receipt, just unlink
+  await api.records.remove(id, false);
 
 
 
@@ -202,10 +219,18 @@ EXAMPLE:
  receipts.upload(file)
 ------------------------------------------------------------
 DESCRIPTION:
-  Uploads a file to GridFS + extracts OCR text.
+  Uploads a file to GridFS → runs OCR → runs Gemini parsing →
+  stores extracted fields → auto-creates a financial record if
+  the total amount is detected.
 
 ARGUMENTS:
-  file (File)
+  file (File object)
+
+RETURNS:
+  {
+    receipt: { ...receiptData },
+    autoRecord: { ...recordData } | null
+  }
 
 EXAMPLE:
   const file = document.querySelector("#fileInput").files[0];
@@ -216,7 +241,7 @@ EXAMPLE:
  receipts.getAll()
 ------------------------------------------------------------
 DESCRIPTION:
-  Retrieves all receipts for logged-in user.
+  Fetches all receipts for the user.
 
 EXAMPLE:
   const list = await api.receipts.getAll();
@@ -226,17 +251,20 @@ EXAMPLE:
  receipts.getOne(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-  Returns metadata for one receipt.
+  Fetch one receipt, including:
+    - OCR text
+    - parsedData
+    - linkedRecordId (if any)
 
 EXAMPLE:
-  const receipt = await api.receipts.getOne("677cb9123abc9123abc9123a");
+  const receipt = await api.receipts.getOne("677cb9123abc0123abc9ff01");
 
 
 ------------------------------------------------------------
  receipts.download(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-  Downloads the original file as a Blob.
+  Downloads the original uploaded file into a Blob.
 
 EXAMPLE:
   const blob = await api.receipts.download("675ca881ab9c45f123abc911");
@@ -246,20 +274,60 @@ EXAMPLE:
  receipts.downloadToFile(receiptId, filename)
 ------------------------------------------------------------
 DESCRIPTION:
-  Downloads and auto-saves the file.
+  Downloads the file and triggers a save to disk.
 
 EXAMPLE:
   await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "receipt.pdf");
 
 
 ------------------------------------------------------------
- receipts.remove(receiptId)
+ receipts.remove(receiptId, deleteRecord)
 ------------------------------------------------------------
 DESCRIPTION:
-  Deletes receipt metadata AND deletes file from GridFS.
+  Deletes a receipt AND optionally its linked record.
 
-EXAMPLE:
-  await api.receipts.remove("675ca881ab9c45f123abc911");
+deleteRecord values:
+  true  → delete both receipt + auto-created record  
+  false → keep record but unlink  
+  undefined → delete only the receipt
+
+EXAMPLES:
+  // Delete only the receipt
+  await api.receipts.remove(id);
+
+  // Delete receipt AND the linked record
+  await api.receipts.remove(id, true);
+
+  // Delete receipt but keep the financial record
+  await api.receipts.remove(id, false);
+
+
+
+============================================================
+ 4. HELPER FUNCTIONS (UI convenience)
+============================================================
+
+------------------------------------------------------------
+ api.getUploadType(record)
+------------------------------------------------------------
+RETURNS:
+  "Receipt" if generated from a receipt,
+  "Manual"  if user-created.
+
+------------------------------------------------------------
+ api.getPayMethodLabel(method)
+------------------------------------------------------------
+Maps internal payMethod values to readable labels.
+
+------------------------------------------------------------
+ api.getReceiptSummary(receipt)
+------------------------------------------------------------
+Returns a consistent summary of:
+  - parsed date
+  - store source
+  - subAmount / amount / tax
+  - parsed items list
+
 
 
 ============================================================

@@ -1,0 +1,165 @@
+============================================================
+GEMINI MODELS AVAILABLE FOR THIS ACCOUNT
+(Listed directly from the Google Generative Language API)
+============================================================
+
+You can use ANY of the model names exactly as listed below
+as the value of GEMINI_MODEL inside your .env file or Render
+environment variables.
+
+These are the EXACT names returned by:
+https://generativelanguage.googleapis.com/v1beta/models
+
+------------------------------------------------------------
+📌 CORE TEXT / MULTIMODAL MODELS
+------------------------------------------------------------
+models/gemini-2.5-flash
+models/gemini-2.5-pro
+
+models/gemini-2.0-flash-exp
+models/gemini-2.0-flash
+models/gemini-2.0-flash-001
+models/gemini-2.0-flash-exp-image-generation
+
+models/gemini-2.0-flash-lite-001
+models/gemini-2.0-flash-lite
+models/gemini-2.0-flash-lite-preview-02-05
+models/gemini-2.0-flash-lite-preview
+
+models/gemini-2.5-flash-image
+models/gemini-2.5-flash-image-preview
+models/gemini-2.5-flash-lite
+models/gemini-2.5-flash-preview-09-2025
+models/gemini-2.5-flash-lite-preview-09-2025
+
+------------------------------------------------------------
+📌 DEVELOPER & PREVIEW MODELS
+------------------------------------------------------------
+models/gemini-flash-latest
+models/gemini-flash-lite-latest
+models/gemini-pro-latest
+models/gemini-3-pro-preview
+models/gemini-3-pro-image-preview
+
+models/gemini-exp-1206
+models/gemini-robotics-er-1.5-preview
+models/gemini-2.5-computer-use-preview-10-2025
+models/deep-research-pro-preview-12-2025
+
+------------------------------------------------------------
+📌 GEMMA MODELS (Open Source, Lower/No Limits)
+------------------------------------------------------------
+models/gemma-3-1b-it
+models/gemma-3-4b-it
+models/gemma-3-12b-it
+models/gemma-3-27b-it
+models/gemma-3n-e4b-it
+models/gemma-3n-e2b-it
+
+------------------------------------------------------------
+📌 EMBEDDING MODELS
+------------------------------------------------------------
+models/embedding-gecko-001
+models/embedding-001
+models/text-embedding-004
+models/gemini-embedding-exp-03-07
+models/gemini-embedding-exp
+models/gemini-embedding-001
+
+------------------------------------------------------------
+📌 QA / IMAGE MODELS
+------------------------------------------------------------
+models/aqa
+models/imagen-4.0-generate-preview-06-06
+models/imagen-4.0-ultra-generate-preview-06-06
+models/imagen-4.0-generate-001
+models/imagen-4.0-ultra-generate-001
+models/imagen-4.0-fast-generate-001
+models/veo-2.0-generate-001
+models/veo-3.0-generate-001
+models/veo-3.0-fast-generate-001
+models/veo-3.1-generate-preview
+models/veo-3.1-fast-generate-preview
+
+
+============================================================
+HOW TO LIST MODELS ANYTIME (WINDOWS POWERSHELL)
+============================================================
+
+1. Open PowerShell
+2. Run:
+
+curl `
+  -X GET `
+  -H "Content-Type: application/json" `
+  "https://generativelanguage.googleapis.com/v1beta/models?key=$env:GEMINI_API_KEY" `
+  | Select-String '"name"'
+
+
+OR simpler:
+
+Invoke-WebRequest `
+  "https://generativelanguage.googleapis.com/v1beta/models?key=$env:GEMINI_API_KEY" -UseBasicParsing
+
+
+============================================================
+HOW TO LIST MODELS ON MAC / LINUX
+============================================================
+
+curl -s \
+  "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" \
+  | grep '"name"'
+
+
+============================================================
+HOW TO SWITCH MODELS
+============================================================
+
+To change which Gemini model your Finance App uses:
+
+------------------------------------------------------------
+1️⃣ Update your local .env file
+------------------------------------------------------------
+Open `.env` and change the model:
+
+GEMINI_MODEL=models/gemini-2.5-flash
+(or ANY option from the list above)
+
+
+------------------------------------------------------------
+2️⃣ Update Render environment variables
+------------------------------------------------------------
+
+On Render:
+
+1. Go to your **Finance App → Environment** tab  
+2. Find `GEMINI_MODEL`  
+3. Change value to the desired model, e.g.:
+
+   models/gemini-2.5-flash  
+   models/gemma-3-4b-it  
+   models/gemini-2.0-flash  
+
+4. Click **Save**  
+5. Click **Deploy Latest Commit** (needed for env changes)
+
+
+============================================================
+RECOMMENDED MODELS FOR RECEIPT PARSING
+============================================================
+
+Best speed + accuracy (but has low usage tiers):
+- models/gemini-2.5-flash
+
+Budget-friendly / fallback (high to no usage tiers):
+- models/gemma-3-4b-it
+- models/gemma-3-12b-it
+- models/gemma-3-27b-it  ← strong accuracy
+
+Slow but very accurate:
+- models/gemini-2.5-pro
+
+
+============================================================
+END OF FILE
+============================================================

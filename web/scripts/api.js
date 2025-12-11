@@ -1,7 +1,10 @@
-// web/scripts/api.js
+// ======================================================================
+// FinanceApp Frontend API Wrapper
+// Fully aligned with backend routes, behaviors, and linked receipt logic
+// ======================================================================
 
 // --------------------------------------
-// CONFIG (auto-switch suggested)
+// CONFIG (auto-switch for localhost vs Render)
 // --------------------------------------
 const API_BASE =
   window.location.hostname.includes("localhost")
@@ -24,7 +27,9 @@ async function request(path, options = {}) {
   let data = null;
   try {
     data = await res.json();
-  } catch {}
+  } catch (err) {
+    console.warn("API returned non-JSON response for:", path);
+  }
 
   if (!res.ok) {
     const message = data?.message || `Request failed (${res.status})`;
@@ -34,105 +39,94 @@ async function request(path, options = {}) {
   return data;
 }
 
-// --------------------------------------
+// ======================================================================
 // AUTH MODULE
-// --------------------------------------
+// ======================================================================
 export const auth = {
-  async register(email, password, fullName) {
+  register(email, password, fullName) {
     return request("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, fullName }),
     });
   },
 
-  async login(identifier, password) {
+  login(identifier, password) {
     return request("/auth/login", {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
     });
   },
 
-  async logout() {
+  logout() {
     return request("/auth/logout", { method: "POST" });
   },
 
-  async me() {
+  me() {
     return request("/auth/me");
   },
 
-  async updateProfile(updates) {
+  updateProfile(updates) {
     return request("/auth/me", {
       method: "PUT",
       body: JSON.stringify(updates),
     });
   },
 
-  async changePassword(currentPassword, newPassword) {
+  changePassword(currentPassword, newPassword) {
     return request("/auth/change-password", {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
 
-  async deleteAccount() {
+  deleteAccount() {
     return request("/auth/me", { method: "DELETE" });
-  },
-
-  async toggle2FA() {
-    return { status: false, message: "Two-Factor Authentication is not implemented yet." };
-  },
-
-  async signOutAll() {
-    return { status: false, message: "Sign-out-from-all-devices is not implemented yet." };
   },
 };
 
-// --------------------------------------
+// ======================================================================
 // RECORDS MODULE
-// --------------------------------------
+// ======================================================================
 export const records = {
-  async getAll() {
-    return request("/records");
+  getAll(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return request(`/records${query ? `?${query}` : ""}`);
   },
 
-  async create({ type, amount, category, date, note }) {
+  getOne(id) {
+    return request(`/records/${id}`);
+  },
+
+  create({ type, amount, category, date, note }) {
     return request("/records", {
       method: "POST",
       body: JSON.stringify({ type, amount, category, date, note }),
     });
   },
 
-  async update(id, updates) {
+  update(id, updates) {
     return request(`/records/${id}`, {
       method: "PUT",
       body: JSON.stringify(updates),
     });
   },
 
-  async getOne(id) {
-    return request(`/records/${id}`);
-  },
-
   /**
-   * DELETE record
-   * deleteReceipt:
-   *   true  → delete linked receipt also
-   *   false → keep receipt, unlink
-   *   undefined → omit param (safe default)
+   * deleteReceipt === true  → delete linked receipt also
+   * deleteReceipt === false → unlink but keep receipt
+   * deleteReceipt === undefined → omit parameter
    */
-  async remove(id, deleteReceipt) {
+  remove(id, deleteReceipt) {
     const query =
-      deleteReceipt === undefined
-        ? ""
-        : `?deleteReceipt=${deleteReceipt}`;
+      deleteReceipt === undefined ? "" : `?deleteReceipt=${deleteReceipt}`;
 
     return request(`/records/${id}${query}`, { method: "DELETE" });
   },
 };
 
-// --------------------------------------
+// ======================================================================
 // RECEIPTS MODULE
-// --------------------------------------
+// ======================================================================
 export const receipts = {
   async upload(file) {
     const formData = new FormData();
@@ -158,11 +152,11 @@ export const receipts = {
     return data;
   },
 
-  async getAll() {
+  getAll() {
     return request("/receipts");
   },
 
-  async getOne(id) {
+  getOne(id) {
     return request(`/receipts/${id}`);
   },
 
@@ -186,31 +180,24 @@ export const receipts = {
     URL.revokeObjectURL(url);
   },
 
-  /**
-   * DELETE receipt
-   * deleteRecord:
-   *   true  → delete linked record also
-   *   false → keep record, unlink
-   *   undefined → omit param (safe default)
-   */
-  async remove(id, deleteRecord) {
+  remove(id, deleteRecord) {
     const query =
-      deleteRecord === undefined
-        ? ""
-        : `?deleteRecord=${deleteRecord}`;
+      deleteRecord === undefined ? "" : `?deleteRecord=${deleteRecord}`;
 
     return request(`/receipts/${id}${query}`, { method: "DELETE" });
   },
 };
 
-// --------------------------------------
-// HELPERS
-// --------------------------------------
-function getUploadType(record) {
+// ======================================================================
+// UI HELPERS (shared by all frontend pages)
+// ======================================================================
+
+/** Returns "Receipt" if the record is linked, otherwise "Manual". */
+export function getUploadType(record) {
   return record?.linkedReceiptId ? "Receipt" : "Manual";
 }
 
-function getPayMethodLabel(method) {
+export function getPayMethodLabel(method) {
   const map = {
     Cash: "Cash",
     Check: "Check",
@@ -223,7 +210,7 @@ function getPayMethodLabel(method) {
   return map[method] || "Unknown";
 }
 
-function getReceiptSummary(receipt) {
+export function getReceiptSummary(receipt) {
   const p = receipt?.parsedData || {};
 
   return {
@@ -238,9 +225,9 @@ function getReceiptSummary(receipt) {
   };
 }
 
-// --------------------------------------
-// EXPORTED API OBJECT
-// --------------------------------------
+// ======================================================================
+// ROOT EXPORT
+// ======================================================================
 export const api = {
   auth,
   records,

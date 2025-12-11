@@ -49,6 +49,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   };
 
+  // BADGE UI (Improvement #2)
+  const typeBadge = (record) => {
+    return record.linkedReceiptId
+      ? `<span class="badge badge-receipt">Receipt</span>`
+      : `<span class="badge badge-manual">Manual</span>`;
+  };
+
   const createRow = (record) => {
     const tr = document.createElement("tr");
     tr.dataset.recordId = record._id;
@@ -60,7 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${record.category || "—"}</td>
       <td class="num">${Number(record.amount).toFixed(2)}</td>
       <td>${record.note || "—"}</td>
-      <td>${api.getUploadType(record)}</td>
+      <td>${typeBadge(record)}</td>
+
       <td class="actions-col">
         <div class="actions-menu-wrap">
           <button class="actions-btn" data-menu-btn="true">⋮</button>
@@ -126,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =======================
-    // DELETE RECORD
+    // DELETE RECORD (Improvement #1)
     // =======================
     const delId = e.target.dataset.delete;
     if (delId) {
@@ -137,30 +145,33 @@ document.addEventListener("DOMContentLoaded", () => {
         m.classList.add("hidden")
       );
 
-      // First popup
+      // Step 1: Confirm deleting record
       const ok = confirm("Delete this record?");
       if (!ok) return;
 
-      // If linked receipt, ask second question
       let deleteReceiptToo = false;
 
+      // Step 2: If linked → ask what to do with receipt
       if (linkedReceiptId) {
         deleteReceiptToo = confirm(
-          "This record is linked to a receipt.\n\nDo you also want to delete the receipt?"
+          "This record is linked to a receipt.\n\nDelete the receipt too?"
         );
       }
 
-      // Proceed with deletion
       try {
-        await api.records.remove(delId);
+        // CASE A: Delete record AND receipt (one unified deletion)
+        if (deleteReceiptToo && linkedReceiptId) {
+          await api.records.remove(delId, true);
+        }
 
-        if (linkedReceiptId) {
-          if (deleteReceiptToo) {
-            await api.receipts.remove(linkedReceiptId, true);
-          } else {
-            // Unlink receipt but keep the file
-            await api.receipts.remove(linkedReceiptId, false);
-          }
+        // CASE B: Delete record ONLY (receipt untouched)
+        else if (!deleteReceiptToo && linkedReceiptId) {
+          await api.records.remove(delId, false);
+        }
+
+        // CASE C: Normal delete (no linked receipt)
+        else {
+          await api.records.remove(delId);
         }
 
         loadRecords();
@@ -171,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Close menus when clicking outside
+    // Close menus on outside click
     document.querySelectorAll(".actions-dropdown").forEach((m) =>
       m.classList.add("hidden")
     );
@@ -197,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===============================
-  // RENDER TABLE (UNCHANGED)
+  // RENDER TABLE
   // ===============================
   const renderTable = (records, tbody, form) => {
     if (!form) return;

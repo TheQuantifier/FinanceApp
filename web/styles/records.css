@@ -62,7 +62,7 @@
   PAGINATION BUTTONS (Prev / Next) — THEME MATCHING
   ========================================================= */
 
-  .records-pager button {
+.records-pager button {
   padding: 0.5rem 1.2rem;
   border-radius: var(--radius);
   background: var(--primary);
@@ -127,11 +127,11 @@
   z-index: 50;
   min-width: 150px;
 
-  display: flex;            /* stacked vertically */
+  display: flex;
   flex-direction: column;
 }
 
-/* Hidden state (JS toggles this) */
+/* Hidden state */
 .actions-dropdown.hidden {
   display: none;
 }
@@ -140,18 +140,42 @@
 .actions-dropdown button {
   width: 100%;
   text-align: left;
-  background: transparent;   /* invisible look */
+  background: transparent;
   border: none;
   padding: 10px 14px;
   cursor: pointer;
   font-size: 0.9rem;
   color: var(--text);
-  border-radius: 0;          /* no squared edges */
+  border-radius: 0;
 }
 
-/* Subtle clean hover */
 .actions-dropdown button:hover {
   background: rgba(0, 0, 0, 0.04);
+}
+
+/* =========================================================
+   BADGES (Receipt / Manual) — NEW
+   ========================================================= */
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 8px;
+  line-height: 1;
+}
+
+/* Receipt → BLUE */
+.badge-receipt {
+  background: rgba(37, 99, 235, 0.16); /* #2563eb22 */
+  color: #2563eb;
+}
+
+/* Manual → MUTED GRAY */
+.badge-manual {
+  background: rgba(107, 114, 128, 0.16); /* #6b728022 */
+  color: #6b7280;
 }
 
 /* =========================================================
