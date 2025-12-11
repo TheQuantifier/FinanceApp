@@ -41,10 +41,12 @@ const timezoneSelect = document.getElementById("timezoneSelect");
 const dashboardViewSelect = document.getElementById("dashboardViewSelect");
 const languageSelect = document.querySelector(".profile-grid select");
 
-// Detect user timezone automatically
+// Detect device timezone
 const userDeviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-// Load saved settings
+// --------------------------------------
+// LOAD SAVED SETTINGS (default dashboardView = Monthly)
+// --------------------------------------
 const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {
   dateFormat: "MM/DD/YYYY",
   currency: "USD",
@@ -66,11 +68,12 @@ if (numberFormatSelect) numberFormatSelect.value = savedSettings.numberFormat;
 if (timezoneSelect) timezoneSelect.value = savedSettings.timezone || userDeviceTimezone;
 if (dashboardViewSelect) dashboardViewSelect.value = savedSettings.dashboardView;
 if (languageSelect) languageSelect.value = savedSettings.language;
+
 if (notifEmail) notifEmail.checked = savedSettings.notifEmail;
 if (notifSMS) notifSMS.checked = savedSettings.notifSMS;
 
 // --------------------------------------
-// SAVE SETTINGS BUTTON FUNCTIONALITY
+// SAVE SETTINGS BUTTON
 // --------------------------------------
 const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 
@@ -80,7 +83,7 @@ saveSettingsBtn.addEventListener("click", () => {
     currency: currencySelect?.value || savedSettings.currency,
     numberFormat: numberFormatSelect?.value || savedSettings.numberFormat,
     timezone: timezoneSelect?.value || userDeviceTimezone,
-    dashboardView: dashboardViewSelect?.value || savedSettings.dashboardView, // <--- save dashboard view
+    dashboardView: dashboardViewSelect?.value || "Monthly",
     language: languageSelect?.value || savedSettings.language,
     notifEmail: notifEmail?.checked || false,
     notifSMS: notifSMS?.checked || false,
@@ -89,7 +92,7 @@ saveSettingsBtn.addEventListener("click", () => {
   // Save to localStorage
   localStorage.setItem("userSettings", JSON.stringify(newSettings));
 
-  // Save default dashboard view separately for easy access on home page
+  // Save default dashboard view separately for quick access
   localStorage.setItem("defaultDashboardView", newSettings.dashboardView);
 
   alert("Settings saved!");
@@ -99,7 +102,7 @@ saveSettingsBtn.addEventListener("click", () => {
 });
 
 // --------------------------------------
-// APPLY FORMATS TO PAGE ELEMENTS
+// APPLY FORMATS TO PAGE
 // --------------------------------------
 function applyFormats(settings) {
   document.querySelectorAll(".date-field").forEach((el) => {
@@ -119,13 +122,11 @@ function applyFormats(settings) {
 }
 
 function formatDate(date, format) {
-  return date.toLocaleDateString(); // Expand later if needed
+  return date.toLocaleDateString(); 
 }
 
 function formatCurrency(value, currency) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
-    value
-  );
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 }
 
 function formatNumber(value, style) {

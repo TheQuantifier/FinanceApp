@@ -20,27 +20,38 @@ import { api } from "./api.js";
       });
 
   // ============================================================
-  //  HELPER: FILTER RECORDS BY DASHBOARD VIEW
+  //  FILTER RECORDS BY DASHBOARD VIEW
   // ============================================================
   function filterRecordsByView(records, view) {
+    if (view === "All") return records; // NEW: All-time view
+
     const now = new Date();
     return records.filter((r) => {
       if (!r.date) return false;
       const d = new Date(r.date);
+
       switch (view) {
         case "Weekly": {
           const startOfWeek = new Date(now);
-          startOfWeek.setDate(now.getDate() - now.getDay()); 
+          startOfWeek.setDate(now.getDate() - now.getDay());
           startOfWeek.setHours(0, 0, 0, 0);
+
           const endOfWeek = new Date(startOfWeek);
           endOfWeek.setDate(endOfWeek.getDate() + 6);
           endOfWeek.setHours(23, 59, 59, 999);
+
           return d >= startOfWeek && d <= endOfWeek;
         }
+
         case "Monthly":
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          return (
+            d.getMonth() === now.getMonth() &&
+            d.getFullYear() === now.getFullYear()
+          );
+
         case "Yearly":
           return d.getFullYear() === now.getFullYear();
+
         default:
           return true;
       }
@@ -87,21 +98,23 @@ import { api } from "./api.js";
       (innerW - gap * (values.length + 1)) / Math.max(values.length, 1)
     );
     const palette = [
-      "#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
+      "#0057b8", "#00a3e0", "#1e3a8a",
+      "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
     ];
 
     values.forEach((v, i) => {
       const h = (v / max) * (innerH - 10);
       const x = P.l + gap + i * (barW + gap);
       const y = P.t + innerH - h;
+
       ctx.fillStyle = palette[i % palette.length];
       ctx.fillRect(x, y, barW, h);
 
-      const isDarkTheme = document.documentElement.getAttribute("data-theme") === "dark";
-      ctx.fillStyle = isDarkTheme ? "#ffffff" : "#111827";
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      ctx.fillStyle = isDark ? "#fff" : "#111827";
       ctx.font = "12px system-ui";
       ctx.textAlign = "center";
-      ctx.fillText(String(v.toFixed(2)), x + barW / 2, y - 6);
+      ctx.fillText(v.toFixed(2), x + barW / 2, y - 6);
 
       ctx.fillStyle = "#6b7280";
       ctx.save();
@@ -118,9 +131,12 @@ import { api } from "./api.js";
   function renderLegend(container, categories) {
     if (!container) return;
     container.innerHTML = "";
+
     const palette = [
-      "#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
+      "#0057b8", "#00a3e0", "#1e3a8a",
+      "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
     ];
+
     Object.keys(categories || {}).forEach((name, i) => {
       const chip = document.createElement("span");
       chip.className = "chip";
@@ -133,14 +149,18 @@ import { api } from "./api.js";
   function renderBreakdown(listEl, categories, currency) {
     if (!listEl) return;
     listEl.innerHTML = "";
+
     const total = Object.values(categories || {}).reduce((a, b) => a + b, 0);
 
     Object.entries(categories || {})
       .sort((a, b) => b[1] - a[1])
       .forEach(([name, amt]) => {
-        const li = document.createElement("li");
         const pct = total ? Math.round((amt / total) * 100) : 0;
-        li.innerHTML = `<span>${name}</span><span>${fmtMoney(amt, currency)} (${pct}%)</span>`;
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span>${name}</span>
+          <span>${fmtMoney(amt, currency)} (${pct}%)</span>
+        `;
         listEl.appendChild(li);
       });
   }
@@ -167,13 +187,13 @@ import { api } from "./api.js";
     const dates = records.map((r) => r.date).filter(Boolean);
     const latestISO = dates.length ? dates.sort().slice(-1)[0] : null;
 
-    return { 
-      total_spending, 
-      total_income, 
-      net_balance, 
-      categories, 
-      currency, 
-      last_updated: latestISO || new Date().toISOString() 
+    return {
+      total_spending,
+      total_income,
+      net_balance,
+      categories,
+      currency,
+      last_updated: latestISO || new Date().toISOString(),
     };
   }
 
@@ -203,7 +223,8 @@ import { api } from "./api.js";
       .slice(0, 8);
 
     if (!expenses.length) {
-      tbody.innerHTML = `<tr><td colspan="4" class="subtle">No expenses yet.</td></tr>`;
+      tbody.innerHTML =
+        `<tr><td colspan="4" class="subtle">No expenses yet.</td></tr>`;
       return;
     }
 
@@ -246,14 +267,15 @@ import { api } from "./api.js";
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `finance_records_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download =
+      `finance_records_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
 
     URL.revokeObjectURL(url);
   }
 
   // ============================================================
-  //  API LOADER (FIXED TO USE api.records.getAll)
+  //  API LOADER
   // ============================================================
   async function loadFromAPI() {
     return await api.records.getAll();
@@ -276,7 +298,6 @@ import { api } from "./api.js";
         const records = await api.records.getAll();
         exportRecordsToCSV(records);
       } catch (err) {
-        console.error("CSV Export error:", err);
         alert("Failed to export CSV: " + err.message);
       }
     });
@@ -305,7 +326,6 @@ import { api } from "./api.js";
         alert("Transaction added!");
         window.location.reload();
       } catch (err) {
-        console.error(err);
         alert("Failed to save transaction: " + err.message);
       }
     });
@@ -331,13 +351,21 @@ import { api } from "./api.js";
     try {
       const records = await loadFromAPI();
 
-      const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {};
+      const savedSettings =
+        JSON.parse(localStorage.getItem("userSettings")) || {};
+
       const dashboardView = savedSettings.dashboardView || "Monthly";
+
       const viewLabel =
-        dashboardView === "Weekly" ? "This week" :
-        dashboardView === "Monthly" ? "This month" :
-        dashboardView === "Yearly" ? "This year" :
-        "This month";
+        dashboardView === "Weekly"
+          ? "This Week"
+          : dashboardView === "Monthly"
+          ? "This Month"
+          : dashboardView === "Yearly"
+          ? "This Year"
+          : dashboardView === "All"
+          ? "All Time"
+          : "This Month";
 
       const filteredRecords = filterRecordsByView(records, dashboardView);
 
@@ -348,6 +376,7 @@ import { api } from "./api.js";
 
       const canvas = $("#categoriesChart");
       drawBarChart(canvas, computed.categories);
+
       renderLegend($("#chartLegend"), computed.categories);
       renderBreakdown($("#categoryList"), computed.categories, computed.currency);
 
