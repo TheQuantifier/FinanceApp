@@ -7,36 +7,49 @@ const auth = require("../middleware/auth");
 
 /*
 |--------------------------------------------------------------------------
-| Get ALL records for logged-in user
+| Validate :id parameter (prevents CastError crashes)
 |--------------------------------------------------------------------------
-| Must be before "/:id" to avoid route shadowing.
+*/
+router.param("id", (req, res, next, id) => {
+  const isValid = /^[0-9a-fA-F]{24}$/.test(id);
+  if (!isValid) {
+    return res.status(400).json({ message: "Invalid record ID format." });
+  }
+  next();
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET All records
+|--------------------------------------------------------------------------
+| Must come before "/:id" route to avoid shadowing.
 */
 router.get("/", auth, controller.getAll);
 
 /*
 |--------------------------------------------------------------------------
-| Create a new record
+| CREATE new record
 |--------------------------------------------------------------------------
 */
 router.post("/", auth, controller.create);
 
 /*
 |--------------------------------------------------------------------------
-| Get a single record by ID
+| GET a single record
 |--------------------------------------------------------------------------
 */
 router.get("/:id", auth, controller.getOne);
 
 /*
 |--------------------------------------------------------------------------
-| Update an existing record
+| UPDATE a record
 |--------------------------------------------------------------------------
 */
 router.put("/:id", auth, controller.update);
 
 /*
 |--------------------------------------------------------------------------
-| Delete a record
+| DELETE a record
 |--------------------------------------------------------------------------
 */
 router.delete("/:id", auth, controller.remove);

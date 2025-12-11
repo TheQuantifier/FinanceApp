@@ -1,8 +1,9 @@
+// src/models/Record.js
 const mongoose = require("mongoose");
 
 const recordSchema = new mongoose.Schema(
   {
-    // The owning user
+    // Owning user
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -17,7 +18,7 @@ const recordSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Dollar amount for the transaction
+    // Dollar amount
     amount: {
       type: Number,
       required: true,
@@ -31,21 +32,29 @@ const recordSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Stored as UTC NOON (via parseDateOnly) to prevent timezone issues
+    // Always stored as UTC noon to avoid timezone shifting
     date: {
       type: Date,
       required: true,
-      default: Date.now,
+      default: () => {
+        const now = new Date();
+        return new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          12, 0, 0
+        ));
+      },
     },
 
-    // Optional note/description
+    // Optional text note
     note: {
       type: String,
       trim: true,
       default: "",
     },
 
-    // Link to a Receipt if this record was auto-created from OCR/AI
+    // If auto-created from a receipt
     linkedReceiptId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Receipt",
@@ -55,5 +64,15 @@ const recordSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// ========================================================
+// Ensure date is never null by schema validation
+// ========================================================
+recordSchema.pre("validate", function (next) {
+  if (!this.date || isNaN(this.date.getTime())) {
+    return next(new Error("Record date is required and must be valid"));
+  }
+  next();
+});
 
 module.exports = mongoose.model("Record", recordSchema);

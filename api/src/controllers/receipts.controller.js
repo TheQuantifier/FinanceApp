@@ -33,7 +33,7 @@ exports.upload = asyncHandler(async (req, res) => {
     req.file.mimetype
   );
 
-  // 2. OCR
+  // 2. OCR extraction
   let ocrText = "";
   try {
     const result = await runOcrBuffer(buffer);
@@ -43,7 +43,7 @@ exports.upload = asyncHandler(async (req, res) => {
     console.error("❌ OCR failed:", err);
   }
 
-  // 3. AI parsing
+  // 3. AI parsing using Gemini
   let parsed = null;
   if (ocrText.trim().length > 5) {
     console.log("🤖 Sending to AI parser...");
@@ -52,25 +52,41 @@ exports.upload = asyncHandler(async (req, res) => {
 
   console.log("🧠 Parsed result:", parsed);
 
-  // 4. Save receipt to DB
+  // Normalize fields for saving
+  const parsedDate = parsed?.date ? parseDateOnly(parsed.date) : null;
+
+  // 4. Save receipt to DB — using new schema fields
   const receipt = await Receipt.create({
     user: req.user.id,
     originalFilename: req.file.originalname,
     storedFileId: fileId,
     fileType: req.file.mimetype,
     fileSize: req.file.size,
+
+    // Raw OCR
     ocrText,
-    parsedData: parsed || {},
+
+    // New structured fields
+    date: parsedDate,
+    source: parsed?.source || "",
+    subAmount: parsed?.subAmount || 0,
+    amount: parsed?.amount || 0,
+    taxAmount: parsed?.taxAmount || 0,
+    payMethod: parsed?.payMethod || "Other",
+    items: parsed?.items || [],
+
+    // Keep raw AI JSON
+    parsedData: parsed || {}
   });
 
-  // 5. Auto-create record (if amount found)
+  // 5. Auto-create Record if amount found
   let autoRecord = null;
 
   if (parsed && parsed.amount && parsed.amount > 0) {
     console.log("🧾 Creating auto-record...");
 
     const recordDate =
-      parseDateOnly(parsed.date) ||
+      parsedDate ||
       (() => {
         console.log("⚠️ Invalid AI date → using today.");
         return new Date();
@@ -86,7 +102,7 @@ exports.upload = asyncHandler(async (req, res) => {
       linkedReceiptId: receipt._id,
     });
 
-    // Cross-link record → receipt
+    // Cross-link record back to receipt
     receipt.linkedRecordId = autoRecord._id;
     await receipt.save();
 
@@ -167,13 +183,13 @@ exports.remove = asyncHandler(async (req, res) => {
 
   const linkedRecordId = receipt.linkedRecordId;
 
-  // 1. Delete physical file
+  // 1. Delete file
   await deleteFromGridFS(receipt.storedFileId);
 
   // 2. Delete receipt entry
   await Receipt.deleteOne({ _id: receipt._id });
 
-  // 3. Handle linked record
+  // 3. Record cleanup logic
   if (linkedRecordId) {
     const record = await Record.findOne({
       _id: linkedRecordId,
@@ -182,10 +198,8 @@ exports.remove = asyncHandler(async (req, res) => {
 
     if (record) {
       if (deleteRecord) {
-        // delete record fully
         await Record.deleteOne({ _id: linkedRecordId });
       } else {
-        // keep record but unlink
         await Record.updateOne(
           { _id: linkedRecordId },
           { $set: { linkedReceiptId: null } }

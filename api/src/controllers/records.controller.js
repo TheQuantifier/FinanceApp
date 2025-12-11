@@ -10,11 +10,12 @@ const { deleteFromGridFS } = require("../lib/gridfs");
 // ==========================================================
 function parseDateOnly(dateStr) {
   if (!dateStr) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 exports.parseDateOnly = parseDateOnly;
-
 
 // ==========================================================
 // GET /api/records/:id
@@ -55,12 +56,21 @@ exports.create = asyncHandler(async (req, res) => {
       .json({ message: "Missing required fields: type, amount, category" });
   }
 
+  // Validate date format if provided
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid date format. Use YYYY-MM-DD" });
+  }
+
+  const parsedDate = date ? parseDateOnly(date) : new Date();
+
   const record = await Record.create({
     user: req.user.id,
     type,
     amount,
     category,
-    date: parseDateOnly(date) || new Date(),
+    date: parsedDate,
     note,
     linkedReceiptId: null,
   });
@@ -91,12 +101,20 @@ exports.update = asyncHandler(async (req, res) => {
   if (amount !== undefined && amount < 0) {
     return res.status(400).json({ message: "Amount must be ≥ 0" });
   }
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ message: "Invalid date format. Use YYYY-MM-DD" });
+  }
 
-  // Apply updates
+  // Apply updates safely
   if (type !== undefined) record.type = type;
   if (amount !== undefined) record.amount = amount;
   if (category !== undefined) record.category = category;
-  if (date !== undefined) record.date = parseDateOnly(date);
+
+  if (date !== undefined) {
+    // Only update if non-empty; otherwise preserve old value
+    record.date = date ? parseDateOnly(date) : record.date;
+  }
+
   if (note !== undefined) record.note = note;
 
   await record.save();
@@ -123,10 +141,7 @@ exports.remove = asyncHandler(async (req, res) => {
 
   const linkedReceiptId = record.linkedReceiptId;
 
-  // 1. Delete the record itself
-  await Record.deleteOne({ _id: record._id });
-
-  // 2. Handle linked receipt logic
+  // If the record has a linked receipt, handle receipt deletion or unlinking
   if (linkedReceiptId) {
     const receipt = await Receipt.findOne({
       _id: linkedReceiptId,
@@ -134,12 +149,19 @@ exports.remove = asyncHandler(async (req, res) => {
     });
 
     if (receipt) {
+      // Case 1: Delete receipt entirely
       if (deleteReceipt) {
-        // Delete receipt + gridfs file
+        // Delete GridFS file FIRST (prevents orphan chunks)
+        if (receipt.storedFileId) {
+          await deleteFromGridFS(receipt.storedFileId);
+        }
+
+        // Then delete the receipt document
         await Receipt.deleteOne({ _id: linkedReceiptId });
-        await deleteFromGridFS(receipt.storedFileId);
-      } else {
-        // Keep receipt but unlink
+      }
+
+      // Case 2: Keep receipt but unlink
+      else {
         await Receipt.updateOne(
           { _id: linkedReceiptId },
           { $set: { linkedRecordId: null } }
@@ -147,6 +169,9 @@ exports.remove = asyncHandler(async (req, res) => {
       }
     }
   }
+
+  // Finally, delete the record itself
+  await Record.deleteOne({ _id: record._id });
 
   res.json({
     message: "Record deleted",

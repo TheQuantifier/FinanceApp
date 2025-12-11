@@ -1,11 +1,11 @@
 // src/services/aiParser.service.js
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenerativeAI } = require("@google/genai");
 
 const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
 
 // ---------------------------------------------------------
-// NEW PARSE PROMPT — matches your NEW schema
+// Receipt Parsing Prompt — aligned with YOUR schema
 // ---------------------------------------------------------
 const PARSE_PROMPT = `
 You are a financial receipt extraction system.
@@ -50,11 +50,13 @@ exports.parseReceiptText = async function (ocrText) {
   }
 
   // -----------------------------------------------------
-  // GEMINI PROVIDER (required for your setup)
+  // GEMINI Provider
   // -----------------------------------------------------
   if (USE_GEMINI) {
     try {
-      const ai = new GoogleGenerativeAI({}); // uses GEMINI_API_KEY automatically
+      const ai = new GoogleGenerativeAI({
+        apiKey: process.env.GEMINI_API_KEY
+      });
 
       const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
       console.log("🤖 Using Gemini model:", modelName);
@@ -69,21 +71,19 @@ exports.parseReceiptText = async function (ocrText) {
 
       const raw = response.text || "";
 
-      // Extract JSON block from Gemini output
+      // Extract JSON from model response
       const start = raw.indexOf("{");
       const end = raw.lastIndexOf("}");
+
       if (start === -1 || end === -1) {
-        console.warn("⚠️ Gemini did not produce valid JSON.");
+        console.warn("⚠️ Gemini did not return valid JSON.");
         return null;
       }
 
-      const jsonString = raw.slice(start, end + 1);
-
+      const jsonString = raw.slice(start, end + 1).trim();
       const parsed = JSON.parse(jsonString);
 
-      // ----------------------------------------
-      // Normalize fields to protect your backend
-      // ----------------------------------------
+      // Normalize and protect backend fields
       return {
         date: parsed.date || "",
         source: parsed.source || "",
