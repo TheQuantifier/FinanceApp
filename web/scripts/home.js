@@ -30,7 +30,7 @@ import { api } from "./api.js";
       switch (view) {
         case "Weekly": {
           const startOfWeek = new Date(now);
-          startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+          startOfWeek.setDate(now.getDate() - now.getDay()); 
           startOfWeek.setHours(0, 0, 0, 0);
           const endOfWeek = new Date(startOfWeek);
           endOfWeek.setDate(endOfWeek.getDate() + 6);
@@ -146,7 +146,7 @@ import { api } from "./api.js";
   }
 
   // ============================================================
-  //  COMPUTE SUMMARY FROM API DATA
+  //  COMPUTE SUMMARY
   // ============================================================
   function computeOverview(records) {
     const expenses = records.filter((r) => r.type === "expense");
@@ -167,7 +167,14 @@ import { api } from "./api.js";
     const dates = records.map((r) => r.date).filter(Boolean);
     const latestISO = dates.length ? dates.sort().slice(-1)[0] : null;
 
-    return { total_spending, total_income, net_balance, categories, currency, last_updated: latestISO || new Date().toISOString() };
+    return { 
+      total_spending, 
+      total_income, 
+      net_balance, 
+      categories, 
+      currency, 
+      last_updated: latestISO || new Date().toISOString() 
+    };
   }
 
   function renderKpis(comp, viewLabel) {
@@ -177,13 +184,14 @@ import { api } from "./api.js";
 
     $("#kpiPeriodIncome").textContent = viewLabel;
     $("#kpiPeriodSpending").textContent = viewLabel;
-    $("#kpiPeriodBalance").textContent = viewLabel === "Income − Spending" ? "Income − Spending" : viewLabel;
+    $("#kpiPeriodBalance").textContent = viewLabel;
 
-    $("#lastUpdated").textContent = "Data updated " + new Date(comp.last_updated).toLocaleString();
+    $("#lastUpdated").textContent =
+      "Data updated " + new Date(comp.last_updated).toLocaleString();
   }
 
   // ============================================================
-  //  EXPENSE TABLE
+  //  TABLE
   // ============================================================
   function renderExpensesTable(tbody, records, currency) {
     if (!tbody) return;
@@ -245,14 +253,14 @@ import { api } from "./api.js";
   }
 
   // ============================================================
-  //  LOAD DATA FROM API
+  //  API LOADER (FIXED TO USE api.records.getAll)
   // ============================================================
   async function loadFromAPI() {
     return await api.records.getAll();
   }
 
   // ============================================================
-  //  UI INTERACTIONS
+  //  UI ACTIONS
   // ============================================================
   function wireActions() {
     const modal = $("#addTxnModal");
@@ -306,7 +314,8 @@ import { api } from "./api.js";
   async function personalizeWelcome() {
     try {
       const { user } = await api.auth.me();
-      $("#welcomeTitle").textContent = `Welcome back, ${user.fullName || user.username}`;
+      $("#welcomeTitle").textContent =
+        `Welcome back, ${user.fullName || user.username}`;
     } catch {
       $("#welcomeTitle").textContent = "Welcome back";
     }
@@ -322,12 +331,13 @@ import { api } from "./api.js";
     try {
       const records = await loadFromAPI();
 
-      // Load dashboard view from settings
       const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {};
       const dashboardView = savedSettings.dashboardView || "Monthly";
-      const viewLabel = dashboardView === "Weekly" ? "This week" :
-                        dashboardView === "Monthly" ? "This month" :
-                        dashboardView === "Yearly" ? "This year" : "This month";
+      const viewLabel =
+        dashboardView === "Weekly" ? "This week" :
+        dashboardView === "Monthly" ? "This month" :
+        dashboardView === "Yearly" ? "This year" :
+        "This month";
 
       const filteredRecords = filterRecordsByView(records, dashboardView);
 
@@ -347,7 +357,8 @@ import { api } from "./api.js";
     } catch (err) {
       console.error(err);
       $("#lastUpdated").textContent = "Could not load data.";
-      $("#txnTbody").innerHTML = `<tr><td colspan="4" class="subtle">Failed to load records.</td></tr>`;
+      $("#txnTbody").innerHTML =
+        `<tr><td colspan="4" class="subtle">Failed to load records.</td></tr>`;
     }
   }
 

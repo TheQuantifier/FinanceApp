@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reports | Finance App</title>
 
-  <!-- Meta -->
   <meta name="description" content="View spending reports, category breakdowns, and monthly trends." />
   <meta name="author" content="Finance App" />
   <link rel="icon" type="image/png" href="images/favicon.png" />
 
-  <!-- Styles -->
   <link rel="stylesheet" href="styles/default.css" />
   <link rel="stylesheet" href="styles/reports.css" />
 
@@ -18,24 +16,33 @@
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
   </script>
-  
 </head>
+
 <body>
-  <!-- Header injected by default.js -->
   <div id="header"></div>
 
   <main class="main main--reports">
+
+    <!-- ========== SUMMARY ========== -->
     <section class="summary">
-      <h2>Spending Overview</h2>
+      <h2>Transaction Overview</h2>
+
       <div class="cards">
         <div class="card">
           <h3>Total Expenses</h3>
           <p id="total-expenses">Loading...</p>
         </div>
+
+        <div class="card">
+          <h3>Total Income</h3>
+          <p id="total-income">Loading...</p>
+        </div>
+
         <div class="card">
           <h3>Monthly Average</h3>
           <p id="monthly-average">Loading...</p>
         </div>
+
         <div class="card">
           <h3>Top Category</h3>
           <p id="top-category">Loading...</p>
@@ -43,30 +50,45 @@
       </div>
     </section>
 
+    <!-- ========== PIE CHARTS ========== -->
     <section class="chart-section">
-      <h2>Expenses by Category</h2>
-      <canvas id="categoryChart" width="400" height="200"></canvas>
+      <h2>Category Breakdown</h2>
+
+      <div class="chart-row">
+        <div class="chart-box">
+          <h3>Expenses by Category</h3>
+          <canvas id="pieChartExpenses"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <h3>Income by Category</h3>
+          <canvas id="pieChartIncome"></canvas>
+        </div>
+      </div>
     </section>
 
+    <!-- ========== MONTHLY TREND ========== -->
     <section class="chart-section">
       <div class="section-head">
         <h2>Income & Expenses Over Time</h2>
-        <div class="toggles" aria-label="Toggle series">
+
+        <div class="toggles">
           <label><input type="checkbox" id="toggle-expenses" checked /> Expenses</label>
           <label><input type="checkbox" id="toggle-income" checked /> Income</label>
         </div>
       </div>
-      <canvas id="monthlyChart" width="400" height="220"></canvas>
+
+      <canvas id="monthlyChart"></canvas>
     </section>
+
   </main>
 
-  <!-- Footer injected by default.js -->
   <div id="footer"></div>
 
-  <!-- Scripts -->
-  <script src="scripts/default.js" type="module"  defer></script>
+  <script src="scripts/default.js" type="module" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="scripts/reports.js" type="module"  defer></script>
+  <script src="scripts/reports.js" type="module" defer></script>
+
 </body>
 </html>

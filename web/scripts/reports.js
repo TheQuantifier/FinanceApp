@@ -1,14 +1,11 @@
 // scripts/reports.js
-// Generates reports using live backend data via api.records.getAll()
-
 import { api } from "./api.js";
 
-let categoryChartInstance = null;
+let expensePieChart = null;
+let incomePieChart = null;
 let monthlyChartInstance = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadReports();
-});
+document.addEventListener("DOMContentLoaded", loadReports);
 
 // ======================================================
 // MAIN LOADER
@@ -20,173 +17,141 @@ async function loadReports() {
     const expenses = all.filter(r => r.type === "expense");
     const income = all.filter(r => r.type === "income");
 
-    const derived = computeSummaryFromRaw(expenses, income);
+    const summary = computeSummary(expenses, income);
 
-    updateSummary(derived);
+    updateSummary(summary);
 
-    renderCategoryChart(derived.categories);
+    renderPieChart("pieChartExpenses", summary.expenseCategories, "Expenses");
+    renderPieChart("pieChartIncome", summary.incomeCategories, "Income");
+
     renderIncomeExpenseOverTime(expenses, income);
 
-  } catch (error) {
-    console.error("Error loading reports:", error);
-    document.querySelectorAll(".card p").forEach(p => {
-      p.textContent = "Error loading data";
-    });
+  } catch (err) {
+    console.error("Error loading reports:", err);
   }
 }
 
 // ======================================================
-// SUMMARY FROM RAW RECORDS
+// SUMMARY PROCESSING
 // ======================================================
-function computeSummaryFromRaw(expenses, income) {
-  const currency = "USD";
+function computeSummary(expenses, income) {
+  const expenseCategories = {};
+  const incomeCategories = {};
 
-  // ----- EXPENSES -----
-  const categories = {};
-  let total_spending = 0;
+  let totalExpenses = 0;
+  let totalIncome = 0;
 
-  for (const t of expenses) {
-    const amt = toNumber(t.amount);
-    total_spending += amt;
-
-    const cat = t.category || "Uncategorized";
-    categories[cat] = (categories[cat] || 0) + amt;
+  for (const e of expenses) {
+    const amt = Number(e.amount) || 0;
+    totalExpenses += amt;
+    const cat = e.category || "Uncategorized";
+    expenseCategories[cat] = (expenseCategories[cat] || 0) + amt;
   }
 
-  // ----- INCOME -----
-  let total_income = 0;
   for (const inc of income) {
-    total_income += toNumber(inc.amount);
+    const amt = Number(inc.amount) || 0;
+    totalIncome += amt;
+    const cat = inc.category || "Uncategorized";
+    incomeCategories[cat] = (incomeCategories[cat] || 0) + amt;
   }
 
-  // Monthly average (by expense months)
-  const months = new Set(expenses.map(e => yyyymm(e.date)).filter(Boolean));
-  const monthCount = Math.max(1, months.size);
-  const monthly_average = total_spending / monthCount;
+  const distinctMonths = new Set(expenses.map(e => e.date?.slice(0, 7)));
+  const monthCount = Math.max(1, distinctMonths.size);
 
   return {
-    currency,
-    total_spending,
-    total_income,
-    monthly_average,
-    categories,
-    topCategory: getTopCategory(categories),
+    currency: "USD",
+    total_spending: totalExpenses,
+    total_income: totalIncome,
+    monthly_average: totalExpenses / monthCount,
+    expenseCategories,
+    incomeCategories,
+    topCategory:
+      Object.entries(expenseCategories).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+      "N/A",
   };
 }
 
 // ======================================================
-// SUMMARY CARDS
+// UPDATE SUMMARY CARD VALUES
 // ======================================================
-function updateSummary(sum) {
-  const fmt = n => `$${toNumber(n).toFixed(2)} ${sum.currency}`;
+function updateSummary(s) {
+  const fmt = n => `$${(Number(n) || 0).toFixed(2)} ${s.currency}`;
 
-  const $ = id => document.getElementById(id);
-
-  $("total-expenses").textContent = fmt(sum.total_spending);
-  $("total-income").textContent = fmt(sum.total_income);
-  $("monthly-average").textContent = fmt(sum.monthly_average);
-  $("top-category").textContent = sum.topCategory || "N/A";
-}
-
-function getTopCategory(categories) {
-  let top = "N/A";
-  let max = 0;
-
-  for (const [cat, amt] of Object.entries(categories || {})) {
-    if (amt > max) {
-      max = amt;
-      top = cat;
-    }
-  }
-  return top;
+  document.getElementById("total-expenses").textContent = fmt(s.total_spending);
+  document.getElementById("total-income").textContent = fmt(s.total_income);
+  document.getElementById("monthly-average").textContent = fmt(s.monthly_average);
+  document.getElementById("top-category").textContent = s.topCategory;
 }
 
 // ======================================================
-// CHART COLORS BASED ON THEME
+// PIE CHART (SHARED COMPONENT) — FIXED SIZING
 // ======================================================
-function getChartColors() {
-  const theme = document.documentElement.getAttribute("data-theme") || "light";
-
-  if (theme === "dark") {
-    return {
-      primary: "#0d6efd",
-      success: "#198754",
-      warning: "#ffc107",
-      danger: "#dc3545",
-      info: "#0dcaf0",
-      muted: "#adb5bd",
-      background: "#212529",
-      text: "#f8f9fa",
-    };
-  }
-
-  return {
-    primary: "#007BFF",
-    success: "#28A745",
-    warning: "#FFC107",
-    danger: "#DC3545",
-    info: "#17A2B8",
-    muted: "#6c757d",
-    background: "#ffffff",
-    text: "#212529",
-  };
-}
-
-// ======================================================
-// CATEGORY DOUGHNUT CHART
-// ======================================================
-function renderCategoryChart(categories) {
-  const ctx = document.getElementById("categoryChart");
+function renderPieChart(canvasId, categories, label) {
+  const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  if (categoryChartInstance) categoryChartInstance.destroy();
+  // Destroy existing chart instance
+  if (canvasId === "pieChartExpenses" && expensePieChart)
+    expensePieChart.destroy();
+  if (canvasId === "pieChartIncome" && incomePieChart)
+    incomePieChart.destroy();
 
-  const colors = getChartColors();
-  const labels = Object.keys(categories || {});
-  const values = Object.values(categories || {});
+  const labels = Object.keys(categories);
+  const values = Object.values(categories);
+  const total = values.reduce((a, b) => a + b, 0);
 
-  categoryChartInstance = new Chart(ctx, {
+  // Stable color palette
+  const colors = [
+    "#007BFF",
+    "#28A745",
+    "#FFC107",
+    "#DC3545",
+    "#17A2B8",
+    "#6f42c1",
+    "#6c757d"
+  ];
+
+  const pieChart = new Chart(ctx, {
     type: "doughnut",
     data: {
       labels,
       datasets: [
         {
-          label: "Spending by Category",
+          label,
           data: values,
-          backgroundColor: [
-            colors.primary,
-            colors.success,
-            colors.warning,
-            colors.danger,
-            colors.muted,
-            colors.info,
-            "#6610f2",
-            "#6c757d",
-          ],
-        },
-      ],
+          backgroundColor: colors.slice(0, labels.length)
+        }
+      ]
     },
     options: {
+      maintainAspectRatio: true,   // ⬅ Prevents chart growing vertically
+      responsive: true,
+
       plugins: {
-        legend: { position: "bottom", labels: { color: colors.text } },
+        legend: {
+          position: "bottom",
+          labels: { color: getChartColors().text }
+        },
         datalabels: {
           color: "#fff",
           font: { weight: "bold", size: 13 },
-          formatter: (value, ctx) => {
-            const arr = ctx.chart.data.datasets[0].data;
-            const total = arr.reduce((a, b) => a + toNumber(b), 0);
+          formatter: value => {
             if (!total) return "0%";
             return ((value / total) * 100).toFixed(1) + "%";
-          },
-        },
-      },
+          }
+        }
+      }
     },
-    plugins: [ChartDataLabels],
+    plugins: [ChartDataLabels]
   });
+
+  // Store chart instance
+  if (canvasId === "pieChartExpenses") expensePieChart = pieChart;
+  else incomePieChart = pieChart;
 }
 
 // ======================================================
-// MONTHLY INCOME VS EXPENSES CHART
+// LINE CHART (Income vs Expenses)
 // ======================================================
 function renderIncomeExpenseOverTime(expenses, income) {
   const ctx = document.getElementById("monthlyChart");
@@ -194,15 +159,14 @@ function renderIncomeExpenseOverTime(expenses, income) {
 
   if (monthlyChartInstance) monthlyChartInstance.destroy();
 
-  const colors = getChartColors();
   const expenseByDate = sumByDate(expenses);
   const incomeByDate = sumByDate(income);
 
   const labels = Array.from(
     new Set([...Object.keys(expenseByDate), ...Object.keys(incomeByDate)])
-  )
-    .filter(Boolean)
-    .sort();
+  ).sort();
+
+  const colors = getChartColors();
 
   monthlyChartInstance = new Chart(ctx, {
     type: "line",
@@ -210,95 +174,63 @@ function renderIncomeExpenseOverTime(expenses, income) {
       labels,
       datasets: [
         {
-          label: "Expenses ($)",
-          data: labels.map(d => toNumber(expenseByDate[d])),
-          borderColor: colors.danger,
-          backgroundColor: "rgba(220,53,69,0.2)",
+          label: "Expenses",
+          data: labels.map(d => expenseByDate[d] || 0),
+          borderColor: "#DC3545",
+          backgroundColor: "rgba(220,53,69,0.25)",
           fill: true,
-          tension: 0.3,
+          tension: 0.3
         },
         {
-          label: "Income ($)",
-          data: labels.map(d => toNumber(incomeByDate[d])),
-          borderColor: colors.success,
-          backgroundColor: "rgba(40,167,69,0.2)",
+          label: "Income",
+          data: labels.map(d => incomeByDate[d] || 0),
+          borderColor: "#28A745",
+          backgroundColor: "rgba(40,167,69,0.25)",
           fill: true,
-          tension: 0.3,
-        },
-      ],
+          tension: 0.3
+        }
+      ]
     },
     options: {
-      scales: {
-        y: { beginAtZero: true, ticks: { color: colors.text } },
-        x: { ticks: { color: colors.text } },
-      },
+      maintainAspectRatio: true,
       plugins: {
-        legend: { labels: { color: colors.text } },
-        tooltip: {
-          callbacks: {
-            label: ctx =>
-              `${ctx.dataset.label}: $${toNumber(ctx.parsed.y).toFixed(2)}`,
-          },
-        },
+        legend: { labels: { color: colors.text } }
       },
-    },
+      scales: {
+        x: { ticks: { color: colors.text } },
+        y: { ticks: { color: colors.text }, beginAtZero: true }
+      }
+    }
   });
 
-  // Checkbox toggles
-  const expToggle = document.getElementById("toggle-expenses");
-  if (expToggle) {
-    expToggle.addEventListener("change", () => {
-      monthlyChartInstance.data.datasets[0].hidden = !expToggle.checked;
-      monthlyChartInstance.update();
-    });
-  }
+  // Toggle visibility
+  document.getElementById("toggle-expenses")?.addEventListener("change", e => {
+    monthlyChartInstance.data.datasets[0].hidden = !e.target.checked;
+    monthlyChartInstance.update();
+  });
 
-  const incToggle = document.getElementById("toggle-income");
-  if (incToggle) {
-    incToggle.addEventListener("change", () => {
-      monthlyChartInstance.data.datasets[1].hidden = !incToggle.checked;
-      monthlyChartInstance.update();
-    });
-  }
+  document.getElementById("toggle-income")?.addEventListener("change", e => {
+    monthlyChartInstance.data.datasets[1].hidden = !e.target.checked;
+    monthlyChartInstance.update();
+  });
 }
 
 // ======================================================
 // HELPERS
 // ======================================================
-function toNumber(x) {
-  const n = Number(x);
-  return Number.isFinite(n) ? n : 0;
-}
+function getChartColors() {
+  const theme = document.documentElement.getAttribute("data-theme") || "light";
 
-function yyyymm(iso) {
-  if (!iso) return null;
-  const date = normalizeDateKey(iso);
-  return date ? date.slice(0, 7) : null;
+  return theme === "dark"
+    ? { text: "#f8f9fa" }
+    : { text: "#212529" };
 }
 
 function sumByDate(rows) {
   const out = {};
-  for (const r of rows || []) {
-    const d = normalizeDateKey(r.date);
-    if (!d) continue;
-    out[d] = (out[d] || 0) + toNumber(r.amount);
+  for (const r of rows) {
+    const key = r.date?.slice(0, 10);
+    if (key) out[key] = (out[key] || 0) + Number(r.amount || 0);
   }
   return out;
-}
-
-function normalizeDateKey(iso) {
-  if (!iso) return null;
-
-  // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-
-  // Parse fallback
-  const d = new Date(iso);
-  if (isNaN(d)) return null;
-
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-
-  return `${yyyy}-${mm}-${dd}`;
 }

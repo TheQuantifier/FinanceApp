@@ -16,7 +16,7 @@
 .card {
   width: 220px;
   text-align: center;
-  background-color: var(--card-bg);
+  background: var(--card-bg);
   color: var(--text);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -41,7 +41,7 @@
   border-radius: var(--radius);
   padding: 2rem;
   margin: 2rem 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   color: var(--text);
 }
 
@@ -52,7 +52,7 @@
   font-size: 1.3rem;
 }
 
-/* ===== TOGGLE HEADER FOR LINE CHART ===== */
+/* ===== LINE CHART HEADER WITH TOGGLES ===== */
 .section-head {
   display: flex;
   align-items: center;
@@ -87,59 +87,69 @@
   accent-color: var(--primary);
 }
 
-/* ===== CANVAS SIZING ===== */
-#categoryChart {
-  display: block;
-  margin: 0 auto;
-  width: 420px;
-  height: 420px;
-  max-width: 95%;
+/* ===== CHART LAYOUT ===== */
+.chart-row {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
-#monthlyChart {
-  display: block;
-  margin: 0 auto;
+.chart-box {
+  flex: 1 1 380px;
+  max-width: 480px;
+  text-align: center;
+}
+
+/* ===== RESPONSIVE PIE CHARTS ===== */
+#pieChartExpenses,
+#pieChartIncome {
   width: 100%;
-  max-width: 900px;
-  height: 320px;
+  height: auto;
+  aspect-ratio: 1 / 1; /* perfect square */
+  display: block;
+  margin: 0 auto;
 }
 
-/* ===== DATLABELS PLUGIN STYLING ===== */
+/* ===== LINE CHART (FILL WIDTH) ===== */
+#monthlyChart {
+  width: 100%;
+  height: 350px;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+/* ===== DATLABELS ===== */
 .chartjs-datalabels {
   font-family: system-ui, sans-serif;
   font-weight: 700 !important;
   font-size: 14px !important;
   color: #ffffff !important;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 1024px) {
-  #categoryChart {
-    width: 360px;
-    height: 360px;
-  }
+@media(max-width: 1024px) {
   #monthlyChart {
     height: 300px;
-    max-width: 95%;
   }
 }
 
-@media (max-width: 640px) {
+@media(max-width: 640px) {
   .cards {
     flex-direction: column;
     align-items: center;
   }
+
   .chart-section h2 {
     font-size: 1.15rem;
   }
-  #categoryChart {
-    width: 300px;
-    height: 300px;
-  }
+
   #monthlyChart {
     height: 260px;
   }
+
   .section-head {
     justify-content: center;
     text-align: center;
@@ -159,7 +169,8 @@
   color: var(--text);
 }
 
-[data-theme="dark"] #categoryChart,
+[data-theme="dark"] #pieChartExpenses,
+[data-theme="dark"] #pieChartIncome,
 [data-theme="dark"] #monthlyChart {
   background-color: transparent;
 }
