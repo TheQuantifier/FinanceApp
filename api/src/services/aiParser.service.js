@@ -5,7 +5,7 @@ const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
 
 // ---------------------------------------------------------
-// Receipt Parsing Prompt — aligned with your Receipt schema
+// Prompt for Receipt Parsing
 // ---------------------------------------------------------
 const PARSE_PROMPT = `
 You are a financial receipt extraction system.
@@ -37,7 +37,33 @@ No explanations. No markdown. Only JSON.
 `;
 
 // ---------------------------------------------------------
-// Helper: Extract JSON from Gemini output safely
+// Extract text from ANY model (Gemini OR Gemma)
+// ---------------------------------------------------------
+async function extractTextFromResponse(response) {
+  // Case 1 — Gemini models have .text()
+  if (typeof response.text === "function") {
+    return await response.text();
+  }
+
+  // Case 2 — Gemma models deliver inside candidates[].content.parts[]
+  try {
+    const parts =
+      response?.candidates?.[0]?.content?.parts;
+
+    if (Array.isArray(parts)) {
+      const textPart = parts.find((p) => p.text);
+      if (textPart?.text) return textPart.text;
+    }
+  } catch (err) {
+    console.warn("⚠️ Could not read Gemma-style response:", err);
+  }
+
+  console.warn("⚠️ No text found in model response.");
+  return "";
+}
+
+// ---------------------------------------------------------
+// Extract JSON from model output
 // ---------------------------------------------------------
 function extractJson(raw) {
   if (!raw || typeof raw !== "string") return null;
@@ -50,13 +76,13 @@ function extractJson(raw) {
   try {
     return JSON.parse(raw.slice(start, end + 1).trim());
   } catch (e) {
-    console.warn("⚠️ Failed to parse JSON from model output.");
+    console.warn("⚠️ Failed to parse JSON.");
     return null;
   }
 }
 
 // ---------------------------------------------------------
-// Helper: Normalize parsed fields to match schema
+// Normalize parsed fields
 // ---------------------------------------------------------
 function normalize(parsed = {}) {
   return {
@@ -71,15 +97,15 @@ function normalize(parsed = {}) {
 }
 
 // ---------------------------------------------------------
-// Gemini Request with retry support
+// Retry logic for overloaded models (503)
 // ---------------------------------------------------------
 async function runGeminiWithRetry(ai, modelName, contents, retries = 2) {
   try {
     return await ai.models.generateContent({ model: modelName, contents });
   } catch (err) {
     if (retries > 0 && err?.status === 503) {
-      console.warn("🔁 Gemini overloaded. Retrying...");
-      await new Promise((res) => setTimeout(res, 300)); // small delay
+      console.warn("🔁 Model overloaded. Retrying...");
+      await new Promise((res) => setTimeout(res, 300));
       return runGeminiWithRetry(ai, modelName, contents, retries - 1);
     }
     throw err;
@@ -87,15 +113,15 @@ async function runGeminiWithRetry(ai, modelName, contents, retries = 2) {
 }
 
 // ---------------------------------------------------------
-// Main Receipt Parsing Function
+// Main entry: Parse receipt text
 // ---------------------------------------------------------
 exports.parseReceiptText = async function (ocrText) {
   if (!ocrText || ocrText.trim().length < 5) return null;
 
-  // Truncate long OCR input
+  // Limit size
   let text = ocrText;
   if (text.length > MAX_CHARS) {
-    console.warn(`Gemini: OCR truncated ${text.length} -> ${MAX_CHARS}`);
+    console.warn(`Gemini: OCR truncated ${text.length} → ${MAX_CHARS}`);
     text = text.slice(0, MAX_CHARS);
   }
 
@@ -106,19 +132,19 @@ exports.parseReceiptText = async function (ocrText) {
       apiKey: process.env.GEMINI_API_KEY,
     });
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-    console.log("🤖 Using Gemini model:", modelName);
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    console.log("🤖 Using AI model:", modelName);
 
     const contents = [
       { role: "system", text: PARSE_PROMPT },
       { role: "user", text }
     ];
 
-    // Run with retry support
+    // Call API with retry
     const response = await runGeminiWithRetry(ai, modelName, contents);
 
-    // Gemini SDK v1+ → text is obtained via response.text()
-    const raw = await response.text();
+    // Works for BOTH Gemini & Gemma
+    const raw = await extractTextFromResponse(response);
 
     const parsed = extractJson(raw);
     if (!parsed) return null;
