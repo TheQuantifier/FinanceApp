@@ -1,5 +1,5 @@
 // src/services/aiParser.service.js
-const { GoogleGenerativeAI } = require("@google/genai");
+const { GoogleGenAI } = require("@google/genai");
 
 const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
 const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
@@ -54,24 +54,31 @@ exports.parseReceiptText = async function (ocrText) {
   // -----------------------------------------------------
   if (USE_GEMINI) {
     try {
-      const ai = new GoogleGenerativeAI({
+      const ai = new GoogleGenAI({
         apiKey: process.env.GEMINI_API_KEY
       });
 
       const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
       console.log("🤖 Using Gemini model:", modelName);
 
+      // Generate content
       const response = await ai.models.generateContent({
         model: modelName,
         contents: [
           { role: "system", text: PARSE_PROMPT },
           { role: "user", text }
-        ],
+        ]
       });
 
-      const raw = response.text || "";
+      // Gemini 2.0+ returns text via response.text()
+      const raw = await response.text();
 
-      // Extract JSON from model response
+      if (!raw || typeof raw !== "string") {
+        console.warn("⚠️ Gemini returned no text.");
+        return null;
+      }
+
+      // Extract JSON from model output
       const start = raw.indexOf("{");
       const end = raw.lastIndexOf("}");
 
@@ -81,9 +88,16 @@ exports.parseReceiptText = async function (ocrText) {
       }
 
       const jsonString = raw.slice(start, end + 1).trim();
-      const parsed = JSON.parse(jsonString);
 
-      // Normalize and protect backend fields
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonString);
+      } catch (err) {
+        console.warn("⚠️ Could not parse Gemini JSON:", jsonString);
+        return null;
+      }
+
+      // Normalize to protect backend
       return {
         date: parsed.date || "",
         source: parsed.source || "",

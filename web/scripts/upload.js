@@ -78,8 +78,24 @@ import { api } from "./api.js";
         ? new Date(r.createdAt).toLocaleString()
         : "—";
 
-      const parsed = r.parsedData || {};
-      const hasAI = Object.keys(parsed).length > 0;
+      // ----------------------------------------------
+      // NEW STATUS LOGIC (Raw / Read / Parsed / Error)
+      // ----------------------------------------------
+      let status = "Raw";
+
+      const hasOCR = r.ocrText && r.ocrText.trim().length > 0;
+
+      const hasParsed =
+        r.parsedData &&
+        typeof r.parsedData === "object" &&
+        Object.keys(r.parsedData).length > 0;
+
+      if (hasParsed) status = "Parsed";
+      else if (hasOCR) status = "Read";
+      else status = "Raw";
+
+      // Future‐proof backend errors
+      if (r.error || r.ocrFailed) status = "Error";
 
       const tr = document.createElement("tr");
       tr.dataset.id = id;
@@ -90,7 +106,7 @@ import { api } from "./api.js";
         <td>${r.fileType || "—"}</td>
         <td class="num">${bytesToSize(r.fileSize || 0)}</td>
         <td>${created}</td>
-        <td>${hasAI ? "parsed" : "raw"}</td>
+        <td>${status}</td>
 
         <td class="num actions-col">
           <button class="icon-btn js-download"
@@ -109,6 +125,7 @@ import { api } from "./api.js";
       recentTableBody.appendChild(tr);
     }
   }
+
 
   async function refreshRecent() {
     try {
