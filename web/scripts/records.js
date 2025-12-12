@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${fmtDate(record.date)}</td>
       <td>${record.type}</td>
       <td>${record.category || "—"}</td>
-      <td class="num">${Number(record.amount).toFixed(2)}</td>
+      <td class="num">${fmtMoney(record.amount)}</td>
       <td>${record.note || "—"}</td>
       <td>${typeBadge(record)}</td>
 
@@ -92,6 +92,29 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     return tr;
   };
+
+  // ===============================
+  // MONEY FORMATTER (settings-aware)
+  // ===============================
+  const getCurrentCurrency = () => {
+    const saved = localStorage.getItem("settings_currency");
+    if (saved) return saved;
+
+    // Fallback to auto-detected (from settings.js Option B)
+    const detected = localStorage.getItem("auto_currency");
+    if (detected) return detected;
+
+    return "USD"; // final fallback
+  };
+
+  const fmtMoney = (value) => {
+    const currency = getCurrentCurrency();
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+    }).format(Number(value) || 0);
+  };
+
 
   // ===============================
   // DELETE RECORD (New Modal Logic)
