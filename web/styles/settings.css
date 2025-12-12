@@ -1,109 +1,126 @@
-/* ===== SETTINGS PAGE STYLES ===== */
+/* =========================================================
+   SETTINGS PAGE STYLES — THEME-SAFE + BLUE CONSISTENCY
+   ========================================================= */
 
 .settings-container {
-    max-width: 1100px;
-    margin: 20px auto;
-    padding: 20px;
-  }
-  
-  .settings-title {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: var(--text);
-  }
-  
-  .settings-card {
-    background: var(--card-bg, #ffffff);
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.08);
-  }
-  
-  .settings-card h2 {
-    margin-bottom: 15px;
-    font-size: 20px;
-    color: var(--text);
-  }
-  
+  max-width: 1100px;
+  margin: var(--space-4) auto;
+  padding: var(--space-4);
+}
+
+.settings-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+}
+
+.settings-card {
+  background: var(--card-bg);
+  padding: var(--space-4);
+  border-radius: 12px;
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-card h2 {
+  margin-bottom: var(--space-3);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* =========================================================
+   FORM ROWS
+   ========================================================= */
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-3);
+}
+
+.settings-row label {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  color: var(--text);
+}
+
+.settings-row input,
+.settings-row select {
+  padding: var(--space-3);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.settings-row input:focus,
+.settings-row select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,163,224,0.15); /* matches global */
+  outline: none;
+}
+
+/* =========================================================
+   SAVE BUTTON — MATCHES APP-WIDE BUTTON COLORS
+   ========================================================= */
+
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: var(--space-2);
+  padding: 0.6rem 1.1rem;
+
+  /*background-color: var(--primary);*/
+  color: #fff;
+
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary);
+  cursor: pointer;
+
+  font-weight: 600;
+  font-size: 0.95rem;
+
+  transition: filter 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-btn:hover {
+  filter: brightness(0.92); /* matches global .btn--primary:hover */
+}
+
+/* =========================================================
+   DARK MODE OVERRIDES
+   ========================================================= */
+
+[data-theme="dark"] .settings-card {
+  background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .settings-row input,
+[data-theme="dark"] .settings-row select {
+  background: #202327;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+[data-theme="dark"] .settings-row label,
+[data-theme="dark"] .settings-card h2,
+[data-theme="dark"] .settings-title {
+  color: var(--text);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
   .settings-row {
-    display: flex;
     flex-direction: column;
-    margin-bottom: 12px;
   }
-  
-  .settings-row label {
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: var(--text);
-  }
-  
-  .settings-row input,
-  .settings-row select {
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border, #ccc);
-    font-size: 14px;
-    background-color: var(--bg, #fff);
-    color: var(--text);
-    transition: border 0.2s, background 0.2s;
-  }
-  
-  .settings-row input:focus,
-  .settings-row select:focus {
-    border-color: var(--primary, #0057b8);
-    outline: none;
-  }
-  
-  .settings-save-btn {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 10px 16px;
-    background-color: var(--primary, #4e73df);
-    color: #fff;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background 0.2s, border 0.2s;
-  }
-  
-  .settings-save-btn:hover {
-    background-color: #395dca;
-  }
-  
-  /* Dark mode adjustments */
-  [data-theme="dark"] .settings-card {
-    background: #1f2937;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  }
-  
-  [data-theme="dark"] .settings-row input,
-  [data-theme="dark"] .settings-row select {
-    background-color: #374151;
-    border: 1px solid #4b5563;
-    color: #f3f4f6;
-  }
-  
-  [data-theme="dark"] .settings-row label,
-  [data-theme="dark"] .settings-card h2,
-  [data-theme="dark"] .settings-title {
-    color: #f3f4f6;
-  }
-  
-  [data-theme="dark"] .settings-save-btn {
-    background-color: #4e73df;
-  }
-  
-  [data-theme="dark"] .settings-save-btn:hover {
-    background-color: #395dca;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .settings-row {
-      flex-direction: column;
-    }
-  }
-  
+}
