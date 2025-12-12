@@ -21,11 +21,11 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
-  width: 100%;            /* NEW: ensures each flex row spans full width */
+  width: 100%;
 }
 
 .quick-actions > * {
-  flex-shrink: 0;         /* NEW: prevents button squishing / collapsing */
+  flex-shrink: 0;
 }
 
 /* KPIs */
@@ -55,7 +55,7 @@
   font-size: 0.9rem;
 }
 
-/* ===== FIX: Chart + Breakdown layout ===== */
+/* ===== Chart + Breakdown layout ===== */
 .chart-section {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 1.2fr);
@@ -67,7 +67,7 @@
 .chart-card {
   padding: 1.25rem;
   max-width: 100%;
-  overflow-x: auto; 
+  overflow-x: auto;
 }
 
 /* Fix canvas overflow */
@@ -132,7 +132,41 @@
   border-bottom: 0;
 }
 
-/* Recent transactions */
+/* ============================================================
+   RECENT TRANSACTIONS TABLE — FIX COLUMN WIDTHS + ALIGNMENT
+   ============================================================ */
+
+.txn-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Column widths */
+.txn-table th:nth-child(1),
+.txn-table td:nth-child(1) {
+  width: 110px; /* Date */
+}
+
+.txn-table th:nth-child(2),
+.txn-table td:nth-child(2) {
+  width: 130px; /* Category */
+}
+
+.txn-table th.num,
+.txn-table td.num {
+  width: 110px; 
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+/* Notes expands automatically */
+.txn-table th:nth-child(4),
+.txn-table td:nth-child(4) {
+  width: auto;
+  white-space: nowrap; /* remove if wrapping is preferred */
+}
+
+/* Recent section header */
 .recent-header {
   display: flex;
   align-items: baseline;
