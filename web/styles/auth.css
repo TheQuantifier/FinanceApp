@@ -327,6 +327,24 @@ body.landing-light {
 }
 
 /* =========================================================
+   ⭐ FIX AUTOFILL — MOVED HERE BELOW INPUT RULES
+   ========================================================= */
+
+/* FIX AUTOFILL IN LIGHT THEME */
+input:-webkit-autofill {
+  background-color: #f7f7f7 !important;
+  -webkit-box-shadow: 0 0 0 1000px #f7f7f7 inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+/* FIX AUTOFILL IN DARK THEME */
+:root[data-theme="dark"] input:-webkit-autofill {
+  background-color: #111418 !important;
+  -webkit-box-shadow: 0 0 0 1000px #111418 inset !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* =========================================================
    DARK MODE
    ========================================================= */
 
@@ -385,7 +403,6 @@ body.landing-light {
   background: var(--accent);
   color: #fff;
 }
-
 
 /* =========================================================
    ⭐ DARK MODE — MAKE HERO BLACK ONLY
