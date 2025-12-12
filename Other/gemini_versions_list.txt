@@ -115,7 +115,7 @@ curl -s \
 HOW TO SWITCH MODELS
 ============================================================
 
-To change which Gemini model your Finance App uses:
+To change which Gemini model your WalletWise uses:
 
 ------------------------------------------------------------
 1️⃣ Update your local .env file
@@ -132,7 +132,7 @@ GEMINI_MODEL=models/gemini-2.5-flash
 
 On Render:
 
-1. Go to your **Finance App → Environment** tab  
+1. Go to your **WalletWise → Environment** tab  
 2. Find `GEMINI_MODEL`  
 3. Change value to the desired model, e.g.:
 

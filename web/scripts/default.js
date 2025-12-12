@@ -1,5 +1,5 @@
 /* ===============================================
-Finance App – default.js
+WalletWise – default.js
 Shared script for all pages.
 Loads header/footer, sets active nav link,
 manages account dropdown, updates auth state,

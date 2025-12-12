@@ -1,5 +1,7 @@
-# Finance App
+# WalletWise
+
 Receipt-scanning finance tracker. Folders:
+
 - web/: frontend
 - api/: backend
 - worker/: background OCR/AI
