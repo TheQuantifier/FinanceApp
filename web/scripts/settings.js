@@ -2,6 +2,7 @@ import { api } from "./api.js";
 
 console.log("Settings page loaded.");
 
+//
 // ======================================
 // DARK MODE TOGGLE (FIXED)
 // ======================================
@@ -25,12 +26,43 @@ toggleDarkModeBtn?.addEventListener("click", () => {
   localStorage.setItem("theme", newTheme);
 });
 
+//
 // --------------------------------------
 // NOTIFICATION TOGGLES
 // --------------------------------------
 const notifEmail = document.getElementById("notif_email");
 const notifSMS = document.getElementById("notif_sms");
 
+//
+// --------------------------------------
+// DEVICE CURRENCY + LOCALE DETECTION  (ADDED STEP 1)
+// --------------------------------------
+function detectUserCurrencyAndLocale() {
+  const locale = navigator.language || "en-US";
+
+  const localeToCurrency = {
+    "en-US": "USD",
+    "en-GB": "GBP",
+    "en-AU": "AUD",
+    "en-CA": "CAD",
+    "en-IN": "INR",
+    "fr-FR": "EUR",
+    "de-DE": "EUR",
+    "es-ES": "EUR",
+    "it-IT": "EUR",
+    "ja-JP": "JPY",
+    "zh-CN": "CNY",
+  };
+
+  return {
+    locale,
+    currency: localeToCurrency[locale] || "USD",
+  };
+}
+
+const deviceInfo = detectUserCurrencyAndLocale();
+
+//
 // --------------------------------------
 // FORMAT & SETTINGS
 // --------------------------------------
@@ -44,13 +76,15 @@ const languageSelect = document.querySelector(".profile-grid select");
 // Detect device timezone
 const userDeviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+//
 // --------------------------------------
-// LOAD SAVED SETTINGS (default dashboardView = Monthly)
+// LOAD SAVED SETTINGS (now defaults to device currency + locale)
 // --------------------------------------
 const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {
   dateFormat: "MM/DD/YYYY",
-  currency: "USD",
-  numberFormat: "1,234.56",
+  currency: deviceInfo.currency,      // ← UPDATED
+  numberFormat: deviceInfo.locale.includes("US") ? "1,234.56" : "1.234,56", // ← UPDATED
+  locale: deviceInfo.locale,          // ← UPDATED
   timezone: userDeviceTimezone,
   dashboardView: "Monthly",
   language: "English",
@@ -58,6 +92,7 @@ const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {
   notifSMS: false,
 };
 
+//
 // --------------------------------------
 // APPLY SAVED SETTINGS TO INPUTS
 // --------------------------------------
@@ -72,6 +107,7 @@ if (languageSelect) languageSelect.value = savedSettings.language;
 if (notifEmail) notifEmail.checked = savedSettings.notifEmail;
 if (notifSMS) notifSMS.checked = savedSettings.notifSMS;
 
+//
 // --------------------------------------
 // SAVE SETTINGS BUTTON
 // --------------------------------------
@@ -101,6 +137,7 @@ saveSettingsBtn.addEventListener("click", () => {
   applyFormats(newSettings);
 });
 
+//
 // --------------------------------------
 // APPLY FORMATS TO PAGE
 // --------------------------------------
@@ -122,17 +159,23 @@ function applyFormats(settings) {
 }
 
 function formatDate(date, format) {
-  return date.toLocaleDateString(); 
+  return date.toLocaleDateString();
 }
 
+// Updated currency formatter to use locale automatically
 function formatCurrency(value, currency) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
+  const locale = savedSettings.locale || "en-US";
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+  }).format(value);
 }
 
 function formatNumber(value, style) {
-  return new Intl.NumberFormat("en-US").format(value);
+  return new Intl.NumberFormat(savedSettings.locale || "en-US").format(value);
 }
 
+//
 // --------------------------------------
 // DELETE ACCOUNT
 // --------------------------------------
