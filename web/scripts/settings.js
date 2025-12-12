@@ -2,10 +2,35 @@ import { api } from "./api.js";
 
 console.log("Settings page loaded.");
 
-//
-// ======================================
-// DARK MODE TOGGLE (FIXED)
-// ======================================
+// =========================================================
+// HELPERS
+// =========================================================
+function detectDeviceCurrency() {
+  try {
+    const parts = new Intl.NumberFormat().formatToParts(1.11);
+    const currency = Intl.NumberFormat().resolvedOptions().currency;
+    return currency || "USD";
+  } catch {
+    return "USD";
+  }
+}
+
+function detectNumberFormat() {
+  const formatted = Intl.NumberFormat().format(1234.56);
+  return formatted.includes(",") && formatted.includes(".") ? "US" : "EU";
+}
+
+function detectDeviceTimezone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+function detectDeviceLocale() {
+  return Intl.DateTimeFormat().resolvedOptions().locale || "en-US";
+}
+
+// =========================================================
+// DARK MODE
+// =========================================================
 const toggleDarkModeBtn = document.getElementById("toggleDarkMode");
 
 function applyTheme(theme) {
@@ -14,11 +39,9 @@ function applyTheme(theme) {
     theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode";
 }
 
-// Load saved theme
 const savedTheme = localStorage.getItem("theme") || "light";
 applyTheme(savedTheme);
 
-// Theme toggle
 toggleDarkModeBtn?.addEventListener("click", () => {
   const current = document.documentElement.getAttribute("data-theme") || "light";
   const newTheme = current === "dark" ? "light" : "dark";
@@ -26,159 +49,123 @@ toggleDarkModeBtn?.addEventListener("click", () => {
   localStorage.setItem("theme", newTheme);
 });
 
-//
-// --------------------------------------
-// NOTIFICATION TOGGLES
-// --------------------------------------
-const notifEmail = document.getElementById("notif_email");
-const notifSMS = document.getElementById("notif_sms");
-
-//
-// --------------------------------------
-// DEVICE CURRENCY + LOCALE DETECTION  (ADDED STEP 1)
-// --------------------------------------
-function detectUserCurrencyAndLocale() {
-  const locale = navigator.language || "en-US";
-
-  const localeToCurrency = {
-    "en-US": "USD",
-    "en-GB": "GBP",
-    "en-AU": "AUD",
-    "en-CA": "CAD",
-    "en-IN": "INR",
-    "fr-FR": "EUR",
-    "de-DE": "EUR",
-    "es-ES": "EUR",
-    "it-IT": "EUR",
-    "ja-JP": "JPY",
-    "zh-CN": "CNY",
-  };
-
-  return {
-    locale,
-    currency: localeToCurrency[locale] || "USD",
-  };
-}
-
-const deviceInfo = detectUserCurrencyAndLocale();
-
-//
-// --------------------------------------
-// FORMAT & SETTINGS
-// --------------------------------------
-const dateFormatSelect = document.getElementById("dateFormat");
+// =========================================================
+// SETTINGS ELEMENTS
+// =========================================================
 const currencySelect = document.getElementById("currencySelect");
 const numberFormatSelect = document.getElementById("numberFormatSelect");
 const timezoneSelect = document.getElementById("timezoneSelect");
 const dashboardViewSelect = document.getElementById("dashboardViewSelect");
-const languageSelect = document.querySelector(".profile-grid select");
+const languageSelect = document.getElementById("languageSelect");
 
-// Detect device timezone
-const userDeviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const notifEmail = document.getElementById("notif_email");
+const notifSMS = document.getElementById("notif_sms");
 
-//
-// --------------------------------------
-// LOAD SAVED SETTINGS (now defaults to device currency + locale)
-// --------------------------------------
-const savedSettings = JSON.parse(localStorage.getItem("userSettings")) || {
-  dateFormat: "MM/DD/YYYY",
-  currency: deviceInfo.currency,      // ← UPDATED
-  numberFormat: deviceInfo.locale.includes("US") ? "1,234.56" : "1.234,56", // ← UPDATED
-  locale: deviceInfo.locale,          // ← UPDATED
-  timezone: userDeviceTimezone,
-  dashboardView: "Monthly",
-  language: "English",
-  notifEmail: false,
-  notifSMS: false,
+// =========================================================
+// LOAD SAVED SETTINGS — WITH AUTO-DETECT FIRST RUN
+// =========================================================
+const deviceSettings = {
+  currency: detectDeviceCurrency(),
+  numberFormat: detectNumberFormat(),
+  timezone: detectDeviceTimezone(),
+  locale: detectDeviceLocale(),
 };
 
-//
-// --------------------------------------
-// APPLY SAVED SETTINGS TO INPUTS
-// --------------------------------------
-if (dateFormatSelect) dateFormatSelect.value = savedSettings.dateFormat;
+let savedSettings = JSON.parse(localStorage.getItem("userSettings"));
+
+if (!savedSettings) {
+  // First app run → Auto-save device settings
+  savedSettings = {
+    currency: deviceSettings.currency,
+    numberFormat: deviceSettings.numberFormat,
+    timezone: deviceSettings.timezone,
+    dashboardView: "Monthly",
+    language: "English",
+    notifEmail: false,
+    notifSMS: false,
+  };
+
+  localStorage.setItem("userSettings", JSON.stringify(savedSettings));
+}
+
+// =========================================================
+// APPLY SAVED SETTINGS TO UI
+// =========================================================
 if (currencySelect) currencySelect.value = savedSettings.currency;
 if (numberFormatSelect) numberFormatSelect.value = savedSettings.numberFormat;
-
-if (timezoneSelect) timezoneSelect.value = savedSettings.timezone || userDeviceTimezone;
+if (timezoneSelect) timezoneSelect.value = savedSettings.timezone;
 if (dashboardViewSelect) dashboardViewSelect.value = savedSettings.dashboardView;
 if (languageSelect) languageSelect.value = savedSettings.language;
 
 if (notifEmail) notifEmail.checked = savedSettings.notifEmail;
 if (notifSMS) notifSMS.checked = savedSettings.notifSMS;
 
-//
-// --------------------------------------
-// SAVE SETTINGS BUTTON
-// --------------------------------------
-const saveSettingsBtn = document.getElementById("saveSettingsBtn");
-
-saveSettingsBtn.addEventListener("click", () => {
-  const newSettings = {
-    dateFormat: dateFormatSelect?.value || savedSettings.dateFormat,
-    currency: currencySelect?.value || savedSettings.currency,
-    numberFormat: numberFormatSelect?.value || savedSettings.numberFormat,
-    timezone: timezoneSelect?.value || userDeviceTimezone,
-    dashboardView: dashboardViewSelect?.value || "Monthly",
-    language: languageSelect?.value || savedSettings.language,
-    notifEmail: notifEmail?.checked || false,
-    notifSMS: notifSMS?.checked || false,
+// =========================================================
+// SAVE SETTINGS
+// =========================================================
+document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+  const updated = {
+    currency: currencySelect.value,
+    numberFormat: numberFormatSelect.value,
+    timezone: timezoneSelect.value,
+    dashboardView: dashboardViewSelect.value,
+    language: languageSelect.value,
+    notifEmail: notifEmail.checked,
+    notifSMS: notifSMS.checked,
   };
 
-  // Save to localStorage
-  localStorage.setItem("userSettings", JSON.stringify(newSettings));
-
-  // Save default dashboard view separately for quick access
-  localStorage.setItem("defaultDashboardView", newSettings.dashboardView);
+  localStorage.setItem("userSettings", JSON.stringify(updated));
+  localStorage.setItem("defaultDashboardView", updated.dashboardView);
 
   alert("Settings saved!");
 
-  // Apply immediately
-  applyFormats(newSettings);
+  applyFormats(updated);
 });
 
-//
-// --------------------------------------
-// APPLY FORMATS TO PAGE
-// --------------------------------------
+// =========================================================
+// FORMATTING ENGINE (Global utility)
+// =========================================================
 function applyFormats(settings) {
+  // Dates
   document.querySelectorAll(".date-field").forEach((el) => {
-    const date = new Date(el.dataset.timestamp);
-    el.textContent = formatDate(date, settings.dateFormat);
+    const timestamp = el.dataset.timestamp;
+    const date = new Date(timestamp);
+    el.textContent = formatDate(date, settings.timezone);
   });
 
+  // Currency
   document.querySelectorAll(".currency-field").forEach((el) => {
     const value = parseFloat(el.dataset.value);
     el.textContent = formatCurrency(value, settings.currency);
   });
 
+  // Numbers
   document.querySelectorAll(".number-field").forEach((el) => {
     const value = parseFloat(el.dataset.value);
     el.textContent = formatNumber(value, settings.numberFormat);
   });
 }
 
-function formatDate(date, format) {
-  return date.toLocaleDateString();
+function formatDate(date, timezone) {
+  return date.toLocaleDateString(undefined, { timeZone: timezone });
 }
 
-// Updated currency formatter to use locale automatically
 function formatCurrency(value, currency) {
-  const locale = savedSettings.locale || "en-US";
-  return new Intl.NumberFormat(locale, {
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
   }).format(value);
 }
 
-function formatNumber(value, style) {
-  return new Intl.NumberFormat(savedSettings.locale || "en-US").format(value);
+function formatNumber(value, format) {
+  if (format === "US") return new Intl.NumberFormat("en-US").format(value);
+  if (format === "EU") return new Intl.NumberFormat("de-DE").format(value);
+  return value;
 }
 
-//
-// --------------------------------------
+// =========================================================
 // DELETE ACCOUNT
-// --------------------------------------
+// =========================================================
 const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 
 if (deleteAccountBtn) {
