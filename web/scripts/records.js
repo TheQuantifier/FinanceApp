@@ -34,18 +34,22 @@ document.addEventListener("DOMContentLoaded", () => {
   let incomePage = 1;
 
   // ===============================
-  // HELPERS
+  // FX RATES (STATIC — replace with live API for real-time)
   // ===============================
-  const showModal = (modal) => modal?.classList.remove("hidden");
-  const hideModal = (modal) => modal?.classList.add("hidden");
-
   const FX_RATES = {
     USD: { USD: 1, EUR: 0.92, GBP: 0.79, INR: 83.1, CAD: 1.37, AUD: 1.55, JPY: 148 },
     EUR: { USD: 1.09, EUR: 1, GBP: 0.86, INR: 90.4, CAD: 1.49, AUD: 1.69, JPY: 161 },
     GBP: { USD: 1.26, EUR: 1.16, GBP: 1, INR: 105.5, CAD: 1.73, AUD: 1.96, JPY: 187 },
   };
-  
+
+  // ===============================
+  // HELPERS
+  // ===============================
+  const showModal = (modal) => modal?.classList.remove("hidden");
+  const hideModal = (modal) => modal?.classList.add("hidden");
+
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
     if (FX_RATES[fromCurrency] && FX_RATES[fromCurrency][toCurrency]) {
       return amount * FX_RATES[fromCurrency][toCurrency];
     }
@@ -72,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const fmtMoney = (value, originalCurrency = "USD") => {
     const currency = getCurrentCurrency();
     const converted = convertCurrency(Number(value) || 0, originalCurrency, currency);
-  
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
