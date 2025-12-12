@@ -159,7 +159,7 @@ body.landing-light {
 }
 
 /* =========================================================
-   ⭐ NEW RULE — LOGIN BUTTON HALF WIDTH
+   ⭐ LOGIN BUTTON HALF WIDTH
    ========================================================= */
 
 .nf-signup .nf-btn {
@@ -250,7 +250,7 @@ body.landing-light {
 }
 
 /* =========================================================
-   AUTH POPUP STYLE (register)
+   AUTH CONTAINER (REGISTER)
    ========================================================= */
 
 .auth-container {
@@ -373,6 +373,33 @@ body.landing-light {
   background: #111418;
   color: #ccc;
   border-color: #2a2e35;
+}
+
+:root[data-theme="dark"] .nf-login {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+:root[data-theme="dark"] .nf-login:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+
+/* =========================================================
+   ⭐ DARK MODE — MAKE HERO BLACK ONLY
+   ========================================================= */
+
+:root[data-theme="dark"] .nf-hero {
+  background: #000 !important;
+  color: var(--primary) !important;
+}
+
+:root[data-theme="dark"] .nf-hero .nf-title,
+:root[data-theme="dark"] .nf-hero .nf-subtitle,
+:root[data-theme="dark"] .nf-hero .nf-hero-content {
+  color: var(--primary) !important;
 }
 
 /* =========================================================
