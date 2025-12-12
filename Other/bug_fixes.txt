@@ -1,11 +1,13 @@
 All - 
+- create footer pages
 
 Home - 
 
 Upload - 
 
 Records - 
-
+- Rows per page option does not do anything - remove it since we only want 10 entries per page
 Reports - 
-
+- Add a standin "Please upload an income/expense to see chart" when pie charts are empty
 About - 
+- Atharva needs to add his photo to image folder
