@@ -28,6 +28,8 @@ function detectDeviceLocale() {
   return Intl.DateTimeFormat().resolvedOptions().locale || "en-US";
 }
 
+
+
 // =========================================================
 // DARK MODE
 // =========================================================
@@ -116,6 +118,7 @@ document.getElementById("saveSettingsBtn").addEventListener("click", () => {
 
   localStorage.setItem("userSettings", JSON.stringify(updated));
   localStorage.setItem("defaultDashboardView", updated.dashboardView);
+  localStorage.setItem("settings_currency", updated.currency);
 
   alert("Settings saved!");
 
@@ -135,8 +138,17 @@ function applyFormats(settings) {
 
   // Currency
   document.querySelectorAll(".currency-field").forEach((el) => {
-    const value = parseFloat(el.dataset.value);
-    el.textContent = formatCurrency(value, settings.currency);
+    const originalValue = parseFloat(el.dataset.value);
+    const originalCurrency = el.dataset.currency || "USD"; // default
+  
+    // Convert before formatting
+    const converted = convertCurrency(
+      originalValue,
+      originalCurrency,
+      settings.currency
+    );
+  
+    el.textContent = formatCurrency(converted, settings.currency);
   });
 
   // Numbers
@@ -162,6 +174,27 @@ function formatNumber(value, format) {
   if (format === "EU") return new Intl.NumberFormat("de-DE").format(value);
   return value;
 }
+
+// =========================================================
+// CURRENCY CONVERSION ENGINE
+// =========================================================
+
+// Simple static conversion table (can be replaced with live API later)
+const FX_RATES = {
+  USD: { USD: 1, EUR: 0.92, GBP: 0.79, INR: 83.1, CAD: 1.37, AUD: 1.55, JPY: 148 },
+  EUR: { USD: 1.09, EUR: 1, GBP: 0.86, INR: 90.4, CAD: 1.49, AUD: 1.69, JPY: 161 },
+  GBP: { USD: 1.26, EUR: 1.16, GBP: 1, INR: 105.5, CAD: 1.73, AUD: 1.96, JPY: 187 },
+};
+
+function convertCurrency(amount, fromCurrency, toCurrency) {
+  if (!FX_RATES[fromCurrency] || !FX_RATES[fromCurrency][toCurrency]) {
+    console.warn("Missing FX rate:", fromCurrency, "→", toCurrency);
+    return amount; // fallback: no conversion
+  }
+
+  return amount * FX_RATES[fromCurrency][toCurrency];
+}
+
 
 // =========================================================
 // DELETE ACCOUNT
