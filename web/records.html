@@ -15,7 +15,6 @@
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
   </script>
-  
 </head>
 
 <body>
@@ -140,7 +139,6 @@
 
     </section>
 
-
     <!-- ========================================================
          INCOME SECTION
     ========================================================= -->
@@ -257,14 +255,13 @@
 
     </section>
 
-
     <!-- ========================================================
-         MODALS
+         ADD/EDIT MODALS
     ========================================================= -->
 
     <!-- Add Expense Modal -->
     <div id="addExpenseModal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content modal-box">
         <h2>Add New Expense</h2>
 
         <form id="expenseForm" class="txn-form">
@@ -291,7 +288,7 @@
 
     <!-- Add Income Modal -->
     <div id="addIncomeModal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content modal-box">
         <h2>Add New Income</h2>
 
         <form id="incomeForm" class="txn-form">
@@ -313,6 +310,25 @@
             <button type="button" class="btn" id="cancelIncomeBtn">Cancel</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         DELETE RECORD MODAL  (NEW)
+    ========================================================= -->
+    <div id="deleteRecordModal" class="modal hidden">
+      <div class="modal-content modal-box">
+        <h2>Delete Record</h2>
+        <p id="deleteRecordText">
+          This record is linked to an uploaded receipt.<br>
+          What would you like to delete?
+        </p>
+
+        <div class="modal-actions">
+          <button id="btnDeleteRecordOnly" class="btn btn--danger">Delete Record Only</button>
+          <button id="btnDeleteRecordAndReceipt" class="btn btn--warning">Delete Record & Receipt</button>
+          <button id="btnCancelDeleteRecord" class="btn">Cancel</button>
+        </div>
       </div>
     </div>
 

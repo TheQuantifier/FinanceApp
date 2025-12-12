@@ -154,7 +154,7 @@
 }
 
 /* =========================================================
-   BADGES (Receipt / Manual) — NEW
+   BADGES (Receipt / Manual)
    ========================================================= */
 
 .badge {
@@ -166,16 +166,93 @@
   line-height: 1;
 }
 
-/* Receipt → BLUE */
 .badge-receipt {
-  background: rgba(37, 99, 235, 0.16); /* #2563eb22 */
+  background: rgba(37, 99, 235, 0.16);
   color: #2563eb;
 }
 
-/* Manual → MUTED GRAY */
 .badge-manual {
-  background: rgba(107, 114, 128, 0.16); /* #6b728022 */
+  background: rgba(107, 114, 128, 0.16);
   color: #6b7280;
+}
+
+/* =========================================================
+   MODAL STYLES (SAME AS UPLOAD PAGE)
+   ========================================================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+/* Backdrop */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Modal Box */
+.modal-box,
+.modal-content {
+  position: relative;
+  z-index: 1;
+  width: min(90%, 400px);
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-box h2,
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.modal-box p,
+.modal-content p {
+  margin: 0;
+  color: var(--text);
+}
+
+/* Modal buttons */
+.modal-actions {
+  margin-top: 1.25rem;
+
+  /* centered buttons (same fix as Upload modal) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.75rem;
+}
+
+.modal-actions .btn {
+  width: auto;
+  min-width: 200px;
+  text-align: center;
+}
+
+/* Red */
+.btn--danger {
+  background: #b00020;
+  color: #fff;
+}
+
+/* Yellow */
+.btn--warning {
+  background: #e6a100;
+  color: #111;
 }
 
 /* =========================================================

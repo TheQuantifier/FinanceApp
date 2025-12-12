@@ -1,6 +1,5 @@
 // scripts/upload.js
-// FinanceApp — Receipt Uploads, Downloads, and Deletion
-// Fully aligned with backend logic & optional deleteRecord parameter
+// FinanceApp — Receipt Uploads, Downloads, and Deletion (Modal-based)
 
 import { api } from "./api.js";
 
@@ -19,6 +18,12 @@ import { api } from "./api.js";
   const statusMsg = document.getElementById("statusMsg");
   const recentTableBody = document.getElementById("recentTableBody");
 
+  // Modal elements
+  const deleteModal = document.getElementById("deleteModal");
+  const btnDeleteFile = document.getElementById("btnDeleteFile");
+  const btnDeleteBoth = document.getElementById("btnDeleteBoth");
+  const btnDeleteCancel = document.getElementById("btnDeleteCancel");
+
   if (!dropzone || !fileInput) {
     console.error("upload.js: Missing #dropzone or #fileInput in DOM");
     return;
@@ -27,8 +32,16 @@ import { api } from "./api.js";
   let queue = [];
   let pickerArmed = false;
 
+  // Tracks current deletion
+  let pendingDelete = {
+    receiptId: null,
+    linkedRecordId: null,
+    deleteRecord: false,
+    buttonRef: null,
+  };
+
   // ----------------------------------------
-  // Helpers
+  // Status helper
   // ----------------------------------------
   const setStatus = (msg, isError = false) => {
     if (!statusMsg) return;
@@ -57,7 +70,65 @@ import { api } from "./api.js";
   const overLimit = (file) => file.size > MAX_MB * 1024 * 1024;
 
   // ----------------------------------------
-  // Recent Uploads Table
+  // Modal Logic
+  // ----------------------------------------
+
+  function openDeleteModal(receiptId, linkedRecordId, buttonRef) {
+    pendingDelete.receiptId = receiptId;
+    pendingDelete.linkedRecordId = linkedRecordId;
+    pendingDelete.buttonRef = buttonRef;
+
+    // Only show "Delete Both" if linked record exists
+    btnDeleteBoth.style.display = linkedRecordId ? "block" : "none";
+
+    deleteModal.classList.remove("hidden");
+  }
+
+  function closeDeleteModal() {
+    deleteModal.classList.add("hidden");
+
+    pendingDelete = {
+      receiptId: null,
+      linkedRecordId: null,
+      deleteRecord: false,
+      buttonRef: null,
+    };
+  }
+
+  async function performDelete(deleteRecord) {
+    const { receiptId, buttonRef } = pendingDelete;
+
+    try {
+      if (buttonRef) buttonRef.disabled = true;
+
+      await api.receipts.remove(receiptId, deleteRecord);
+
+      setStatus(
+        deleteRecord
+          ? "Receipt and linked record deleted."
+          : "Receipt deleted."
+      );
+
+      await refreshRecent();
+    } catch (err) {
+      console.error(err);
+      setStatus(`Delete failed: ${err.message}`, true);
+    } finally {
+      if (buttonRef) buttonRef.disabled = false;
+      closeDeleteModal();
+    }
+  }
+
+  // Modal button actions
+  btnDeleteFile.addEventListener("click", () => performDelete(false));
+  btnDeleteBoth.addEventListener("click", () => performDelete(true));
+  btnDeleteCancel.addEventListener("click", closeDeleteModal);
+
+  deleteModal.querySelector(".modal-backdrop")
+    .addEventListener("click", closeDeleteModal);
+
+  // ----------------------------------------
+  // Recent Uploads Table Rendering
   // ----------------------------------------
   const trashIcon = `<img src="images/trash.png" alt="Delete" class="icon-trash" />`;
   const downloadIcon = `<img src="images/download.png" alt="Download" class="icon-trash" />`;
@@ -78,23 +149,12 @@ import { api } from "./api.js";
         ? new Date(r.createdAt).toLocaleString()
         : "—";
 
-      // ----------------------------------------------
-      // NEW STATUS LOGIC (Raw / Read / Parsed / Error)
-      // ----------------------------------------------
       let status = "Raw";
-
       const hasOCR = r.ocrText && r.ocrText.trim().length > 0;
-
-      const hasParsed =
-        r.parsedData &&
-        typeof r.parsedData === "object" &&
-        Object.keys(r.parsedData).length > 0;
+      const hasParsed = r.parsedData && Object.keys(r.parsedData).length > 0;
 
       if (hasParsed) status = "Parsed";
       else if (hasOCR) status = "Read";
-      else status = "Raw";
-
-      // Future‐proof backend errors
       if (r.error || r.ocrFailed) status = "Error";
 
       const tr = document.createElement("tr");
@@ -126,7 +186,6 @@ import { api } from "./api.js";
     }
   }
 
-
   async function refreshRecent() {
     try {
       const receipts = await api.receipts.getAll();
@@ -139,7 +198,7 @@ import { api } from "./api.js";
   }
 
   // ----------------------------------------
-  // Download + Delete Actions
+  // Table Action Handling (download + modal open)
   // ----------------------------------------
   recentTableBody?.addEventListener("click", async (e) => {
     const downloadBtn = e.target.closest(".js-download");
@@ -161,55 +220,18 @@ import { api } from "./api.js";
       return;
     }
 
-    // DELETE RECEIPT (TWO-POPUP LOGIC)
+    // DELETE
     if (deleteBtn) {
       const id = deleteBtn.dataset.id;
       const row = deleteBtn.closest("tr");
       const linkedRecordId = row?.dataset?.linkedRecordId || "";
 
-      let deleteRecord = false;
-
-      // POPUP #1 — Ask ONLY if user wants to delete the linked record
-      if (linkedRecordId) {
-        deleteRecord = confirm(
-          "This receipt is linked to a financial record.\n\nDo you also want to delete the linked record?"
-        );
-      }
-
-      // POPUP #2 — Final confirmation
-      const finalConfirm = confirm(
-        deleteRecord
-          ? "Final confirmation:\nDelete BOTH the receipt and the linked record?"
-          : "Final confirmation:\nDelete ONLY the receipt?"
-      );
-
-      if (!finalConfirm) return;
-
-      try {
-        deleteBtn.disabled = true;
-
-        await api.receipts.remove(id, deleteRecord);
-
-        setStatus(
-          linkedRecordId
-            ? (deleteRecord
-                ? "Receipt and linked record deleted."
-                : "Receipt deleted (record retained).")
-            : "Receipt deleted."
-        );
-
-        await refreshRecent();
-      } catch (err) {
-        console.error(err);
-        setStatus(`Delete failed: ${err.message}`, true);
-      } finally {
-        deleteBtn.disabled = false;
-      }
+      openDeleteModal(id, linkedRecordId, deleteBtn);
     }
   });
 
   // ----------------------------------------
-  // Queue Rendering
+  // Pending Queue Rendering
   // ----------------------------------------
   function renderQueue() {
     fileList.innerHTML = "";
@@ -295,7 +317,7 @@ import { api } from "./api.js";
   }
 
   // ----------------------------------------
-  // File Picker & Drag-Drop
+  // Dropzone & File Picker
   // ----------------------------------------
   function openPickerOnce() {
     if (!fileInput || pickerArmed) return;
@@ -358,7 +380,7 @@ import { api } from "./api.js";
   });
 
   // ----------------------------------------
-  // Upload Logic
+  // Upload logic
   // ----------------------------------------
   async function uploadAll() {
     while (queue.length > 0) {

@@ -1,3 +1,4 @@
+ <!-- upload.html for Upload Page -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,8 +14,8 @@
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
   </script>
-  
 </head>
+
 <body>
   <!-- Header injected by default.js -->
   <div id="header"></div>
@@ -27,14 +28,20 @@
 
     <section class="uploader card">
       <label for="fileInput" class="file-label">Choose files</label>
+
       <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Upload dropzone">
         <div class="dz-inner">
-          <svg class="dz-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M7 10l5-6 5 6M12 4v12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <svg class="dz-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6M7 10l5-6 5 6M12 4v12"
+              fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+
           <div class="dz-text">
             <strong>Click to select</strong>
             or drag & drop files here
           </div>
         </div>
+
         <input id="fileInput" class="dz-input" type="file" accept=".pdf,.png,.jpg,.jpeg" />
       </div>
 
@@ -58,6 +65,7 @@
 
     <section class="recent card">
       <h2>Recent uploads</h2>
+
       <div class="table-wrap">
         <table class="txn-table">
           <thead>
@@ -70,6 +78,7 @@
               <th scope="col" class="actions-col">Actions</th>
             </tr>
           </thead>
+
           <tbody id="recentTableBody">
             <tr><td colspan="6" class="subtle">Loading…</td></tr>
           </tbody>
@@ -81,10 +90,23 @@
   <!-- Footer injected by default.js -->
   <div id="footer"></div>
 
-  <script>
-    // Optional: override API from querystring ?api=https://my.api
-    window.API_BASE = new URLSearchParams(location.search).get("api") || "http://localhost:4000";
-  </script>
+  <!-- ===================== DELETE RECEIPT MODAL ===================== -->
+  <div id="deleteModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-box">
+      <h3>Delete Receipt</h3>
+      <p>This receipt may be linked to a financial record. What would you like to delete?</p>
+
+      <div class="modal-actions">
+        <button id="btnDeleteFile" class="btn btn--danger">Delete Receipt Only</button>
+        <button id="btnDeleteBoth" class="btn btn--warning">Delete Both Receipt & Record</button>
+        <button id="btnDeleteCancel" class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="scripts/default.js" type="module" defer></script>
   <script src="scripts/upload.js" type="module" defer></script>
 </body>

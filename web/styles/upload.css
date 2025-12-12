@@ -157,7 +157,6 @@
 .icon-btn:hover {
   background: #f3f4f6;
 }
-/* Prefer focus-visible so mouse clicks don’t show a ring */
 .icon-btn:focus {
   outline: none;
 }
@@ -165,8 +164,6 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-
-/* Trash icon image: no borders/outline */
 .icon-trash {
   width: 20px;
   height: 20px;
@@ -176,9 +173,81 @@
   outline: none;
   box-shadow: none;
 }
-/* Extra safety for any img placed inside the icon button */
 .icon-btn img {
   border: none;
   outline: none;
   box-shadow: none;
+}
+
+/* ===================================================================
+   MODAL STYLES (NEW)
+   =================================================================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+/* Backdrop */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Modal Box */
+.modal-box {
+  position: relative;
+  z-index: 1;
+  width: min(90%, 400px);
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-box h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.modal-box p {
+  margin: 0;
+  color: var(--text);
+}
+
+/* Modal buttons — FIXED & CENTERED */
+.modal-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;    /* centers horizontally */
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.modal-actions .btn {
+  width: auto;            /* prevent stretching */
+  min-width: 200px;       /* uniform button width */
+  text-align: center;
+}
+
+/* Delete Receipt Only */
+.btn--danger {
+  background: #b00020;
+  color: #fff;
+}
+
+/* Delete Both */
+.btn--warning {
+  background: #e6a100;
+  color: #111;
 }

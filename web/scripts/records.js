@@ -25,6 +25,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnExportExpenses = document.getElementById("btnExportExpenses");
   const btnExportIncome = document.getElementById("btnExportIncome");
 
+  // DELETE RECORD MODAL ELEMENTS
+  const deleteRecordModal = document.getElementById("deleteRecordModal");
+  const btnDeleteRecordOnly = document.getElementById("btnDeleteRecordOnly");
+  const btnDeleteRecordAndReceipt = document.getElementById("btnDeleteRecordAndReceipt");
+  const btnCancelDeleteRecord = document.getElementById("btnCancelDeleteRecord");
+
+  // Tracks the deletion target
+  let pendingDelete = {
+    recordId: null,
+    linkedReceiptId: null,
+  };
+
   let expensePage = 1;
   let incomePage = 1;
 
@@ -49,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   };
 
-  // BADGE UI (Improvement #2)
   const typeBadge = (record) => {
     return record.linkedReceiptId
       ? `<span class="badge badge-receipt">Receipt</span>`
@@ -83,6 +94,38 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===============================
+  // DELETE RECORD (New Modal Logic)
+  // ===============================
+  function openDeleteModal(recordId, linkedReceiptId) {
+    pendingDelete.recordId = recordId;
+    pendingDelete.linkedReceiptId = linkedReceiptId;
+
+    // Hide the "delete record + receipt" button if no receipt is linked
+    btnDeleteRecordAndReceipt.style.display = linkedReceiptId ? "block" : "none";
+
+    showModal(deleteRecordModal);
+  }
+
+  async function performDelete(deleteReceiptToo) {
+    const { recordId, linkedReceiptId } = pendingDelete;
+    try {
+      await api.records.remove(recordId, deleteReceiptToo && linkedReceiptId);
+      hideModal(deleteRecordModal);
+      loadRecords();
+    } catch (err) {
+      alert("Failed to delete: " + err.message);
+    }
+  }
+
+  btnDeleteRecordOnly.addEventListener("click", () => performDelete(false));
+  btnDeleteRecordAndReceipt.addEventListener("click", () => performDelete(true));
+  btnCancelDeleteRecord.addEventListener("click", () => hideModal(deleteRecordModal));
+
+  deleteRecordModal?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal")) hideModal(deleteRecordModal);
+  });
+
+  // ===============================
   // EVENT DELEGATION
   // ===============================
   document.addEventListener("click", async (e) => {
@@ -109,9 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const record = await api.records.getOne(editId);
       if (!record) return;
 
-      document.querySelectorAll(".actions-dropdown").forEach((m) =>
-        m.classList.add("hidden")
-      );
+      document.querySelectorAll(".actions-dropdown").forEach((m) => m.classList.add("hidden"));
 
       if (record.type === "expense") {
         document.getElementById("expenseDate").value = isoToInputDate(record.date);
@@ -134,55 +175,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =======================
-    // DELETE RECORD (Improvement #1)
+    // DELETE RECORD (OPEN MODAL)
     // =======================
     const delId = e.target.dataset.delete;
     if (delId) {
       const row = e.target.closest("tr");
       const linkedReceiptId = row?.dataset.linkedReceiptId || "";
 
-      document.querySelectorAll(".actions-dropdown").forEach((m) =>
-        m.classList.add("hidden")
-      );
+      document.querySelectorAll(".actions-dropdown").forEach((m) => m.classList.add("hidden"));
 
-      // Step 1: Confirm deleting record
-      const ok = confirm("Delete this record?");
-      if (!ok) return;
-
-      let deleteReceiptToo = false;
-
-      // Step 2: If linked → ask what to do with receipt
-      if (linkedReceiptId) {
-        deleteReceiptToo = confirm(
-          "This record is linked to a receipt.\n\nDelete the receipt too?"
-        );
-      }
-
-      try {
-        // CASE A: Delete record AND receipt (one unified deletion)
-        if (deleteReceiptToo && linkedReceiptId) {
-          await api.records.remove(delId, true);
-        }
-
-        // CASE B: Delete record ONLY (receipt untouched)
-        else if (!deleteReceiptToo && linkedReceiptId) {
-          await api.records.remove(delId, false);
-        }
-
-        // CASE C: Normal delete (no linked receipt)
-        else {
-          await api.records.remove(delId);
-        }
-
-        loadRecords();
-      } catch (err) {
-        alert("Failed to delete: " + err.message);
-      }
-
+      openDeleteModal(delId, linkedReceiptId);
       return;
     }
 
-    // Close menus on outside click
+    // Close menus when clicking outside
     document.querySelectorAll(".actions-dropdown").forEach((m) =>
       m.classList.add("hidden")
     );
