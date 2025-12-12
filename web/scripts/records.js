@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnDeleteRecordAndReceipt = document.getElementById("btnDeleteRecordAndReceipt");
   const btnCancelDeleteRecord = document.getElementById("btnCancelDeleteRecord");
 
-  // Tracks the deletion target
   let pendingDelete = {
     recordId: null,
     linkedReceiptId: null,
@@ -61,6 +60,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   };
 
+  // ===============================
+  // CURRENCY FORMATTER (NEW)
+  // ===============================
+  const formatMoney = (amount) => {
+    const settings = api.settings.get();
+    const currency = settings?.currency || "USD";
+
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+    }).format(amount);
+  };
+
   const typeBadge = (record) => {
     return record.linkedReceiptId
       ? `<span class="badge badge-receipt">Receipt</span>`
@@ -76,7 +88,10 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${fmtDate(record.date)}</td>
       <td>${record.type}</td>
       <td>${record.category || "—"}</td>
-      <td class="num">${Number(record.amount).toFixed(2)}</td>
+
+      <!-- UPDATED: Currency formatting -->
+      <td class="num">${formatMoney(record.amount)}</td>
+
       <td>${record.note || "—"}</td>
       <td>${typeBadge(record)}</td>
 
@@ -94,15 +109,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===============================
-  // DELETE RECORD (New Modal Logic)
+  // DELETE RECORD (modal logic)
   // ===============================
   function openDeleteModal(recordId, linkedReceiptId) {
     pendingDelete.recordId = recordId;
     pendingDelete.linkedReceiptId = linkedReceiptId;
 
-    // Hide the "delete record + receipt" button if no receipt is linked
     btnDeleteRecordAndReceipt.style.display = linkedReceiptId ? "block" : "none";
-
     showModal(deleteRecordModal);
   }
 
@@ -130,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   document.addEventListener("click", async (e) => {
 
-    // MENU OPEN/CLOSE
     const menuBtn = e.target.closest("[data-menu-btn]");
     if (menuBtn) {
       e.stopPropagation();
@@ -144,9 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // =======================
-    // EDIT RECORD
-    // =======================
     const editId = e.target.dataset.edit;
     if (editId) {
       const record = await api.records.getOne(editId);
@@ -174,21 +183,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // =======================
-    // DELETE RECORD (OPEN MODAL)
-    // =======================
     const delId = e.target.dataset.delete;
     if (delId) {
       const row = e.target.closest("tr");
       const linkedReceiptId = row?.dataset.linkedReceiptId || "";
-
       document.querySelectorAll(".actions-dropdown").forEach((m) => m.classList.add("hidden"));
-
       openDeleteModal(delId, linkedReceiptId);
       return;
     }
 
-    // Close menus when clicking outside
     document.querySelectorAll(".actions-dropdown").forEach((m) =>
       m.classList.add("hidden")
     );
@@ -327,15 +330,16 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      if (editId) await api.records.update(editId, payload);
-      else await api.records.create(payload);
-
+      if (editId) {
+        await api.records.update(editId, payload);
+        delete addExpenseModal.dataset.editId;
+      } else {
+        await api.records.create(payload);
+      }
       hideModal(addExpenseModal);
-      expenseForm.reset();
-      delete addExpenseModal.dataset.editId;
       loadRecords();
-    } catch (err) {
-      alert("Error saving expense: " + err.message);
+    } catch (error) {
+      alert("Error saving expense: " + error.message);
     }
   });
 
@@ -352,109 +356,21 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      if (editId) await api.records.update(editId, payload);
-      else await api.records.create(payload);
-
+      if (editId) {
+        await api.records.update(editId, payload);
+        delete addIncomeModal.dataset.editId;
+      } else {
+        await api.records.create(payload);
+      }
       hideModal(addIncomeModal);
-      incomeForm.reset();
-      delete addIncomeModal.dataset.editId;
       loadRecords();
-    } catch (err) {
-      alert("Error saving income: " + err.message);
+    } catch (error) {
+      alert("Error saving income: " + error.message);
     }
   });
 
   // ===============================
-  // FILTERS
-  // ===============================
-  filtersForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    expensePage = 1;
-    loadRecords();
-  });
-
-  filtersFormIncome?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    incomePage = 1;
-    loadRecords();
-  });
-
-  document.getElementById("btnClear")?.addEventListener("click", () => {
-    filtersForm?.reset();
-    expensePage = 1;
-    loadRecords();
-  });
-
-  document.getElementById("btnClearIncome")?.addEventListener("click", () => {
-    filtersFormIncome?.reset();
-    incomePage = 1;
-    loadRecords();
-  });
-
-  // ===============================
-  // EXPORT CSV
-  // ===============================
-  btnExportExpenses?.addEventListener("click", async () => {
-    const records = await api.records.getAll();
-    exportToCSV(records.filter((r) => r.type === "expense"), "expenses");
-  });
-
-  btnExportIncome?.addEventListener("click", async () => {
-    const records = await api.records.getAll();
-    exportToCSV(records.filter((r) => r.type === "income"), "income");
-  });
-
-  const exportToCSV = (records, label) => {
-    if (!records.length) return alert("No records to export.");
-
-    const headers = ["Date", "Type", "Category", "Amount", "Notes"];
-    const rows = [headers.join(",")];
-
-    records.forEach((r) => {
-      const date = r.date ? r.date.split("T")[0] : "";
-      const type = r.type || "";
-      const category = (r.category || "").replace(/,/g, ";");
-      const amount = r.amount ?? "";
-      const notes = (r.note || "").replace(/,/g, ";");
-      rows.push([date, type, category, amount, notes].join(","));
-    });
-
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label}_records_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // ===============================
-  // PAGINATION
-  // ===============================
-  document.getElementById("prevPageExpense")?.addEventListener("click", () => {
-    if (expensePage > 1) {
-      expensePage--;
-      loadRecords();
-    }
-  });
-
-  document.getElementById("nextPageExpense")?.addEventListener("click", () => {
-    expensePage++;
-    loadRecords();
-  });
-
-  document.getElementById("prevPageIncome")?.addEventListener("click", () => {
-    if (incomePage > 1) {
-      incomePage--;
-      loadRecords();
-    }
-  });
-
-  document.getElementById("nextPageIncome")?.addEventListener("click", () => {
-    incomePage++;
-    loadRecords();
-  });
-
   // INITIAL LOAD
+  // ===============================
   loadRecords();
 });
