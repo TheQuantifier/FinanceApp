@@ -12,7 +12,6 @@
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
   </script>
-  
 </head>
 
 <body>
@@ -27,18 +26,18 @@
         <p class="subtle">View and update your personal info</p>
       </div>
       <div class="actions" role="group">
-        <button id="editProfileBtn" class="btn btn--primary" type="button">Edit Profile</button>
+        <button id="editProfileBtn" class="btn btn--primary" type="button">
+          Edit Profile
+        </button>
       </div>
     </section>
 
     <div class="profile-grid">
 
       <!-- SUMMARY + EDIT FORM -->
-      <section class="card profile-card" aria-labelledby="profile-summary-title">
-        <h2 id="profile-summary-title" class="sr-only">Profile summary</h2>
-
+      <section class="card profile-card">
         <div class="avatar-block">
-          <div class="avatar" aria-hidden="true"></div>
+          <div class="avatar"></div>
           <div class="identity">
             <h3 class="name" id="fullName">—</h3>
             <p class="subtle" id="username">@—</p>
@@ -91,7 +90,7 @@
             </div>
             <div class="sr-right align-right">
               <span id="stat_2FA">—</span>
-              <button class="btn" id="toggle2FA">Configure</button>
+              <button class="btn btn--primary" id="toggle2FA">Configure</button>
             </div>
           </div>
 
@@ -101,7 +100,7 @@
               <p class="subtle">Use a strong unique password.</p>
             </div>
             <div class="sr-right align-right">
-              <button class="btn" id="changePasswordBtn">Change</button>
+              <button class="btn btn--primary" id="changePasswordBtn">Change</button>
             </div>
           </div>
 
@@ -134,28 +133,23 @@
             </div>
           </div>
 
-
           <div class="security-row">
             <div class="sr-left">
               <p class="label">Sessions</p>
               <p class="subtle">Manage signed-in devices.</p>
             </div>
             <div class="sr-right align-right">
-              <button class="btn" id="signOutAllBtn">Sign Out All</button>
+              <button class="btn btn--primary" id="signOutAllBtn">Sign Out All</button>
             </div>
           </div>
 
           <div class="security-row">
-            <div class="sr-left">
-              <p class="label">Last Login</p>
-            </div>
+            <div class="sr-left"><p class="label">Last Login</p></div>
             <div class="sr-right align-right" id="stat_lastLogin">—</div>
           </div>
 
           <div class="security-row">
-            <div class="sr-left">
-              <p class="label">Records Uploaded</p>
-            </div>
+            <div class="sr-left"><p class="label">Records Uploaded</p></div>
             <div class="sr-right align-right" id="stat_uploads">—</div>
           </div>
 

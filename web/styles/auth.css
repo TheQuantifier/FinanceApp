@@ -1,46 +1,50 @@
 /* =========================================================
-   Finance App - Auth + Landing Styles
-   Combines Register, Login, and Landing Page Design
+   FINANCE APP — AUTH + LANDING
+   Login, Register, Landing Pages
+   Uses global design tokens from default.css
    ========================================================= */
 
-/* Allow auth pages to override the default body padding */
+/* Allow landing pages to override global padding */
 body.landing-light {
   padding-top: 0;
 }
 
-/* ========== BASE LAYOUT ========== */
+/* =========================================================
+   BASE LAYOUT
+   ========================================================= */
+
 .landing-light {
-  background: #fff;
-  color: #111;
+  background: var(--grey-0);
+  color: var(--text);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   overflow-x: hidden;
 }
 
 /* =========================================================
-   HEADER (fixed at top)
+   HEADER
    ========================================================= */
+
 .nf-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   width: 100%;
-  z-index: 1000;
   background: #e6f4ff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  z-index: 1000;
 }
 
 .nf-header-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0.75rem 1.5rem;
+  padding: var(--space-3) var(--space-4);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .nf-logo {
@@ -57,25 +61,27 @@ body.landing-light {
   padding: 0.5rem 1rem;
   border-radius: 999px;
   border: 1px solid #ccc;
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: 0.2s ease;
 }
+
 .nf-login:hover {
   background: var(--primary);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-sm);
 }
 
 /* =========================================================
-   HERO SECTION
+   HERO / MAIN BLOCK
    ========================================================= */
+
 .nf-hero {
   flex: 1;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  padding: 6rem 1rem 6rem;
   text-align: center;
-  padding: 6rem 1rem 6rem; /* header + footer spacing */
-  background: #fff;
+  background: var(--grey-0);
 }
 
 .nf-hero-content {
@@ -86,78 +92,89 @@ body.landing-light {
 .nf-title {
   font-size: clamp(2.4rem, 6vw, 3.2rem);
   font-weight: 900;
-  color: #000;
-  margin-bottom: 0.5rem;
+  color: var(--text);
+  margin-bottom: var(--space-2);
 }
 
 .nf-subtitle {
   font-size: 1.15rem;
-  color: #444;
-  margin-bottom: 1.2rem;
-  line-height: 1.5;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.55;
 }
 
 /* =========================================================
-   SIGNUP FORM (Landing/Register)
+   LOGIN + REGISTER FORM (Landing)
    ========================================================= */
+
 .nf-signup {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   max-width: 460px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .nf-input {
   padding: 0.85rem 1rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: #f7f7f7;
-  color: #000;
-  outline: none;
   font-size: 1rem;
+  color: var(--text);
+  transition: border-color 0.2s, background 0.2s;
 }
+
 .nf-input::placeholder {
-  color: #888;
+  color: var(--muted);
 }
+
 .nf-input:focus {
+  background: var(--grey-0);
   border-color: var(--primary);
-  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,87,184,0.15);
 }
 
 .nf-btn {
   padding: 0.85rem 1.3rem;
-  border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--primary);
   color: #fff;
   font-weight: 700;
+  border: none;
   cursor: pointer;
   font-size: 0.95rem;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.05s ease;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.05s;
 }
+
 .nf-btn:hover {
   background: var(--accent);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-sm);
 }
+
 .nf-btn:active {
   transform: translateY(1px);
 }
 
-.nf-hint {
-  display: block;
-  margin-top: 0.6rem;
-  color: #666;
-  font-size: 0.88rem;
+/* =========================================================
+   ⭐ NEW RULE — LOGIN BUTTON HALF WIDTH
+   ========================================================= */
+
+.nf-signup .nf-btn {
+  width: 50%;
+  align-self: center;
 }
 
 /* =========================================================
    ABOUT SECTION
    ========================================================= */
+
 .nf-about {
   background: #fafafa;
-  border-top: 1px solid #eee;
-  padding: 3rem 1rem 4rem;
+  border-top: 1px solid var(--border);
+  padding: var(--space-6) 1rem var(--space-6);
   text-align: center;
 }
 
@@ -169,154 +186,109 @@ body.landing-light {
 .nf-about h2 {
   color: var(--primary);
   font-size: 2rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-3);
 }
 
 .nf-about p {
-  color: #444;
-  font-size: 1.05rem;
-  margin-bottom: 2rem;
-  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: var(--space-4);
 }
 
-/* Feature Cards */
 .nf-about-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1rem;
+  gap: var(--space-5);
 }
 
 .nf-about-card {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  background: var(--grey-0);
+  border-radius: var(--radius);
   padding: 1.5rem;
-  text-align: left;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .nf-about-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
 .nf-about-card h3 {
   color: var(--primary);
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .nf-about-card p {
-  font-size: 0.95rem;
-  color: #555;
-  line-height: 1.5;
+  color: var(--muted);
 }
 
 /* =========================================================
-   FOOTER (fixed at bottom)
+   FOOTER
    ========================================================= */
+
 .nf-footer {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
   background: #e6f4ff;
-  color: #555;
+  border-top: 1px solid var(--border);
+  padding: 0.85rem 1rem;
   text-align: center;
-  border-top: 1px solid #ddd;
-  padding: 0.8rem 1rem;
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.05);
-  z-index: 999;
+  box-shadow: 0 -1px 4px rgba(0,0,0,0.05);
 }
 
 .nf-footer-inner {
   max-width: 900px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
 }
 
 .nf-footer-inner p {
   margin: 0;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.nf-legal {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-}
-
-.nf-legal a {
   color: #555;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.nf-legal a:hover {
-  color: var(--accent);
-}
-
-.nf-legal .sep {
-  color: #aaa;
-  margin: 0 0.3rem;
+  font-size: 0.95rem;
 }
 
 /* =========================================================
-   AUTH PAGES (Login + Register Forms)
+   AUTH POPUP STYLE (register)
    ========================================================= */
+
 .auth-container {
   max-width: 420px;
   margin: 6rem auto 4rem;
   background: var(--card-bg);
   padding: 2rem 2.5rem;
   border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   text-align: center;
 }
 
 .auth-container h1 {
   font-size: 1.8rem;
   color: var(--primary);
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-2);
 }
 
 .auth-container p.subtext {
   color: var(--muted);
-  margin-bottom: 1.5rem;
   font-size: 0.95rem;
+  margin-bottom: var(--space-4);
 }
 
-/* FORM */
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.auth-form label {
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--text);
-}
-
 .auth-form input {
-  padding: 0.7rem;
+  padding: 0.75rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--grey-1);
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: 0.2s;
 }
 
 .auth-form input:focus {
@@ -325,38 +297,29 @@ body.landing-light {
   outline: none;
 }
 
-/* BUTTON — RESTORED ORIGINAL VERSION */
 .auth-form button {
   background: var(--primary);
   color: white;
   border: none;
   border-radius: var(--radius);
-  padding: 0.75rem;
-  font-weight: 600;
+  padding: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 0.95rem;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.05s ease;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 
 .auth-form button:hover {
   background: var(--accent);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-sm);
 }
 
-.auth-form button:active {
-  transform: translateY(1px);
-}
-
-/* LINKS */
 .auth-links {
-  margin-top: 1.25rem;
-  font-size: 0.95rem;
+  margin-top: var(--space-4);
 }
 
 .auth-links a {
   color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .auth-links a:hover {
@@ -364,165 +327,78 @@ body.landing-light {
 }
 
 /* =========================================================
-DARK MODE OVERRIDES
-========================================================= */
+   DARK MODE
+   ========================================================= */
 
-:root[data-theme="dark"] .landing-light,
-:root[data-theme="dark"] body.landing-light {
-  background: #0f1115 !important;
-  color: #ffffff !important;
+:root[data-theme="dark"] .landing-light {
+  background: #0f1115;
+  color: #fff;
 }
 
-/* ---------- Header ---------- */
 :root[data-theme="dark"] .nf-header {
-  background: #111418 !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
+  background: #111418;
+  box-shadow: none;
 }
 
 :root[data-theme="dark"] .nf-logo {
-  color: #3b82f6 !important;
+  color: var(--primary);
 }
 
-:root[data-theme="dark"] .nf-login {
-  color: #ffffff !important;
-  border-color: #2a2e35 !important;
-  background: #1c1f26 !important;
-}
-:root[data-theme="dark"] .nf-login:hover {
-  background: #3b82f6 !important; 
-  color: #fff !important;
-}
-
-/* ---------- Hero Section ---------- */
-:root[data-theme="dark"] .nf-hero {
-  background: #0f1115 !important;
-}
-
-:root[data-theme="dark"] .nf-title {
-  color: #ffffff !important;
-}
-
-:root[data-theme="dark"] .nf-subtitle {
-  color: #cfcfcf !important;
-}
-
-/* ---------- Inputs ---------- */
 :root[data-theme="dark"] .nf-input {
-  background: #111418 !important;
-  border: 1px solid #2a2e35 !important;
-  color: #ffffff !important;
+  background: #111418;
+  border-color: #2a2e35;
+  color: #fff;
 }
-:root[data-theme="dark"] .nf-input::placeholder {
-  color: #9a9a9a !important;
-}
+
 :root[data-theme="dark"] .nf-input:focus {
-  background: #1c1f26 !important;
-  border-color: #3b82f6 !important;
+  background: #1c1f26;
+  border-color: var(--primary);
 }
 
-/* ---------- About ---------- */
+:root[data-theme="dark"] .nf-btn:hover {
+  background: var(--accent);
+}
+
 :root[data-theme="dark"] .nf-about {
-  background: #111418 !important;
-  border-top: 1px solid #2a2e35 !important;
-}
-
-:root[data-theme="dark"] .nf-about h2 {
-  color: #3b82f6 !important;
-}
-
-:root[data-theme="dark"] .nf-about p {
-  color: #cfcfcf !important;
+  background: #111418;
+  border-color: #2a2e35;
 }
 
 :root[data-theme="dark"] .nf-about-card {
-  background: #1c1f26 !important;
-  border: 1px solid #2a2e35 !important;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.35) !important;
+  background: #1c1f26;
+  border: 1px solid #2a2e35;
 }
 
-:root[data-theme="dark"] .nf-about-card h3 {
-  color: #3b82f6 !important;
-}
-
-:root[data-theme="dark"] .nf-about-card p {
-  color: #d5d5d5 !important;
-}
-
-/* ---------- Footer ---------- */
 :root[data-theme="dark"] .nf-footer {
-  background: #111418 !important;
-  color: #d6d6d6 !important;
-  border-top: 1px solid #2a2e35 !important;
-}
-
-:root[data-theme="dark"] .nf-footer-inner p,
-:root[data-theme="dark"] .nf-legal a {
-  color: #c0c0c0 !important;
+  background: #111418;
+  color: #ccc;
+  border-color: #2a2e35;
 }
 
 /* =========================================================
-FIX AUTOFILL
-========================================================= */
-
-:root[data-theme="dark"] input:-webkit-autofill,
-:root[data-theme="dark"] input:-webkit-autofill:hover,
-:root[data-theme="dark"] input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #ffffff !important;
-  caret-color: #ffffff !important;
-  box-shadow: 0 0 0 1000px #111418 inset !important;
-  transition: background-color 9999s ease-in-out 0s !important;
-}
-
-/* =========================================================
-RESPONSIVE
-========================================================= */
+   RESPONSIVE
+   ========================================================= */
 
 @media (max-width: 640px) {
   .nf-header-inner {
-    flex-direction: row;
     padding: 0.75rem 1rem;
   }
-
-  .nf-logo {
-    font-size: 1.5rem;
-  }
-
   .nf-signup {
-    grid-template-columns: 1fr;
-  }
-
-  .nf-btn {
     width: 100%;
   }
-
   .nf-hero {
     padding: 5rem 1rem 3rem;
-  }
-
-  .nf-about {
-    padding: 2rem 1rem 3rem;
-  }
-
-  .nf-about h2 {
-    font-size: 1.7rem;
-  }
-
-  .auth-container {
-    margin: 4.5rem 1rem 2rem;
-    padding: 1.5rem;
   }
 }
 
 /* =========================================================
-🚀 BACKGROUND IMAGE (LIGHT + DARK)
-========================================================= */
+   BACKGROUND IMAGE — LIGHT + DARK
+   ========================================================= */
 
 body.landing-light {
-  background: url("../images/background.jpg") no-repeat center center fixed !important;
-  background-size: cover !important;
+  background: url("../images/background.jpg") no-repeat center / cover fixed;
 }
 
 :root[data-theme="dark"] body.landing-light {
-  background: url("../images/background.jpg") no-repeat center center fixed !important;
-  background-size: cover !important;
+  background: url("../images/background.jpg") no-repeat center / cover fixed;
 }

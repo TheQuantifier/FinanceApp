@@ -32,7 +32,7 @@ body {
   gap: 1.25rem;
 }
 
-/* ===== CARDS BASE PADDING ===== */
+/* ===== CARD BASE ===== */
 .profile-card,
 .quick-stats,
 .security,
@@ -73,9 +73,7 @@ body {
   font-weight: 700;
 }
 
-.identity .subtle {
-  color: var(--muted);
-}
+.identity .subtle { color: var(--muted); }
 
 /* ===== META LIST ===== */
 .meta {
@@ -118,9 +116,7 @@ body {
 }
 
 /* ===== EDIT FORM ===== */
-.edit-form {
-  margin-top: 0.6rem;
-}
+.edit-form { margin-top: 0.6rem; }
 
 .form-grid {
   display: grid;
@@ -149,9 +145,7 @@ textarea {
   color: var(--text);
 }
 
-textarea {
-  resize: vertical;
-}
+textarea { resize: vertical; }
 
 .form-actions {
   display: flex;
@@ -183,13 +177,8 @@ textarea {
   color: var(--text);
 }
 
-.sr-left .label {
-  font-weight: 700;
-}
-
-.sr-left .subtle {
-  color: var(--muted);
-}
+.sr-left .label { font-weight: 700; }
+.sr-left .subtle { color: var(--muted); }
 
 .sr-right {
   margin-left: auto;
@@ -198,35 +187,11 @@ textarea {
   gap: 0.6rem;
 }
 
-.align-right {
-  justify-content: flex-end;
-}
-
-.security .btn {
-  background-color: var(--primary);
-  color: #fff;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.security .btn.btn--link {
-  background: none;
-  color: var(--primary);
-  padding: 0;
-}
-
-[data-theme="dark"] .security .btn {
-  background-color: var(--accent);
-  color: #fff;
-}
-
 /* ===== MODAL ===== */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: var(--modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,32 +207,11 @@ textarea {
 }
 
 /* ===== ACTIVITY ===== */
-.activity {
-  grid-column: 1 / -1;
-}
+.activity { grid-column: 1 / -1; }
 
 .activity h2 {
   font-size: 1.1rem;
   margin-bottom: 0.6rem;
-}
-
-/* ===== BUTTONS BASE ===== */
-.btn {
-  cursor: pointer;
-  border-radius: var(--radius);
-  border: none;
-  padding: 0.5rem 0.9rem;
-}
-
-.btn--primary {
-  background-color: var(--primary);
-  color: #fff;
-}
-
-.btn--link {
-  background: none;
-  color: var(--primary);
-  padding: 0;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -277,10 +221,6 @@ textarea {
     align-items: flex-start;
     gap: 0.5rem;
   }
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
+  .profile-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
 }

@@ -426,6 +426,7 @@ input, select, textarea {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--grey-0);
+  color: var(--gray-3);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
