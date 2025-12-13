@@ -581,6 +581,12 @@ textarea:focus {
   color: white;
 }
 
+:root[data-theme="dark"] .btn--danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: white;
+}
+
 :root[data-theme="dark"] .footer-bottom,
 :root[data-theme="dark"] footer {
   background: #23272b;
