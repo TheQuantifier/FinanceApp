@@ -46,8 +46,23 @@
         </details>
 
         <details>
+          <summary>How do I export my data?</summary>
+          <p>Go to Records and use the Export option to download a CSV for budgeting, accounting, or taxes.</p>
+        </details>
+
+        <details>
+          <summary>Why don’t my charts match my records?</summary>
+          <p>Check your selected date range and filters—charts only reflect the currently filtered records.</p>
+        </details>
+
+        <details>
+          <summary>How do I delete or edit a transaction?</summary>
+          <p>Open Records, select the transaction, and choose Edit or Delete from the actions menu.</p>
+        </details>
+
+        <details>
           <summary>How do I contact support?</summary>
-          <p>Email us at support@financeapp.com</p>
+          <p>Email us at <a href="mailto:support@walletwise.app">support@walletwise.app</a></p>
         </details>
       </section>
 
@@ -55,17 +70,34 @@
       <section class="card">
         <h2>Contact Support</h2>
 
-        <label>
-          <span class="label">Your Email</span>
-          <input type="email" />
-        </label>
+        <form id="supportForm" novalidate>
+          <label for="supportEmail">
+            <span class="label">Your Email</span>
+            <input
+              id="supportEmail"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
+          </label>
 
-        <label>
-          <span class="label">Message</span>
-          <textarea rows="4"></textarea>
-        </label>
+          <label for="supportMessage">
+            <span class="label">Message</span>
+            <textarea
+              id="supportMessage"
+              name="message"
+              rows="5"
+              placeholder="Tell us what happened (include steps to reproduce and any error messages)."
+              required
+            ></textarea>
+          </label>
 
-        <button class="btn btn--primary">Send Message</button>
+          <p id="supportStatus" class="subtle" aria-live="polite" style="display:none;"></p>
+
+          <button type="submit" class="btn btn--primary">Send Message</button>
+        </form>
       </section>
 
     </div>

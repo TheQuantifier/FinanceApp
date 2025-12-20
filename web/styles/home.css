@@ -67,6 +67,7 @@
 .chart-card {
   padding: 1.25rem;
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
 }
 
@@ -125,8 +126,9 @@
 .cat-list li {
   display: flex;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.5rem 0;
-  border-bottom: 1px dashed #eee;
+  border-bottom: 1px dashed var(--border);
 }
 .cat-list li:last-child {
   border-bottom: 0;
@@ -183,7 +185,23 @@
     flex-direction: column;
     gap: 0.75rem;
   }
+  .quick-actions {
+    justify-content: flex-start;
+  }
   .legend {
     display: none;
+  }
+
+  /* Recent table: avoid cramped columns */
+  .txn-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Allow notes to wrap on small screens */
+  .txn-table th:nth-child(4),
+  .txn-table td:nth-child(4) {
+    white-space: normal;
   }
 }

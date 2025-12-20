@@ -5,6 +5,28 @@ import { api } from "./api.js";
   const CURRENCY_FALLBACK = "USD";
   const $ = (sel, root = document) => root.querySelector(sel);
 
+  const setText = (sel, value) => {
+    const el = $(sel);
+    if (el) el.textContent = value;
+  };
+
+  // Avoid injecting unsanitized user content into innerHTML
+  const escapeHTML = (str) =>
+    String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const debounce = (fn, delay = 150) => {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  };
+
   const fmtMoney = (value, currency) =>
     new Intl.NumberFormat(undefined, {
       style: "currency",
@@ -64,7 +86,8 @@ import { api } from "./api.js";
   function drawBarChart(canvas, dataObj) {
     if (!canvas) return;
 
-    const parentWidth = canvas.parentElement.clientWidth || 600;
+    const parent = canvas.parentElement || canvas;
+    const parentWidth = parent.clientWidth || 600;
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = parentWidth * dpr;
@@ -92,15 +115,16 @@ import { api } from "./api.js";
     ctx.lineTo(P.l + innerW, P.t + innerH);
     ctx.stroke();
 
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    const palette = isDark
+      ? ["#60a5fa", "#38bdf8", "#818cf8", "#22d3ee", "#93c5fd", "#67e8f9", "#a5b4fc"]
+      : ["#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"];
+
     const gap = 14;
     const barW = Math.max(
       10,
       (innerW - gap * (values.length + 1)) / Math.max(values.length, 1)
     );
-    const palette = [
-      "#0057b8", "#00a3e0", "#1e3a8a",
-      "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
-    ];
 
     values.forEach((v, i) => {
       const h = (v / max) * (innerH - 10);
@@ -110,7 +134,6 @@ import { api } from "./api.js";
       ctx.fillStyle = palette[i % palette.length];
       ctx.fillRect(x, y, barW, h);
 
-      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
       ctx.fillStyle = isDark ? "#fff" : "#111827";
       ctx.font = "12px system-ui";
       ctx.textAlign = "center";
@@ -132,16 +155,21 @@ import { api } from "./api.js";
     if (!container) return;
     container.innerHTML = "";
 
-    const palette = [
-      "#0057b8", "#00a3e0", "#1e3a8a",
-      "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"
-    ];
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    const palette = isDark
+      ? ["#60a5fa", "#38bdf8", "#818cf8", "#22d3ee", "#93c5fd", "#67e8f9", "#a5b4fc"]
+      : ["#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6"];
 
     Object.keys(categories || {}).forEach((name, i) => {
       const chip = document.createElement("span");
       chip.className = "chip";
       chip.style.color = palette[i % palette.length];
-      chip.innerHTML = `<span class="dot"></span>${name}`;
+
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      chip.appendChild(dot);
+      chip.appendChild(document.createTextNode(name));
+
       container.appendChild(chip);
     });
   }
@@ -157,10 +185,12 @@ import { api } from "./api.js";
       .forEach(([name, amt]) => {
         const pct = total ? Math.round((amt / total) * 100) : 0;
         const li = document.createElement("li");
-        li.innerHTML = `
-          <span>${name}</span>
-          <span>${fmtMoney(amt, currency)} (${pct}%)</span>
-        `;
+        const left = document.createElement("span");
+        left.textContent = name;
+        const right = document.createElement("span");
+        right.textContent = `${fmtMoney(amt, currency)} (${pct}%)`;
+        li.appendChild(left);
+        li.appendChild(right);
         listEl.appendChild(li);
       });
   }
@@ -198,16 +228,18 @@ import { api } from "./api.js";
   }
 
   function renderKpis(comp, viewLabel) {
-    $("#kpiIncome").textContent = fmtMoney(comp.total_income, comp.currency);
-    $("#kpiSpending").textContent = fmtMoney(comp.total_spending, comp.currency);
-    $("#kpiBalance").textContent = fmtMoney(comp.net_balance, comp.currency);
+    setText("#kpiIncome", fmtMoney(comp.total_income, comp.currency));
+    setText("#kpiSpending", fmtMoney(comp.total_spending, comp.currency));
+    setText("#kpiBalance", fmtMoney(comp.net_balance, comp.currency));
 
-    $("#kpiPeriodIncome").textContent = viewLabel;
-    $("#kpiPeriodSpending").textContent = viewLabel;
-    $("#kpiPeriodBalance").textContent = viewLabel;
+    setText("#kpiPeriodIncome", viewLabel);
+    setText("#kpiPeriodSpending", viewLabel);
+    setText("#kpiPeriodBalance", viewLabel);
 
-    $("#lastUpdated").textContent =
-      "Data updated " + new Date(comp.last_updated).toLocaleString();
+    setText(
+      "#lastUpdated",
+      "Data updated " + new Date(comp.last_updated).toLocaleString()
+    );
   }
 
   // ============================================================
@@ -223,19 +255,37 @@ import { api } from "./api.js";
       .slice(0, 8);
 
     if (!expenses.length) {
-      tbody.innerHTML =
-        `<tr><td colspan="4" class="subtle">No expenses yet.</td></tr>`;
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 4;
+      td.className = "subtle";
+      td.textContent = "No expenses yet.";
+      tr.appendChild(td);
+      tbody.appendChild(tr);
       return;
     }
 
     expenses.forEach((txn) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${fmtDate(txn.date)}</td>
-        <td>${txn.category || ""}</td>
-        <td class="num">${fmtMoney(txn.amount, currency)}</td>
-        <td>${txn.note || ""}</td>
-      `;
+
+      const tdDate = document.createElement("td");
+      tdDate.textContent = fmtDate(txn.date);
+
+      const tdCat = document.createElement("td");
+      tdCat.textContent = txn.category || "";
+
+      const tdAmt = document.createElement("td");
+      tdAmt.className = "num";
+      tdAmt.textContent = fmtMoney(txn.amount, currency);
+
+      const tdNote = document.createElement("td");
+      tdNote.textContent = txn.note || "";
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdCat);
+      tr.appendChild(tdAmt);
+      tr.appendChild(tdNote);
+
       tbody.appendChild(tr);
     });
   }
@@ -289,6 +339,11 @@ import { api } from "./api.js";
     const form = $("#txnForm");
     const btnCancel = $("#btnCancelModal");
 
+    const btnAddTxn = $("#btnAddTxn");
+
+    const closeModal = () => modal?.classList.add("hidden");
+    const openModal = () => modal?.classList.remove("hidden");
+
     $("#btnUpload")?.addEventListener("click", () => {
       window.location.href = "upload.html";
     });
@@ -302,12 +357,20 @@ import { api } from "./api.js";
       }
     });
 
-    $("#btnAddTxn")?.addEventListener("click", () => {
-      modal.classList.remove("hidden");
+    btnAddTxn?.addEventListener("click", openModal);
+
+    btnCancel?.addEventListener("click", closeModal);
+
+    // Close modal on ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
     });
 
-    btnCancel?.addEventListener("click", () => {
-      modal.classList.add("hidden");
+    // Close modal when clicking the backdrop (but not the modal content)
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
     });
 
     form?.addEventListener("submit", async (e) => {
@@ -320,6 +383,16 @@ import { api } from "./api.js";
         amount: parseFloat($("#txnAmount").value),
         note: $("#txnNotes")?.value || "",
       };
+
+      if (!newTxn.type || !newTxn.date) {
+        alert("Please select a type and date.");
+        return;
+      }
+
+      if (!Number.isFinite(newTxn.amount) || newTxn.amount <= 0) {
+        alert("Please enter a valid amount greater than 0.");
+        return;
+      }
 
       try {
         await api.records.create(newTxn);
@@ -334,10 +407,9 @@ import { api } from "./api.js";
   async function personalizeWelcome() {
     try {
       const { user } = await api.auth.me();
-      $("#welcomeTitle").textContent =
-        `Welcome back, ${user.fullName || user.username}`;
+      setText("#welcomeTitle", `Welcome back, ${user.fullName || user.username}`);
     } catch {
-      $("#welcomeTitle").textContent = "Welcome back";
+      setText("#welcomeTitle", "Welcome back");
     }
   }
 
@@ -380,14 +452,30 @@ import { api } from "./api.js";
       renderLegend($("#chartLegend"), computed.categories);
       renderBreakdown($("#categoryList"), computed.categories, computed.currency);
 
-      window.addEventListener("resize", () =>
-        drawBarChart(canvas, computed.categories)
-      );
+      const redraw = debounce(() => {
+        drawBarChart(canvas, computed.categories);
+      }, 150);
+
+      window.addEventListener("resize", redraw);
+
+      // Re-draw chart when theme changes so colors/labels stay readable
+      window.addEventListener("storage", (e) => {
+        if (e.key === "theme") redraw();
+      });
     } catch (err) {
       console.error(err);
-      $("#lastUpdated").textContent = "Could not load data.";
-      $("#txnTbody").innerHTML =
-        `<tr><td colspan="4" class="subtle">Failed to load records.</td></tr>`;
+      setText("#lastUpdated", "Could not load data.");
+      const tbody = $("#txnTbody");
+      if (tbody) {
+        tbody.innerHTML = "";
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.className = "subtle";
+        td.textContent = "Failed to load records.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
     }
   }
 
