@@ -35,8 +35,8 @@
         </div>
 
         <div class="records-actions">
-          <button class="btn" id="btnAddExpense">Add Expense</button>
-          <button class="btn btn--primary" id="btnExportExpenses">Export CSV</button>
+          <button class="btn" id="btnAddExpense" type="button">Add Expense</button>
+          <button class="btn btn--primary" id="btnExportExpenses" type="button">Export CSV</button>
         </div>
       </div>
 
@@ -48,39 +48,39 @@
 
             <label>
               <span>Search</span>
-              <input type="text" id="q" placeholder="Category or note…" />
+              <input type="text" id="q" name="q" placeholder="Category or note…" autocomplete="off" />
             </label>
 
             <label>
               <span>Category</span>
-              <select id="category">
+              <select id="category" name="category">
                 <option value="">All</option>
               </select>
             </label>
 
             <label>
               <span>Min Date</span>
-              <input type="date" id="minDate" />
+              <input type="date" id="minDate" name="minDate" />
             </label>
 
             <label>
               <span>Max Date</span>
-              <input type="date" id="maxDate" />
+              <input type="date" id="maxDate" name="maxDate" />
             </label>
 
             <label>
               <span>Min Amount</span>
-              <input type="number" id="minAmt" step="0.01" placeholder="0.00" />
+              <input type="number" id="minAmt" name="minAmt" step="0.01" min="0" inputmode="decimal" placeholder="0.00" />
             </label>
 
             <label>
               <span>Max Amount</span>
-              <input type="number" id="maxAmt" step="0.01" placeholder="9999.99" />
+              <input type="number" id="maxAmt" name="maxAmt" step="0.01" min="0" inputmode="decimal" placeholder="9999.99" />
             </label>
 
             <label>
               <span>Sort</span>
-              <select id="sort">
+              <select id="sort" name="sort">
                 <option value="date_desc">Date ↓</option>
                 <option value="date_asc">Date ↑</option>
                 <option value="amount_desc">Amount ↓</option>
@@ -92,7 +92,7 @@
 
             <label>
               <span>Rows per page</span>
-              <select id="pageSize">
+              <select id="pageSize" name="pageSize">
                 <option selected>10</option>
                 <option>25</option>
                 <option>50</option>
@@ -109,6 +109,8 @@
         </form>
       </div>
 
+      <p id="recordsStatusExpense" class="subtle" aria-live="polite" style="display:none;"></p>
+
       <!-- Table -->
       <div class="records-table records-subsection">
         <div class="table-wrap card">
@@ -124,16 +126,16 @@
                 <th class="actions-col">Actions</th>
               </tr>
             </thead>
-            <tbody id="recordsTbody">
+            <tbody id="recordsTbody" aria-live="polite">
               <tr><td colspan="7" class="subtle">Loading…</td></tr>
             </tbody>
           </table>
         </div>
 
         <nav class="records-pager">
-          <button class="btn" id="prevPageExpense" disabled>← Prev</button>
+          <button class="btn" id="prevPageExpense" type="button" disabled>← Prev</button>
           <span id="pageInfoExpense" class="subtle">Page 1 of 1</span>
-          <button class="btn" id="nextPageExpense" disabled>Next →</button>
+          <button class="btn" id="nextPageExpense" type="button" disabled>Next →</button>
         </nav>
       </div>
 
@@ -151,8 +153,8 @@
         </div>
 
         <div class="records-actions">
-          <button class="btn" id="btnAddIncome">Add Income</button>
-          <button class="btn btn--primary" id="btnExportIncome">Export CSV</button>
+          <button class="btn" id="btnAddIncome" type="button">Add Income</button>
+          <button class="btn btn--primary" id="btnExportIncome" type="button">Export CSV</button>
         </div>
       </div>
 
@@ -164,39 +166,39 @@
 
             <label>
               <span>Search</span>
-              <input type="text" id="qIncome" placeholder="Category or note…" />
+              <input type="text" id="qIncome" name="qIncome" placeholder="Category or note…" autocomplete="off" />
             </label>
 
             <label>
               <span>Category</span>
-              <select id="categoryIncome">
+              <select id="categoryIncome" name="categoryIncome">
                 <option value="">All</option>
               </select>
             </label>
 
             <label>
               <span>Min Date</span>
-              <input type="date" id="minDateIncome" />
+              <input type="date" id="minDateIncome" name="minDateIncome" />
             </label>
 
             <label>
               <span>Max Date</span>
-              <input type="date" id="maxDateIncome" />
+              <input type="date" id="maxDateIncome" name="maxDateIncome" />
             </label>
 
             <label>
               <span>Min Amount</span>
-              <input type="number" id="minAmtIncome" step="0.01" placeholder="0.00" />
+              <input type="number" id="minAmtIncome" name="minAmtIncome" step="0.01" min="0" inputmode="decimal" placeholder="0.00" />
             </label>
 
             <label>
               <span>Max Amount</span>
-              <input type="number" id="maxAmtIncome" step="0.01" placeholder="99999.99" />
+              <input type="number" id="maxAmtIncome" name="maxAmtIncome" step="0.01" min="0" inputmode="decimal" placeholder="99999.99" />
             </label>
 
             <label>
               <span>Sort</span>
-              <select id="sortIncome">
+              <select id="sortIncome" name="sortIncome">
                 <option value="date_desc">Date ↓</option>
                 <option value="date_asc">Date ↑</option>
                 <option value="amount_desc">Amount ↓</option>
@@ -208,7 +210,7 @@
 
             <label>
               <span>Rows per page</span>
-              <select id="pageSizeIncome">
+              <select id="pageSizeIncome" name="pageSizeIncome">
                 <option selected>10</option>
                 <option>25</option>
                 <option>50</option>
@@ -225,6 +227,8 @@
         </form>
       </div>
 
+      <p id="recordsStatusIncome" class="subtle" aria-live="polite" style="display:none;"></p>
+
       <!-- Table -->
       <div class="records-table records-subsection">
         <div class="table-wrap card">
@@ -240,16 +244,16 @@
                 <th class="actions-col">Actions</th>
               </tr>
             </thead>
-            <tbody id="recordsTbodyIncome">
+            <tbody id="recordsTbodyIncome" aria-live="polite">
               <tr><td colspan="7" class="subtle">Loading…</td></tr>
             </tbody>
           </table>
         </div>
 
         <nav class="records-pager">
-          <button class="btn" id="prevPageIncome" disabled>← Prev</button>
+          <button class="btn" id="prevPageIncome" type="button" disabled>← Prev</button>
           <span id="pageInfoIncome" class="subtle">Page 1 of 1</span>
-          <button class="btn" id="nextPageIncome" disabled>Next →</button>
+          <button class="btn" id="nextPageIncome" type="button" disabled>Next →</button>
         </nav>
       </div>
 
@@ -266,16 +270,16 @@
 
         <form id="expenseForm" class="txn-form">
           <div class="form-row">
-            <label><span>Date</span><input type="date" id="expenseDate" required /></label>
-            <label><span>Amount</span><input type="number" id="expenseAmount" step="0.01" required /></label>
+            <label><span>Date</span><input type="date" id="expenseDate" name="expenseDate" required /></label>
+            <label><span>Amount</span><input type="number" id="expenseAmount" name="expenseAmount" step="0.01" min="0" inputmode="decimal" required /></label>
           </div>
 
           <div class="form-row">
-            <label><span>Category</span><input type="text" id="expenseCategory" required /></label>
+            <label><span>Category</span><input type="text" id="expenseCategory" name="expenseCategory" autocomplete="off" required /></label>
           </div>
 
           <div class="form-row">
-            <label><span>Notes</span><input type="text" id="expenseNotes" /></label>
+            <label><span>Notes</span><input type="text" id="expenseNotes" name="expenseNotes" autocomplete="off" /></label>
           </div>
 
           <div class="modal-actions">
@@ -293,16 +297,16 @@
 
         <form id="incomeForm" class="txn-form">
           <div class="form-row">
-            <label><span>Date</span><input type="date" id="incomeDate" required /></label>
-            <label><span>Amount</span><input type="number" id="incomeAmount" step="0.01" required /></label>
+            <label><span>Date</span><input type="date" id="incomeDate" name="incomeDate" required /></label>
+            <label><span>Amount</span><input type="number" id="incomeAmount" name="incomeAmount" step="0.01" min="0" inputmode="decimal" required /></label>
           </div>
 
           <div class="form-row">
-            <label><span>Category</span><input type="text" id="incomeCategory" required /></label>
+            <label><span>Category</span><input type="text" id="incomeCategory" name="incomeCategory" autocomplete="off" required /></label>
           </div>
 
           <div class="form-row">
-            <label><span>Notes</span><input type="text" id="incomeNotes" /></label>
+            <label><span>Notes</span><input type="text" id="incomeNotes" name="incomeNotes" autocomplete="off" /></label>
           </div>
 
           <div class="modal-actions">
@@ -325,9 +329,9 @@
         </p>
 
         <div class="modal-actions">
-          <button id="btnDeleteRecordOnly" class="btn btn--danger">Delete Record Only</button>
-          <button id="btnDeleteRecordAndReceipt" class="btn btn--warning">Delete Record & Receipt</button>
-          <button id="btnCancelDeleteRecord" class="btn">Cancel</button>
+          <button id="btnDeleteRecordOnly" class="btn btn--danger" type="button">Delete Record Only</button>
+          <button id="btnDeleteRecordAndReceipt" class="btn btn--warning" type="button">Delete Record & Receipt</button>
+          <button id="btnCancelDeleteRecord" class="btn" type="button">Cancel</button>
         </div>
       </div>
     </div>

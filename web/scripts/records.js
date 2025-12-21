@@ -29,9 +29,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnDeleteRecordAndReceipt = document.getElementById("btnDeleteRecordAndReceipt");
   const btnCancelDeleteRecord = document.getElementById("btnCancelDeleteRecord");
 
+  const statusExpense = document.getElementById("recordsStatusExpense");
+  const statusIncome = document.getElementById("recordsStatusIncome");
+
   let pendingDelete = { recordId: null, linkedReceiptId: null };
   let expensePage = 1;
   let incomePage = 1;
+
+  // NEW: cache so we don’t hit API on each keystroke
+  let allRecordsCache = [];
+
+  const debounce = (fn, delay = 200) => {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  };
 
   // ===============================
   // FX RATES (STATIC — replace with live API for real-time)
@@ -47,6 +61,25 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   const showModal = (modal) => modal?.classList.remove("hidden");
   const hideModal = (modal) => modal?.classList.add("hidden");
+
+  const showStatus = (type, msg, kind = "ok") => {
+    const el = type === "income" ? statusIncome : statusExpense;
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    el.classList.toggle("is-ok", kind === "ok");
+    el.classList.toggle("is-error", kind === "error");
+  };
+
+  const clearStatusSoon = (type, ms = 2500) => {
+    const el = type === "income" ? statusIncome : statusExpense;
+    if (!el) return;
+    window.setTimeout(() => {
+      el.style.display = "none";
+      el.textContent = "";
+      el.classList.remove("is-ok", "is-error");
+    }, ms);
+  };
 
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
@@ -82,34 +115,86 @@ document.addEventListener("DOMContentLoaded", () => {
     }).format(converted);
   };
 
-  const typeBadge = (record) => record.linkedReceiptId
-    ? `<span class="badge badge-receipt">Receipt</span>`
-    : `<span class="badge badge-manual">Manual</span>`;
+  const typeBadgeEl = (record) => {
+    const span = document.createElement("span");
+    if (record.linkedReceiptId) {
+      span.className = "badge badge-receipt";
+      span.textContent = "Receipt";
+    } else {
+      span.className = "badge badge-manual";
+      span.textContent = "Manual";
+    }
+    return span;
+  };
 
   const createRow = (record) => {
     const tr = document.createElement("tr");
     tr.dataset.recordId = record._id;
     tr.dataset.linkedReceiptId = record.linkedReceiptId || "";
 
-    tr.innerHTML = `
-      <td>${fmtDate(record.date)}</td>
-      <td>${record.type}</td>
-      <td>${record.category || "—"}</td>
-      <td class="num currency-field" data-value="${record.amount}" data-currency="${record.currency || 'USD'}">
-        ${fmtMoney(record.amount, record.currency || 'USD')}
-      </td>
-      <td>${record.note || "—"}</td>
-      <td>${typeBadge(record)}</td>
-      <td class="actions-col">
-        <div class="actions-menu-wrap">
-          <button class="actions-btn" data-menu-btn="true">⋮</button>
-          <div class="actions-dropdown hidden">
-            <button data-edit="${record._id}">Edit Record</button>
-            <button data-delete="${record._id}" style="color:#b91c1c;">Delete Record</button>
-          </div>
-        </div>
-      </td>
-    `;
+    const tdDate = document.createElement("td");
+    tdDate.textContent = fmtDate(record.date);
+
+    const tdType = document.createElement("td");
+    tdType.textContent = record.type || "—";
+
+    const tdCat = document.createElement("td");
+    tdCat.textContent = record.category || "—";
+
+    const tdAmt = document.createElement("td");
+    tdAmt.className = "num currency-field";
+    tdAmt.dataset.value = String(record.amount ?? 0);
+    tdAmt.dataset.currency = record.currency || "USD";
+    tdAmt.textContent = fmtMoney(record.amount, record.currency || "USD");
+
+    const tdNote = document.createElement("td");
+    tdNote.textContent = record.note || "—";
+
+    const tdBadge = document.createElement("td");
+    tdBadge.appendChild(typeBadgeEl(record));
+
+    const tdActions = document.createElement("td");
+    tdActions.className = "actions-col";
+
+    const wrap = document.createElement("div");
+    wrap.className = "actions-menu-wrap";
+
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "actions-btn";
+    menuBtn.dataset.menuBtn = "true";
+    menuBtn.setAttribute("aria-haspopup", "menu");
+    menuBtn.setAttribute("aria-expanded", "false");
+    menuBtn.textContent = "⋮";
+
+    const dropdown = document.createElement("div");
+    dropdown.className = "actions-dropdown hidden";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.dataset.edit = record._id;
+    editBtn.textContent = "Edit Record";
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.dataset.delete = record._id;
+    delBtn.style.color = "#b91c1c";
+    delBtn.textContent = "Delete Record";
+
+    dropdown.appendChild(editBtn);
+    dropdown.appendChild(delBtn);
+    wrap.appendChild(menuBtn);
+    wrap.appendChild(dropdown);
+    tdActions.appendChild(wrap);
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdType);
+    tr.appendChild(tdCat);
+    tr.appendChild(tdAmt);
+    tr.appendChild(tdNote);
+    tr.appendChild(tdBadge);
+    tr.appendChild(tdActions);
+
     return tr;
   };
 
@@ -126,9 +211,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await api.records.remove(pendingDelete.recordId, deleteReceiptToo && pendingDelete.linkedReceiptId);
       hideModal(deleteRecordModal);
-      loadRecords();
+      await loadRecords();
     } catch (err) {
-      alert("Failed to delete: " + err.message);
+      const type = pendingDelete?.recordId ? (document.querySelector(`tr[data-record-id="${pendingDelete.recordId}"]`)?.querySelector("td:nth-child(2)")?.textContent || "expense") : "expense";
+      showStatus(type === "income" ? "income" : "expense", "Failed to delete: " + (err?.message || "Unknown error"), "error");
+      clearStatusSoon(type === "income" ? "income" : "expense", 3500);
     }
   }
 
@@ -140,6 +227,30 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ===============================
+  // ESC and Backdrop Close for Modals
+  // ===============================
+  const closeAllModals = () => {
+    hideModal(addExpenseModal);
+    hideModal(addIncomeModal);
+    hideModal(deleteRecordModal);
+  };
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    closeAllModals();
+    document.querySelectorAll(".actions-dropdown").forEach((m) => m.classList.add("hidden"));
+    document.querySelectorAll(".actions-btn").forEach((b) => b.setAttribute("aria-expanded", "false"));
+  });
+
+  // Backdrop click to close add/edit modals
+  addExpenseModal?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal")) hideModal(addExpenseModal);
+  });
+  addIncomeModal?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal")) hideModal(addIncomeModal);
+  });
+
+  // ===============================
   // TABLE EVENTS (EDIT/DELETE MENU)
   // ===============================
   document.addEventListener("click", async (e) => {
@@ -148,7 +259,8 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       const menu = menuBtn.nextElementSibling;
       document.querySelectorAll(".actions-dropdown").forEach((m) => { if (m !== menu) m.classList.add("hidden"); });
-      menu.classList.toggle("hidden");
+      const isHidden = menu.classList.toggle("hidden");
+      menuBtn.setAttribute("aria-expanded", String(!isHidden));
       return;
     }
 
@@ -156,6 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const record = await api.records.getOne(e.target.dataset.edit);
       if (!record) return;
       document.querySelectorAll(".actions-dropdown").forEach((m) => m.classList.add("hidden"));
+      document.querySelectorAll(".actions-btn").forEach((b) => b.setAttribute("aria-expanded", "false"));
 
       const modal = record.type === "expense" ? addExpenseModal : addIncomeModal;
       const prefix = record.type === "expense" ? "expense" : "income";
@@ -177,21 +290,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.querySelectorAll(".actions-dropdown").forEach((m) => m.classList.add("hidden"));
+    document.querySelectorAll(".actions-btn").forEach((b) => b.setAttribute("aria-expanded", "false"));
   });
 
   // ===============================
   // LOAD RECORDS
   // ===============================
   async function loadRecords() {
-    expenseTbody.innerHTML = `<tr><td colspan="7" class="subtle">Loading…</td></tr>`;
-    incomeTbody.innerHTML = `<tr><td colspan="7" class="subtle">Loading…</td></tr>`;
+    expenseTbody.innerHTML = "";
+    incomeTbody.innerHTML = "";
+
+    const loadingRow = () => {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 7;
+      td.className = "subtle";
+      td.textContent = "Loading…";
+      tr.appendChild(td);
+      return tr;
+    };
+
+    expenseTbody.appendChild(loadingRow());
+    incomeTbody.appendChild(loadingRow());
 
     try {
-      const records = await api.records.getAll();
-      renderTable(records.filter(r => r.type === "expense"), expenseTbody, filtersForm, "expense");
-      renderTable(records.filter(r => r.type === "income"), incomeTbody, filtersFormIncome, "income");
+      allRecordsCache = await api.records.getAll();
+      renderAll();
     } catch (err) {
       console.error(err);
+      showStatus("expense", "Failed to load records.", "error");
+      clearStatusSoon("expense", 3500);
+      showStatus("income", "Failed to load records.", "error");
+      clearStatusSoon("income", 3500);
     }
   }
 
@@ -235,9 +365,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    let currentPage = type === "expense" ? expensePage : incomePage;
     const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-    if (currentPage > totalPages) currentPage = totalPages;
+    const clampPage = (p) => Math.min(Math.max(1, p), totalPages);
+    let currentPage = type === "expense" ? expensePage : incomePage;
+    currentPage = clampPage(currentPage);
     if (type === "expense") expensePage = currentPage;
     else incomePage = currentPage;
 
@@ -254,23 +385,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tbody.innerHTML = "";
     if (!display.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="subtle">No matching records.</td></tr>`;
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 7;
+      td.className = "subtle";
+      td.textContent = "No matching records.";
+      tr.appendChild(td);
+      tbody.appendChild(tr);
       return;
     }
 
     display.forEach(r => tbody.appendChild(createRow(r)));
   };
 
+  const renderAll = () => {
+    const expenses = allRecordsCache.filter((r) => r.type === "expense");
+    const income = allRecordsCache.filter((r) => r.type === "income");
+  
+    renderTable(expenses, expenseTbody, filtersForm, "expense");
+    renderTable(income, incomeTbody, filtersFormIncome, "income");
+  };
+  
+  const debouncedRenderAll = debounce(renderAll, 200);
+
   // ===============================
   // FORM MODALS
   // ===============================
-  btnAddExpense?.addEventListener("click", () => showModal(addExpenseModal));
+  btnAddExpense?.addEventListener("click", () => {
+    delete addExpenseModal.dataset.editId;
+    expenseForm?.reset();
+    showModal(addExpenseModal);
+  });
   cancelExpenseBtn?.addEventListener("click", () => hideModal(addExpenseModal));
-  btnAddIncome?.addEventListener("click", () => showModal(addIncomeModal));
+  btnAddIncome?.addEventListener("click", () => {
+    delete addIncomeModal.dataset.editId;
+    incomeForm?.reset();
+    showModal(addIncomeModal);
+  });
   cancelIncomeBtn?.addEventListener("click", () => hideModal(addIncomeModal));
 
   const handleFormSubmit = (form, modal, type) => async (e) => {
     e.preventDefault();
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    const prevBtnText = submitBtn?.textContent;
     const editId = modal.dataset.editId;
     const payload = {
       type,
@@ -279,6 +436,29 @@ document.addEventListener("DOMContentLoaded", () => {
       category: document.getElementById(`${type}Category`).value,
       note: document.getElementById(`${type}Notes`).value
     };
+
+    if (!payload.date) {
+      showStatus(type, "Please choose a date.", "error");
+      clearStatusSoon(type, 3000);
+      return;
+    }
+    if (!Number.isFinite(payload.amount) || payload.amount <= 0) {
+      showStatus(type, "Please enter a valid amount greater than 0.", "error");
+      clearStatusSoon(type, 3000);
+      return;
+    }
+    if (!payload.category) {
+      showStatus(type, "Please enter a category.", "error");
+      clearStatusSoon(type, 3000);
+      return;
+    }
+
+    showStatus(type, editId ? "Saving changes…" : "Saving…");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Saving…";
+    }
+
     try {
       if (editId) await api.records.update(editId, payload);
       else await api.records.create(payload);
@@ -286,9 +466,18 @@ document.addEventListener("DOMContentLoaded", () => {
       hideModal(modal);
       form.reset();
       delete modal.dataset.editId;
-      loadRecords();
+      await loadRecords();
+
+      showStatus(type, editId ? "Record updated." : "Record added.");
+      clearStatusSoon(type, 2500);
     } catch (err) {
-      alert(`Error saving ${type}: ` + err.message);
+      showStatus(type, `Error saving ${type}: ` + (err?.message || "Unknown error"), "error");
+      clearStatusSoon(type, 3500);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = prevBtnText || "Save";
+      }
     }
   };
 
@@ -296,49 +485,139 @@ document.addEventListener("DOMContentLoaded", () => {
   incomeForm?.addEventListener("submit", handleFormSubmit(incomeForm, addIncomeModal, "income"));
 
   // ===============================
-  // FILTERS & CLEAR
+  // FILTERS & CLEAR (LIVE)
   // ===============================
-  filtersForm?.addEventListener("submit", e => { e.preventDefault(); expensePage = 1; loadRecords(); });
-  filtersFormIncome?.addEventListener("submit", e => { e.preventDefault(); incomePage = 1; loadRecords(); });
+  const wireLiveFilters = (form, type) => {
+    if (!form) return;
 
-  document.getElementById("btnClear")?.addEventListener("click", () => { filtersForm?.reset(); expensePage = 1; loadRecords(); });
-  document.getElementById("btnClearIncome")?.addEventListener("click", () => { filtersFormIncome?.reset(); incomePage = 1; loadRecords(); });
+    const resetPage = () => {
+      if (type === "expense") expensePage = 1;
+      else incomePage = 1;
+    };
+
+    // Keep submit working if you press Enter, but prefer live filtering
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      resetPage();
+      debouncedRenderAll();
+    });
+
+    // Live updates for all controls
+    const controls = form.querySelectorAll("input, select");
+    controls.forEach((el) => {
+      const evt = el.tagName === "SELECT" ? "change" : "input";
+      el.addEventListener(evt, () => {
+        resetPage();
+        debouncedRenderAll();
+      });
+    });
+  };
+
+  wireLiveFilters(filtersForm, "expense");
+  wireLiveFilters(filtersFormIncome, "income");
+
+  document.getElementById("btnClear")?.addEventListener("click", () => {
+    filtersForm?.reset();
+    expensePage = 1;
+    debouncedRenderAll();
+  });
+
+  document.getElementById("btnClearIncome")?.addEventListener("click", () => {
+    filtersFormIncome?.reset();
+    incomePage = 1;
+    debouncedRenderAll();
+  });
 
   // ===============================
   // EXPORT CSV
   // ===============================
-  const exportToCSV = (records, label) => {
-    if (!records.length) return alert("No records to export.");
-    const headers = ["Date","Type","Category","Amount","Notes"];
+  const exportToCSV = (records, typeLabel) => {
+    const type = typeLabel === "income" ? "income" : "expense";
+    if (!records.length) {
+      showStatus(type, "No records to export.", "error");
+      clearStatusSoon(type, 2500);
+      return;
+    }
+
+    const headers = ["Date", "Type", "Category", "Amount", "Notes"];
     const rows = [headers.join(",")];
-    records.forEach(r => {
-      rows.push([
-        r.date?.split("T")[0] || "",
-        r.type || "",
-        (r.category||"").replace(/,/g,";"),
-        r.amount ?? "",
-        (r.note||"").replace(/,/g,";")
-      ].join(","));
+
+    records.forEach((r) => {
+      rows.push(
+        [
+          r.date?.split("T")[0] || "",
+          r.type || "",
+          (r.category || "").replace(/,/g, ";"),
+          r.amount ?? "",
+          (r.note || "").replace(/,/g, ";"),
+        ].join(",")
+      );
     });
-    const blob = new Blob([rows.join("\n")], {type:"text/csv"});
+
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${label}_records_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `${typeLabel}_records_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+
+    showStatus(type, "Export started.");
+    clearStatusSoon(type, 2000);
   };
 
-  btnExportExpenses?.addEventListener("click", async () => exportToCSV((await api.records.getAll()).filter(r => r.type === "expense"), "expenses"));
-  btnExportIncome?.addEventListener("click", async () => exportToCSV((await api.records.getAll()).filter(r => r.type === "income"), "income"));
+  btnExportExpenses?.addEventListener("click", async () => {
+    try {
+      showStatus("expense", "Preparing export…");
+      if (!allRecordsCache.length) {
+        await loadRecords();
+      }
+      exportToCSV(allRecordsCache.filter((r) => r.type === "expense"), "expense");
+    } catch (err) {
+      showStatus("expense", "Export failed: " + (err?.message || "Unknown error"), "error");
+      clearStatusSoon("expense", 3500);
+    }
+  });
+
+  btnExportIncome?.addEventListener("click", async () => {
+    try {
+      showStatus("income", "Preparing export…");
+      if (!allRecordsCache.length) {
+        await loadRecords();
+      }
+      exportToCSV(allRecordsCache.filter((r) => r.type === "income"), "income");
+    } catch (err) {
+      showStatus("income", "Export failed: " + (err?.message || "Unknown error"), "error");
+      clearStatusSoon("income", 3500);
+    }
+  });
 
   // ===============================
   // PAGINATION BUTTONS
   // ===============================
-  document.getElementById("prevPageExpense")?.addEventListener("click", () => { if (expensePage>1) { expensePage--; loadRecords(); } });
-  document.getElementById("nextPageExpense")?.addEventListener("click", () => { expensePage++; loadRecords(); });
-  document.getElementById("prevPageIncome")?.addEventListener("click", () => { if (incomePage>1) { incomePage--; loadRecords(); } });
-  document.getElementById("nextPageIncome")?.addEventListener("click", () => { incomePage++; loadRecords(); });
+  document.getElementById("prevPageExpense")?.addEventListener("click", () => {
+    if (expensePage > 1) {
+      expensePage--;
+      renderAll();
+    }
+  });
+
+  document.getElementById("nextPageExpense")?.addEventListener("click", () => {
+    expensePage++;
+    renderAll();
+  });
+
+  document.getElementById("prevPageIncome")?.addEventListener("click", () => {
+    if (incomePage > 1) {
+      incomePage--;
+      renderAll();
+    }
+  });
+
+  document.getElementById("nextPageIncome")?.addEventListener("click", () => {
+    incomePage++;
+    renderAll();
+  });
 
   // INITIAL LOAD
   loadRecords();
