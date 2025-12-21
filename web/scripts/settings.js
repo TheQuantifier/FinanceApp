@@ -1,222 +1,329 @@
+// scripts/settings.js
 import { api } from "./api.js";
 
-console.log("Settings page loaded.");
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
 
-// =========================================================
-// HELPERS
-// =========================================================
-function detectDeviceCurrency() {
-  try {
-    const parts = new Intl.NumberFormat().formatToParts(1.11);
-    const currency = Intl.NumberFormat().resolvedOptions().currency;
-    return currency || "USD";
-  } catch {
-    return "USD";
-  }
-}
+  // ===============================
+  // ELEMENTS
+  // ===============================
+  const els = {
+    toggleTheme: $("#toggleDarkMode"),
 
-function detectNumberFormat() {
-  const formatted = Intl.NumberFormat().format(1234.56);
-  return formatted.includes(",") && formatted.includes(".") ? "US" : "EU";
-}
+    currency: $("#currencySelect"),
+    numberFormat: $("#numberFormatSelect"),
+    timezone: $("#timezoneSelect"),
+    dashboardView: $("#dashboardViewSelect"),
+    language: $("#languageSelect"),
 
-function detectDeviceTimezone() {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
+    notifEmail: $("#notif_email"),
+    notifSms: $("#notif_sms"),
 
-function detectDeviceLocale() {
-  return Intl.DateTimeFormat().resolvedOptions().locale || "en-US";
-}
+    save: $("#saveSettingsBtn"),
+    status: $("#settingsStatus"),
 
-
-
-// =========================================================
-// DARK MODE
-// =========================================================
-const toggleDarkModeBtn = document.getElementById("toggleDarkMode");
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  toggleDarkModeBtn.textContent =
-    theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode";
-}
-
-const savedTheme = localStorage.getItem("theme") || "light";
-applyTheme(savedTheme);
-
-toggleDarkModeBtn?.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") || "light";
-  const newTheme = current === "dark" ? "light" : "dark";
-  applyTheme(newTheme);
-  localStorage.setItem("theme", newTheme);
-});
-
-// =========================================================
-// SETTINGS ELEMENTS
-// =========================================================
-const currencySelect = document.getElementById("currencySelect");
-const numberFormatSelect = document.getElementById("numberFormatSelect");
-const timezoneSelect = document.getElementById("timezoneSelect");
-const dashboardViewSelect = document.getElementById("dashboardViewSelect");
-const languageSelect = document.getElementById("languageSelect");
-
-const notifEmail = document.getElementById("notif_email");
-const notifSMS = document.getElementById("notif_sms");
-
-// =========================================================
-// LOAD SAVED SETTINGS — WITH AUTO-DETECT FIRST RUN
-// =========================================================
-const deviceSettings = {
-  currency: detectDeviceCurrency(),
-  numberFormat: detectNumberFormat(),
-  timezone: detectDeviceTimezone(),
-  locale: detectDeviceLocale(),
-};
-
-let savedSettings = JSON.parse(localStorage.getItem("userSettings"));
-
-if (!savedSettings) {
-  // First app run → Auto-save device settings
-  savedSettings = {
-    currency: deviceSettings.currency,
-    numberFormat: deviceSettings.numberFormat,
-    timezone: deviceSettings.timezone,
-    dashboardView: "Monthly",
-    language: "English",
-    notifEmail: false,
-    notifSMS: false,
+    deleteBtn: $("#deleteAccountBtn"),
+    deleteModal: $("#deleteAccountModal"),
+    deleteConfirm: $("#deleteConfirmInput"),
+    deleteConfirmBtn: $("#confirmDeleteAccountBtn"),
+    deleteCancelBtn: $("#cancelDeleteAccountBtn"),
+    deleteStatus: $("#deleteAccountStatus"),
   };
 
-  localStorage.setItem("userSettings", JSON.stringify(savedSettings));
-}
-
-// =========================================================
-// APPLY SAVED SETTINGS TO UI
-// =========================================================
-if (currencySelect) currencySelect.value = savedSettings.currency;
-if (numberFormatSelect) numberFormatSelect.value = savedSettings.numberFormat;
-if (timezoneSelect) timezoneSelect.value = savedSettings.timezone;
-if (dashboardViewSelect) dashboardViewSelect.value = savedSettings.dashboardView;
-if (languageSelect) languageSelect.value = savedSettings.language;
-
-if (notifEmail) notifEmail.checked = savedSettings.notifEmail;
-if (notifSMS) notifSMS.checked = savedSettings.notifSMS;
-
-// =========================================================
-// SAVE SETTINGS
-// =========================================================
-document.getElementById("saveSettingsBtn").addEventListener("click", () => {
-  const updated = {
-    currency: currencySelect.value,
-    numberFormat: numberFormatSelect.value,
-    timezone: timezoneSelect.value,
-    dashboardView: dashboardViewSelect.value,
-    language: languageSelect.value,
-    notifEmail: notifEmail.checked,
-    notifSMS: notifSMS.checked,
+  // ===============================
+  // STATUS HELPERS
+  // ===============================
+  const showStatus = (el, msg, kind = "ok") => {
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    el.classList.toggle("is-ok", kind === "ok");
+    el.classList.toggle("is-error", kind === "error");
   };
 
-  localStorage.setItem("userSettings", JSON.stringify(updated));
-  localStorage.setItem("defaultDashboardView", updated.dashboardView);
-  localStorage.setItem("settings_currency", updated.currency);
+  const clearStatusSoon = (el, ms = 2200) => {
+    if (!el) return;
+    window.setTimeout(() => {
+      el.style.display = "none";
+      el.textContent = "";
+      el.classList.remove("is-ok", "is-error");
+    }, ms);
+  };
 
-  alert("Settings saved!");
+  // ===============================
+  // THEME
+  // ===============================
+  const currentTheme = () => document.documentElement.getAttribute("data-theme") || "light";
 
-  applyFormats(updated);
-});
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  };
 
-// =========================================================
-// FORMATTING ENGINE (Global utility)
-// =========================================================
-function applyFormats(settings) {
-  // Dates
-  document.querySelectorAll(".date-field").forEach((el) => {
-    const timestamp = el.dataset.timestamp;
-    const date = new Date(timestamp);
-    el.textContent = formatDate(date, settings.timezone);
-  });
+  const updateThemeButtonLabel = () => {
+    if (!els.toggleTheme) return;
+    els.toggleTheme.textContent = currentTheme() === "dark" ? "Switch to Light" : "Switch to Dark";
+  };
 
-  // Currency
-  document.querySelectorAll(".currency-field").forEach((el) => {
-    const originalValue = parseFloat(el.dataset.value);
-    const originalCurrency = el.dataset.currency || "USD"; // default
-  
-    // Convert before formatting
-    const converted = convertCurrency(
-      originalValue,
-      originalCurrency,
-      settings.currency
-    );
-  
-    el.textContent = formatCurrency(converted, settings.currency);
-  });
+  const initTheme = () => {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    applyTheme(savedTheme);
+    updateThemeButtonLabel();
+  };
 
-  // Numbers
-  document.querySelectorAll(".number-field").forEach((el) => {
-    const value = parseFloat(el.dataset.value);
-    el.textContent = formatNumber(value, settings.numberFormat);
-  });
-}
+  // ===============================
+  // DEVICE DEFAULTS (first run)
+  // ===============================
+  const detectDeviceCurrency = () => {
+    try {
+      const c = Intl.NumberFormat().resolvedOptions().currency;
+      return c || "USD";
+    } catch {
+      return "USD";
+    }
+  };
 
-function formatDate(date, timezone) {
-  return date.toLocaleDateString(undefined, { timeZone: timezone });
-}
+  const detectNumberFormat = () => {
+    try {
+      const formatted = Intl.NumberFormat().format(1234.56);
+      return formatted.includes(",") && formatted.includes(".") ? "US" : "EU";
+    } catch {
+      return "US";
+    }
+  };
 
-function formatCurrency(value, currency) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format(value);
-}
+  const detectDeviceTimezone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return "UTC";
+    }
+  };
 
-function formatNumber(value, format) {
-  if (format === "US") return new Intl.NumberFormat("en-US").format(value);
-  if (format === "EU") return new Intl.NumberFormat("de-DE").format(value);
-  return value;
-}
+  const detectDeviceLocale = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().locale || "en-US";
+    } catch {
+      return "en-US";
+    }
+  };
 
-// =========================================================
-// CURRENCY CONVERSION ENGINE
-// =========================================================
+  // ===============================
+  // LOAD / SAVE SETTINGS
+  // ===============================
+  const ensureFirstRunDefaults = () => {
+    // If userSettings exists (legacy), migrate minimally
+    const legacy = localStorage.getItem("userSettings");
 
-// Simple static conversion table (can be replaced with live API later)
-const FX_RATES = {
-  USD: { USD: 1, EUR: 0.92, GBP: 0.79, INR: 83.1, CAD: 1.37, AUD: 1.55, JPY: 148 },
-  EUR: { USD: 1.09, EUR: 1, GBP: 0.86, INR: 90.4, CAD: 1.49, AUD: 1.69, JPY: 161 },
-  GBP: { USD: 1.26, EUR: 1.16, GBP: 1, INR: 105.5, CAD: 1.73, AUD: 1.96, JPY: 187 },
-};
+    const hasAnyNewKey =
+      localStorage.getItem("settings_currency") ||
+      localStorage.getItem("settings_number_format") ||
+      localStorage.getItem("settings_timezone") ||
+      localStorage.getItem("settings_language") ||
+      localStorage.getItem("settings_dashboard_view");
 
-function convertCurrency(amount, fromCurrency, toCurrency) {
-  if (!FX_RATES[fromCurrency] || !FX_RATES[fromCurrency][toCurrency]) {
-    console.warn("Missing FX rate:", fromCurrency, "→", toCurrency);
-    return amount; // fallback: no conversion
-  }
+    if (!hasAnyNewKey) {
+      if (legacy) {
+        try {
+          const parsed = JSON.parse(legacy);
+          if (parsed?.currency) localStorage.setItem("settings_currency", parsed.currency);
+          if (parsed?.numberFormat) localStorage.setItem("settings_number_format", parsed.numberFormat);
+          if (parsed?.timezone) localStorage.setItem("settings_timezone", parsed.timezone);
+          if (parsed?.language) localStorage.setItem("settings_language", parsed.language);
+          if (parsed?.dashboardView) localStorage.setItem("settings_dashboard_view", parsed.dashboardView);
+          if (typeof parsed?.notifEmail === "boolean") localStorage.setItem("settings_notif_email", String(parsed.notifEmail));
+          if (typeof parsed?.notifSMS === "boolean") localStorage.setItem("settings_notif_sms", String(parsed.notifSMS));
+        } catch {
+          // ignore
+        }
+      } else {
+        // First run defaults
+        localStorage.setItem("settings_currency", detectDeviceCurrency());
+        localStorage.setItem("settings_number_format", detectNumberFormat());
+        localStorage.setItem("settings_timezone", detectDeviceTimezone());
+        localStorage.setItem("settings_language", "English");
+        localStorage.setItem("settings_dashboard_view", "Monthly");
+        localStorage.setItem("settings_notif_email", "false");
+        localStorage.setItem("settings_notif_sms", "false");
+        // optional helpful keys
+        localStorage.setItem("settings_locale", detectDeviceLocale());
+      }
+    }
+  };
 
-  return amount * FX_RATES[fromCurrency][toCurrency];
-}
+  const loadSettingsIntoUI = () => {
+    const savedCurrency = localStorage.getItem("settings_currency");
+    const savedNumFmt = localStorage.getItem("settings_number_format");
+    const savedTz = localStorage.getItem("settings_timezone");
+    const savedLang = localStorage.getItem("settings_language");
+    const savedDash = localStorage.getItem("settings_dashboard_view");
 
+    if (els.currency && savedCurrency) els.currency.value = savedCurrency;
+    if (els.numberFormat && savedNumFmt) els.numberFormat.value = savedNumFmt;
+    if (els.timezone && savedTz) els.timezone.value = savedTz;
+    if (els.language && savedLang) els.language.value = savedLang;
+    if (els.dashboardView && savedDash) els.dashboardView.value = savedDash;
 
-// =========================================================
-// DELETE ACCOUNT
-// =========================================================
-const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+    if (els.notifEmail) els.notifEmail.checked = localStorage.getItem("settings_notif_email") === "true";
+    if (els.notifSms) els.notifSms.checked = localStorage.getItem("settings_notif_sms") === "true";
 
-if (deleteAccountBtn) {
-  deleteAccountBtn.addEventListener("click", async () => {
-    const confirm1 = confirm("Are you sure you want to delete your account?");
-    if (!confirm1) return;
+    updateThemeButtonLabel();
+  };
 
-    const confirm2 = confirm(
-      "⚠️ This action is permanent.\n\nYour profile, all records, receipts, and uploads will be permanently deleted.\n\nContinue?"
-    );
-    if (!confirm2) return;
+  const saveSettings = async () => {
+    if (els.save) {
+      els.save.disabled = true;
+      els.save.textContent = "Saving…";
+    }
+
+    showStatus(els.status, "Saving settings…");
 
     try {
-      await api.auth.deleteAccount();
-      alert("Your account has been permanently deleted.");
-      window.location.href = "login.html";
+      if (els.currency) localStorage.setItem("settings_currency", els.currency.value);
+      if (els.numberFormat) localStorage.setItem("settings_number_format", els.numberFormat.value);
+      if (els.timezone) localStorage.setItem("settings_timezone", els.timezone.value);
+      if (els.language) localStorage.setItem("settings_language", els.language.value);
+      if (els.dashboardView) localStorage.setItem("settings_dashboard_view", els.dashboardView.value);
+
+      if (els.notifEmail) localStorage.setItem("settings_notif_email", String(els.notifEmail.checked));
+      if (els.notifSms) localStorage.setItem("settings_notif_sms", String(els.notifSms.checked));
+
+      // legacy convenience key used elsewhere
+      if (els.dashboardView) localStorage.setItem("defaultDashboardView", els.dashboardView.value);
+
+      // Optional backend persistence if your API supports it (guarded)
+      const payload = {
+        currency: els.currency?.value,
+        numberFormat: els.numberFormat?.value,
+        timezone: els.timezone?.value,
+        language: els.language?.value,
+        dashboardView: els.dashboardView?.value,
+        notifications: {
+          email: els.notifEmail?.checked,
+          sms: els.notifSms?.checked,
+        },
+      };
+
+      if (api?.settings?.save) {
+        await api.settings.save(payload);
+      }
+
+      showStatus(els.status, "Settings saved.", "ok");
+      clearStatusSoon(els.status, 2000);
     } catch (err) {
-      alert("Failed to delete account: " + err.message);
+      console.error(err);
+      showStatus(els.status, "Failed to save settings: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      if (els.save) {
+        els.save.disabled = false;
+        els.save.textContent = "Save Settings";
+      }
     }
+  };
+
+  // ===============================
+  // DELETE ACCOUNT MODAL
+  // ===============================
+  const showModal = (modal) => modal?.classList.remove("hidden");
+  const hideModal = (modal) => modal?.classList.add("hidden");
+
+  const openDeleteModal = () => {
+    if (!els.deleteModal) return;
+    if (els.deleteConfirm) els.deleteConfirm.value = "";
+    if (els.deleteStatus) {
+      els.deleteStatus.style.display = "none";
+      els.deleteStatus.textContent = "";
+      els.deleteStatus.classList.remove("is-ok", "is-error");
+    }
+    showModal(els.deleteModal);
+    els.deleteConfirm?.focus?.();
+  };
+
+  const closeDeleteModal = () => hideModal(els.deleteModal);
+
+  const performDeleteAccount = async () => {
+    const text = (els.deleteConfirm?.value || "").trim();
+    if (text !== "DELETE") {
+      showStatus(els.deleteStatus, "Please type DELETE to confirm.", "error");
+      clearStatusSoon(els.deleteStatus, 3000);
+      return;
+    }
+
+    if (els.deleteConfirmBtn) {
+      els.deleteConfirmBtn.disabled = true;
+      els.deleteConfirmBtn.textContent = "Deleting…";
+    }
+
+    showStatus(els.deleteStatus, "Deleting account…");
+
+    try {
+      // Guarded backend call(s)
+      if (api?.auth?.deleteAccount) {
+        await api.auth.deleteAccount();
+      } else if (api?.users?.deleteMe) {
+        await api.users.deleteMe();
+      } else if (api?.account?.delete) {
+        await api.account.delete();
+      } else {
+        throw new Error("Delete endpoint not available yet.");
+      }
+
+      showStatus(els.deleteStatus, "Account deleted. Redirecting…", "ok");
+
+      // Clear local tokens (best effort)
+      localStorage.removeItem("token");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("jwt");
+
+      window.setTimeout(() => {
+        window.location.href = "login.html";
+      }, 900);
+    } catch (err) {
+      console.error(err);
+      showStatus(els.deleteStatus, "Delete failed: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      if (els.deleteConfirmBtn) {
+        els.deleteConfirmBtn.disabled = false;
+        els.deleteConfirmBtn.textContent = "Delete Account";
+      }
+    }
+  };
+
+  // ===============================
+  // WIRE EVENTS
+  // ===============================
+  const wire = () => {
+    els.toggleTheme?.addEventListener("click", () => {
+      const next = currentTheme() === "dark" ? "light" : "dark";
+      applyTheme(next);
+      updateThemeButtonLabel();
+    });
+
+    els.save?.addEventListener("click", saveSettings);
+
+    // Delete account flow
+    els.deleteBtn?.addEventListener("click", openDeleteModal);
+    els.deleteCancelBtn?.addEventListener("click", closeDeleteModal);
+    els.deleteConfirmBtn?.addEventListener("click", performDeleteAccount);
+
+    els.deleteModal?.addEventListener("click", (e) => {
+      if (e.target.classList.contains("modal")) closeDeleteModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && els.deleteModal && !els.deleteModal.classList.contains("hidden")) {
+        closeDeleteModal();
+      }
+    });
+  };
+
+  // ===============================
+  // INIT
+  // ===============================
+  document.addEventListener("DOMContentLoaded", () => {
+    ensureFirstRunDefaults();
+    initTheme();
+    loadSettingsIntoUI();
+    wire();
   });
-}
+})();

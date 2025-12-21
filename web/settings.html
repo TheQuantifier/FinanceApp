@@ -31,7 +31,7 @@
 
         <div class="settings-row">
           <label>Dark Mode</label>
-          <button class="settings-btn btn--primary" id="toggleDarkMode">Toggle</button>  
+          <button class="settings-btn btn--primary" id="toggleDarkMode" type="button">Toggle</button>  
         </div>
 
         <div class="settings-row">
@@ -102,8 +102,9 @@
         </div>
 
         <!-- SAVE BUTTON -->
-        <div class="settings-row">
-          <button class="settings-btn btn--primary" id="saveSettingsBtn">Save Settings</button>
+        <div class="settings-row settings-actions">
+          <button class="settings-btn btn--primary" id="saveSettingsBtn" type="button">Save Settings</button>
+          <p id="settingsStatus" class="subtle" aria-live="polite" style="display:none;"></p>
         </div>
       </section>
 
@@ -132,7 +133,7 @@
 
         <div class="settings-row">
           <label>Delete Account</label>
-          <button class="settings-btn btn--danger" id="deleteAccountBtn">Delete</button>
+          <button class="settings-btn btn--danger" id="deleteAccountBtn" type="button">Delete</button>
         </div>
       </section>
 
@@ -140,6 +141,26 @@
   </main>
 
   <div id="footer"></div>
+
+  <!-- DELETE ACCOUNT CONFIRM MODAL -->
+  <div class="modal hidden" id="deleteAccountModal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="deleteAccountTitle">
+      <h2 id="deleteAccountTitle">Delete Account</h2>
+      <p class="subtle">This will permanently delete your account and data. This action cannot be undone.</p>
+
+      <label>
+        <span class="label">Type <strong>DELETE</strong> to confirm</span>
+        <input id="deleteConfirmInput" type="text" autocomplete="off" placeholder="DELETE" />
+      </label>
+
+      <div class="modal-actions">
+        <button class="btn btn--danger" id="confirmDeleteAccountBtn" type="button">Delete Account</button>
+        <button class="btn" id="cancelDeleteAccountBtn" type="button">Cancel</button>
+      </div>
+
+      <p id="deleteAccountStatus" class="subtle" aria-live="polite" style="display:none;"></p>
+    </div>
+  </div>
 
   <script src="scripts/default.js" type="module"></script>
   <script src="scripts/settings.js" type="module"></script>
