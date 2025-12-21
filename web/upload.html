@@ -1,4 +1,4 @@
- <!-- upload.html for Upload Page -->
+<!-- upload.html for Upload Page -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,7 +42,7 @@
           </div>
         </div>
 
-        <input id="fileInput" class="dz-input" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+        <input id="fileInput" class="dz-input" type="file" accept=".pdf,.png,.jpg,.jpeg" multiple />
       </div>
 
       <ul class="tips">
@@ -60,7 +60,7 @@
         <button id="uploadBtn" class="btn btn--primary" type="button" disabled>Upload</button>
       </div>
 
-      <p id="statusMsg" class="status subtle" role="status" aria-live="polite"></p>
+      <p id="statusMsg" class="status subtle" role="status" aria-live="polite" style="display:none;"></p>
     </section>
 
     <section class="recent card">
@@ -99,9 +99,9 @@
       <p>This receipt may be linked to a financial record. What would you like to delete?</p>
 
       <div class="modal-actions">
-        <button id="btnDeleteFile" class="btn btn--danger">Delete Receipt Only</button>
-        <button id="btnDeleteBoth" class="btn btn--warning">Delete Both Receipt & Record</button>
-        <button id="btnDeleteCancel" class="btn">Cancel</button>
+        <button id="btnDeleteFile" class="btn btn--danger" type="button">Delete Receipt Only</button>
+        <button id="btnDeleteBoth" class="btn btn--warning" type="button">Delete Both Receipt & Record</button>
+        <button id="btnDeleteCancel" class="btn" type="button">Cancel</button>
       </div>
     </div>
   </div>

@@ -3,13 +3,14 @@
 
 import { api } from "./api.js";
 
-(function () {
-  const ACCEPTED = ["application/pdf", "image/png", "image/jpeg"];
+(() => {
+  const ACCEPTED_MIME = ["application/pdf", "image/png", "image/jpeg"];
+  const ACCEPTED_EXT = ["pdf", "png", "jpg", "jpeg"];
   const MAX_MB = 50;
 
-  // ----------------------------------------
-  // DOM elements
-  // ----------------------------------------
+  // -----------------------------
+  // DOM
+  // -----------------------------
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("fileInput");
   const fileList = document.getElementById("fileList");
@@ -18,7 +19,7 @@ import { api } from "./api.js";
   const statusMsg = document.getElementById("statusMsg");
   const recentTableBody = document.getElementById("recentTableBody");
 
-  // Modal elements
+  // Modal
   const deleteModal = document.getElementById("deleteModal");
   const btnDeleteFile = document.getElementById("btnDeleteFile");
   const btnDeleteBoth = document.getElementById("btnDeleteBoth");
@@ -29,30 +30,45 @@ import { api } from "./api.js";
     return;
   }
 
-  let queue = [];
-  let pickerArmed = false;
+  // -----------------------------
+  // State
+  // -----------------------------
+  let pendingFiles = []; // File[]
+  let isUploading = false;
 
-  // Tracks current deletion
   let pendingDelete = {
     receiptId: null,
     linkedRecordId: null,
-    deleteRecord: false,
     buttonRef: null,
   };
 
-  // ----------------------------------------
-  // Status helper
-  // ----------------------------------------
-  const setStatus = (msg, isError = false) => {
+  // -----------------------------
+  // Status helpers
+  // -----------------------------
+  const setStatus = (msg, kind = "ok") => {
     if (!statusMsg) return;
     statusMsg.textContent = msg;
-    statusMsg.classList.toggle("error", isError);
+    statusMsg.style.display = msg ? "block" : "none";
+    statusMsg.classList.toggle("is-ok", kind === "ok");
+    statusMsg.classList.toggle("is-error", kind === "error");
   };
 
+  const clearStatusSoon = (ms = 2000) => {
+    if (!statusMsg) return;
+    window.setTimeout(() => {
+      statusMsg.textContent = "";
+      statusMsg.style.display = "none";
+      statusMsg.classList.remove("is-ok", "is-error");
+    }, ms);
+  };
+
+  // -----------------------------
+  // Utils
+  // -----------------------------
   const bytesToSize = (bytes = 0) => {
     const units = ["B", "KB", "MB", "GB"];
     let i = 0;
-    let n = bytes;
+    let n = Number(bytes) || 0;
     while (n >= 1024 && i < units.length - 1) {
       n /= 1024;
       i++;
@@ -60,122 +76,196 @@ import { api } from "./api.js";
     return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
   };
 
-  const extFromName = (name = "") =>
-    name.includes(".") ? name.split(".").pop().toUpperCase() : "";
+  const extFromName = (name = "") => {
+    const parts = String(name).split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+  };
 
-  const isAccepted = (file) =>
-    ACCEPTED.includes(file.type) ||
-    ["pdf", "png", "jpg", "jpeg"].includes(extFromName(file.name).toLowerCase());
+  const isAccepted = (file) => {
+    if (!file) return false;
+    const ext = extFromName(file.name);
+    return ACCEPTED_MIME.includes(file.type) || ACCEPTED_EXT.includes(ext);
+  };
 
-  const overLimit = (file) => file.size > MAX_MB * 1024 * 1024;
+  const overLimit = (file) => (file?.size || 0) > MAX_MB * 1024 * 1024;
 
-  // ----------------------------------------
-  // Modal Logic
-  // ----------------------------------------
+  const dedupeKey = (file) => `${file.name}::${file.size}::${file.lastModified}`;
 
-  function openDeleteModal(receiptId, linkedRecordId, buttonRef) {
-    pendingDelete.receiptId = receiptId;
-    pendingDelete.linkedRecordId = linkedRecordId;
-    pendingDelete.buttonRef = buttonRef;
+  const clampFiles = (files) => {
+    const out = [];
+    const seen = new Set(pendingFiles.map(dedupeKey));
 
-    // Only show "Delete Both" if linked record exists
-    btnDeleteBoth.style.display = linkedRecordId ? "block" : "none";
-
-    deleteModal.classList.remove("hidden");
-  }
-
-  function closeDeleteModal() {
-    deleteModal.classList.add("hidden");
-
-    pendingDelete = {
-      receiptId: null,
-      linkedRecordId: null,
-      deleteRecord: false,
-      buttonRef: null,
-    };
-  }
-
-  async function performDelete(deleteRecord) {
-    const { receiptId, buttonRef } = pendingDelete;
-
-    try {
-      if (buttonRef) buttonRef.disabled = true;
-
-      await api.receipts.remove(receiptId, deleteRecord);
-
-      setStatus(
-        deleteRecord
-          ? "Receipt and linked record deleted."
-          : "Receipt deleted."
-      );
-
-      await refreshRecent();
-    } catch (err) {
-      console.error(err);
-      setStatus(`Delete failed: ${err.message}`, true);
-    } finally {
-      if (buttonRef) buttonRef.disabled = false;
-      closeDeleteModal();
+    for (const f of Array.from(files || [])) {
+      if (!f) continue;
+      if (!isAccepted(f) || overLimit(f)) continue;
+      const key = dedupeKey(f);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(f);
     }
-  }
+    return out;
+  };
 
-  // Modal button actions
-  btnDeleteFile.addEventListener("click", () => performDelete(false));
-  btnDeleteBoth.addEventListener("click", () => performDelete(true));
-  btnDeleteCancel.addEventListener("click", closeDeleteModal);
+  const setUploadingUI = (flag) => {
+    isUploading = flag;
+    if (uploadBtn) {
+      uploadBtn.disabled = flag || pendingFiles.length === 0;
+      uploadBtn.textContent = flag ? "Uploading…" : "Upload";
+    }
+    if (clearBtn) clearBtn.disabled = flag;
+    if (fileInput) fileInput.disabled = flag;
 
-  deleteModal.querySelector(".modal-backdrop")
-    .addEventListener("click", closeDeleteModal);
+    dropzone.setAttribute("aria-busy", flag ? "true" : "false");
+    dropzone.style.pointerEvents = flag ? "none" : "auto";
+    dropzone.style.opacity = flag ? "0.85" : "1";
+  };
 
-  // ----------------------------------------
-  // Recent Uploads Table Rendering
-  // ----------------------------------------
+  // -----------------------------
+  // Pending list rendering
+  // -----------------------------
+  const renderPending = () => {
+    if (!fileList) return;
+
+    fileList.innerHTML = "";
+
+    if (!pendingFiles.length) {
+      const empty = document.createElement("div");
+      empty.className = "subtle";
+      empty.textContent = "No files selected.";
+      fileList.appendChild(empty);
+      setUploadingUI(false);
+      return;
+    }
+
+    // Use the new pill UI if upload.css defines it; otherwise fallback to existing layout.
+    const usePills = true;
+
+    if (usePills) {
+      const container = document.createElement("div");
+      container.className = "file-list";
+
+      pendingFiles.forEach((f, idx) => {
+        const pill = document.createElement("div");
+        pill.className = "file-pill";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = f.name;
+
+        const sub = document.createElement("div");
+        sub.className = "sub";
+        sub.textContent = `${bytesToSize(f.size)} • ${f.type || extFromName(f.name).toUpperCase() || "file"}`;
+
+        meta.appendChild(name);
+        meta.appendChild(sub);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "btn remove";
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", () => {
+          pendingFiles.splice(idx, 1);
+          renderPending();
+        });
+
+        pill.appendChild(meta);
+        pill.appendChild(removeBtn);
+        container.appendChild(pill);
+      });
+
+      fileList.appendChild(container);
+    } else {
+      // Fallback: simple list
+      pendingFiles.forEach((f) => {
+        const div = document.createElement("div");
+        div.className = "subtle";
+        div.textContent = `${f.name} • ${bytesToSize(f.size)}`;
+        fileList.appendChild(div);
+      });
+    }
+
+    setUploadingUI(false);
+  };
+
+  const addFiles = (files) => {
+    const incoming = Array.from(files || []);
+    let rejected = 0;
+
+    const accepted = [];
+    for (const f of incoming) {
+      if (!f || !isAccepted(f) || overLimit(f)) rejected++;
+      else accepted.push(f);
+    }
+
+    const cleaned = clampFiles(accepted);
+    if (cleaned.length) {
+      pendingFiles = pendingFiles.concat(cleaned);
+      renderPending();
+      setStatus(`${cleaned.length} file(s) added.`, "ok");
+      clearStatusSoon(1500);
+    }
+
+    if (rejected) {
+      setStatus(`${rejected} file(s) skipped (PDF/PNG/JPG only, ≤ ${MAX_MB} MB).`, "error");
+      clearStatusSoon(3000);
+    }
+
+    if (!cleaned.length && !rejected) {
+      setStatus("No files selected.", "error");
+      clearStatusSoon(2000);
+    }
+  };
+
+  // -----------------------------
+  // Recent table rendering
+  // -----------------------------
   const trashIcon = `<img src="images/trash.png" alt="Delete" class="icon-trash" />`;
   const downloadIcon = `<img src="images/download.png" alt="Download" class="icon-trash" />`;
 
-  function renderRecentRows(rows) {
+  const renderRecentRows = (rows) => {
+    if (!recentTableBody) return;
+
     recentTableBody.innerHTML = "";
 
-    if (!rows.length) {
-      recentTableBody.innerHTML =
-        `<tr><td colspan="6" class="subtle">No uploads yet.</td></tr>`;
+    if (!rows?.length) {
+      recentTableBody.innerHTML = `<tr><td colspan="6" class="subtle">No uploads yet.</td></tr>`;
       return;
     }
 
     for (const r of rows) {
-      const id = r._id;
-      const filename = r.originalFilename || "receipt.pdf";
-      const created = r.createdAt
-        ? new Date(r.createdAt).toLocaleString()
-        : "—";
+      const id = r._id || r.id;
+      const filename = r.originalFilename || r.originalName || r.filename || "receipt.pdf";
+      const created = r.createdAt ? new Date(r.createdAt).toLocaleString() : r.uploadedAt ? new Date(r.uploadedAt).toLocaleString() : "—";
 
       let status = "Raw";
-      const hasOCR = r.ocrText && r.ocrText.trim().length > 0;
+      const hasOCR = r.ocrText && String(r.ocrText).trim().length > 0;
       const hasParsed = r.parsedData && Object.keys(r.parsedData).length > 0;
-
       if (hasParsed) status = "Parsed";
       else if (hasOCR) status = "Read";
       if (r.error || r.ocrFailed) status = "Error";
 
       const tr = document.createElement("tr");
       tr.dataset.id = id;
-      tr.dataset.linkedRecordId = r.linkedRecordId || "";
+      tr.dataset.linkedRecordId = r.linkedRecordId || r.linkedRecord || "";
 
       tr.innerHTML = `
         <td>${filename}</td>
-        <td>${r.fileType || "—"}</td>
-        <td class="num">${bytesToSize(r.fileSize || 0)}</td>
+        <td>${r.fileType || r.mimetype || "—"}</td>
+        <td class="num">${bytesToSize(r.fileSize || r.size || 0)}</td>
         <td>${created}</td>
         <td>${status}</td>
 
         <td class="num actions-col">
-          <button class="icon-btn js-download"
+          <button class="icon-btn js-download" type="button"
                   data-id="${id}"
                   data-filename="${filename}">
             ${downloadIcon}
           </button>
 
-          <button class="icon-btn js-delete"
+          <button class="icon-btn js-delete" type="button"
                   data-id="${id}">
             ${trashIcon}
           </button>
@@ -184,22 +274,84 @@ import { api } from "./api.js";
 
       recentTableBody.appendChild(tr);
     }
-  }
+  };
 
-  async function refreshRecent() {
+  const refreshRecent = async () => {
+    if (!recentTableBody) return;
+
     try {
       const receipts = await api.receipts.getAll();
       renderRecentRows(receipts || []);
     } catch (err) {
       console.error("Failed to refresh uploads:", err);
-      recentTableBody.innerHTML =
-        `<tr><td colspan="6" class="subtle">Failed to load uploads.</td></tr>`;
+      recentTableBody.innerHTML = `<tr><td colspan="6" class="subtle">Failed to load uploads.</td></tr>`;
     }
-  }
+  };
 
-  // ----------------------------------------
-  // Table Action Handling (download + modal open)
-  // ----------------------------------------
+  // -----------------------------
+  // Delete modal
+  // -----------------------------
+  const openDeleteModal = (receiptId, linkedRecordId, buttonRef) => {
+    if (!deleteModal) return;
+
+    pendingDelete.receiptId = receiptId;
+    pendingDelete.linkedRecordId = linkedRecordId;
+    pendingDelete.buttonRef = buttonRef;
+
+    // Only show "Delete Both" if linked record exists
+    if (btnDeleteBoth) btnDeleteBoth.style.display = linkedRecordId ? "block" : "none";
+
+    deleteModal.classList.remove("hidden");
+  };
+
+  const closeDeleteModal = () => {
+    if (!deleteModal) return;
+    deleteModal.classList.add("hidden");
+
+    pendingDelete = {
+      receiptId: null,
+      linkedRecordId: null,
+      buttonRef: null,
+    };
+  };
+
+  const performDelete = async (deleteRecord) => {
+    const { receiptId, buttonRef } = pendingDelete;
+    if (!receiptId) return;
+
+    try {
+      if (buttonRef) buttonRef.disabled = true;
+      if (deleteRecord && btnDeleteBoth) btnDeleteBoth.disabled = true;
+      if (!deleteRecord && btnDeleteFile) btnDeleteFile.disabled = true;
+
+      await api.receipts.remove(receiptId, deleteRecord);
+
+      setStatus(deleteRecord ? "Receipt and linked record deleted." : "Receipt deleted.", "ok");
+      clearStatusSoon(2000);
+
+      await refreshRecent();
+    } catch (err) {
+      console.error(err);
+      setStatus(`Delete failed: ${err?.message || "Unknown error"}`, "error");
+    } finally {
+      if (buttonRef) buttonRef.disabled = false;
+      if (btnDeleteBoth) btnDeleteBoth.disabled = false;
+      if (btnDeleteFile) btnDeleteFile.disabled = false;
+      closeDeleteModal();
+    }
+  };
+
+  // Modal button actions
+  btnDeleteFile?.addEventListener("click", () => performDelete(false));
+  btnDeleteBoth?.addEventListener("click", () => performDelete(true));
+  btnDeleteCancel?.addEventListener("click", closeDeleteModal);
+
+  // Close modal on backdrop click
+  deleteModal?.querySelector(".modal-backdrop")?.addEventListener("click", closeDeleteModal);
+
+  // -----------------------------
+  // Table actions (download + delete)
+  // -----------------------------
   recentTableBody?.addEventListener("click", async (e) => {
     const downloadBtn = e.target.closest(".js-download");
     const deleteBtn = e.target.closest(".js-delete");
@@ -210,12 +362,13 @@ import { api } from "./api.js";
       const filename = downloadBtn.dataset.filename || "receipt";
 
       try {
-        setStatus("Downloading...");
+        setStatus("Downloading…");
         await api.receipts.downloadToFile(id, filename);
-        setStatus("Download complete");
+        setStatus("Download complete", "ok");
+        clearStatusSoon(1500);
       } catch (err) {
         console.error(err);
-        setStatus(`Download failed: ${err.message}`, true);
+        setStatus(`Download failed: ${err?.message || "Unknown error"}`, "error");
       }
       return;
     }
@@ -225,139 +378,39 @@ import { api } from "./api.js";
       const id = deleteBtn.dataset.id;
       const row = deleteBtn.closest("tr");
       const linkedRecordId = row?.dataset?.linkedRecordId || "";
-
       openDeleteModal(id, linkedRecordId, deleteBtn);
     }
   });
 
-  // ----------------------------------------
-  // Pending Queue Rendering
-  // ----------------------------------------
-  function renderQueue() {
-    fileList.innerHTML = "";
-    uploadBtn.disabled = queue.length === 0;
+  // -----------------------------
+  // Picker + dropzone
+  // -----------------------------
+  const openPicker = () => {
+    if (isUploading) return;
+    fileInput.click();
+  };
 
-    queue.forEach((file, idx) => {
-      const item = document.createElement("div");
-      item.className = "file-item";
-
-      const thumb = document.createElement("div");
-      thumb.className = "file-thumb";
-
-      if (file.type.startsWith("image/")) {
-        const img = document.createElement("img");
-        img.alt = "";
-        img.style.width = "100%";
-        img.style.height = "100%";
-        img.style.objectFit = "cover";
-
-        const reader = new FileReader();
-        reader.onload = (e) => (img.src = e.target.result);
-        reader.readAsDataURL(file);
-
-        thumb.appendChild(img);
-      } else {
-        thumb.textContent = extFromName(file.name) || "FILE";
-      }
-
-      const meta = document.createElement("div");
-      meta.className = "file-meta";
-      meta.innerHTML = `
-        <div class="file-name">${file.name}</div>
-        <div class="file-subtle">${file.type || "Unknown"} • ${bytesToSize(
-        file.size
-      )}</div>
-      `;
-
-      const removeBtn = document.createElement("button");
-      removeBtn.className = "file-remove";
-      removeBtn.textContent = "✕";
-      removeBtn.addEventListener("click", () => {
-        queue.splice(idx, 1);
-        renderQueue();
-      });
-
-      const actions = document.createElement("div");
-      actions.className = "file-actions";
-      actions.appendChild(removeBtn);
-
-      item.appendChild(thumb);
-      item.appendChild(meta);
-      item.appendChild(actions);
-
-      fileList.appendChild(item);
-    });
-  }
-
-  // ----------------------------------------
-  // File Intake
-  // ----------------------------------------
-  function addFiles(files) {
-    const incoming = Array.from(files || []);
-    const accepted = [];
-    let rejected = 0;
-
-    for (const f of incoming) {
-      if (!isAccepted(f) || overLimit(f)) rejected++;
-      else accepted.push(f);
-    }
-
-    if (accepted.length) {
-      queue = queue.concat(accepted);
-      renderQueue();
-      setStatus(`${accepted.length} file(s) added.`);
-    }
-
-    if (rejected) {
-      setStatus(
-        `${rejected} file(s) skipped (PDF/PNG/JPG only, ≤ ${MAX_MB} MB).`,
-        true
-      );
-    }
-  }
-
-  // ----------------------------------------
-  // Dropzone & File Picker
-  // ----------------------------------------
-  function openPickerOnce() {
-    if (!fileInput || pickerArmed) return;
-
-    pickerArmed = true;
-    const disarm = () => (pickerArmed = false);
-
-    const onChange = () => {
-      disarm();
-      fileInput.removeEventListener("change", onChange);
-    };
-
-    fileInput.addEventListener("change", onChange, { once: true });
-    setTimeout(disarm, 2000);
-
-    try {
-      fileInput.showPicker?.() ?? fileInput.click();
-    } catch {
-      fileInput.click();
-    }
-  }
-
-  fileInput.addEventListener("click", (e) => e.stopPropagation());
-  dropzone.addEventListener("click", openPickerOnce);
+  dropzone.addEventListener("click", openPicker);
 
   dropzone.addEventListener("keydown", (e) => {
-    if (["Enter", " "].includes(e.key)) {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      openPickerOnce();
+      openPicker();
     }
   });
+
+  fileInput.addEventListener("click", (e) => e.stopPropagation());
 
   fileInput.addEventListener("change", (e) => {
     addFiles(e.target.files);
-    e.target.value = "";
+    e.target.value = ""; // allow selecting the same file again
   });
 
+  // Drag & drop
   ["dragenter", "dragover"].forEach((evt) =>
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault();
+      if (isUploading) return;
       dropzone.classList.add("is-dragover");
     })
   );
@@ -365,7 +418,7 @@ import { api } from "./api.js";
   ["dragleave", "drop"].forEach((evt) =>
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault();
-      if (evt === "drop" && e.dataTransfer?.files) {
+      if (evt === "drop" && !isUploading && e.dataTransfer?.files) {
         addFiles(e.dataTransfer.files);
       }
       dropzone.classList.remove("is-dragover");
@@ -373,47 +426,56 @@ import { api } from "./api.js";
   );
 
   clearBtn?.addEventListener("click", () => {
-    queue = [];
+    if (isUploading) return;
+    pendingFiles = [];
     fileInput.value = "";
-    renderQueue();
-    setStatus("Cleared selection.");
+    renderPending();
+    setStatus("Cleared selection.", "ok");
+    clearStatusSoon(1200);
   });
 
-  // ----------------------------------------
-  // Upload logic
-  // ----------------------------------------
-  async function uploadAll() {
-    while (queue.length > 0) {
-      const file = queue[0];
+  // -----------------------------
+  // Upload logic (sequential)
+  // -----------------------------
+  const uploadAll = async () => {
+    if (!pendingFiles.length || isUploading) return;
 
-      uploadBtn.disabled = true;
-      dropzone.setAttribute("aria-busy", "true");
-      setStatus(`Uploading ${file.name}…`);
+    setUploadingUI(true);
 
-      try {
+    try {
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const file = pendingFiles[i];
+        setStatus(`Uploading ${i + 1} of ${pendingFiles.length}: ${file.name}…`);
         await api.receipts.upload(file);
-
-        setStatus(`Uploaded: ${file.name}`);
-        queue.shift();
-        renderQueue();
-        await refreshRecent();
-      } catch (err) {
-        console.error("Upload error:", err);
-        setStatus(`Upload failed: ${err.message}`, true);
-        break;
-      } finally {
-        dropzone.removeAttribute("aria-busy");
       }
-    }
 
-    uploadBtn.disabled = queue.length === 0;
-  }
+      setStatus("Upload complete.", "ok");
+      clearStatusSoon(2000);
+
+      pendingFiles = [];
+      renderPending();
+      await refreshRecent();
+    } catch (err) {
+      console.error("Upload error:", err);
+      setStatus(`Upload failed: ${err?.message || "Unknown error"}`, "error");
+    } finally {
+      setUploadingUI(false);
+    }
+  };
 
   uploadBtn?.addEventListener("click", uploadAll);
 
-  // ----------------------------------------
+  // Close modal with Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && deleteModal && !deleteModal.classList.contains("hidden")) {
+      closeDeleteModal();
+    }
+  });
+
+  // -----------------------------
   // Init
-  // ----------------------------------------
-  renderQueue();
+  // -----------------------------
+  renderPending();
   refreshRecent();
+  setStatus("", "ok");
 })();
