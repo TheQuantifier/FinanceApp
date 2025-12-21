@@ -23,6 +23,8 @@ if (!api.auth.signOutAll) {
 const editBtn = document.getElementById("editProfileBtn");
 const form = document.getElementById("editForm");
 const cancelBtn = document.getElementById("cancelEditBtn");
+const statusEl = document.getElementById("profileStatus");
+const copyLinkBtn = document.getElementById("copyProfileLinkBtn");
 
 // SUMMARY ELEMENTS
 const f = {
@@ -56,6 +58,7 @@ const stats = {
 
 // AVATAR ELEMENTS
 const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+const avatarInput = document.getElementById("avatarInput");
 const avatarBlock = document.querySelector(".avatar-block .avatar");
 let avatarFile = null;
 
@@ -93,6 +96,23 @@ const hideForm = () => {
   editBtn.disabled = false;
 };
 
+const showStatus = (msg, kind = "ok") => {
+  if (!statusEl) return;
+  statusEl.textContent = msg;
+  statusEl.style.display = "block";
+  statusEl.classList.toggle("is-ok", kind === "ok");
+  statusEl.classList.toggle("is-error", kind === "error");
+};
+
+const clearStatusSoon = (ms = 2000) => {
+  if (!statusEl) return;
+  window.setTimeout(() => {
+    statusEl.style.display = "none";
+    statusEl.textContent = "";
+    statusEl.classList.remove("is-ok", "is-error");
+  }, ms);
+};
+
 /* ----------------------------------------
    LOAD USER PROFILE
 ---------------------------------------- */
@@ -128,7 +148,7 @@ async function loadUserProfile() {
       avatarBlock.textContent = "";
     }
   } catch (err) {
-    alert("You must be logged in.");
+    showStatus("Please log in to view your profile.", "error");
     window.location.href = "login.html";
   }
 }
@@ -138,6 +158,7 @@ async function loadUserProfile() {
 ---------------------------------------- */
 async function saveProfile(e) {
   e.preventDefault();
+  showStatus("Saving…");
   const updates = {};
   for (const key in input) {
     updates[key] = input[key].value.trim();
@@ -153,43 +174,76 @@ async function saveProfile(e) {
 
     hideForm();
     await loadUserProfile();
-    alert("Profile updated successfully!");
+    showStatus("Profile updated.");
+    clearStatusSoon(2500);
   } catch (err) {
-    alert("Update failed: " + err.message);
+    showStatus("Update failed: " + (err?.message || "Unknown error"), "error");
   }
 }
 
 /* ----------------------------------------
    CHANGE AVATAR
 ---------------------------------------- */
-changeAvatarBtn.addEventListener("click", () => {
-  const inputFile = document.createElement("input");
-  inputFile.type = "file";
-  inputFile.accept = "image/*";
+changeAvatarBtn?.addEventListener("click", () => {
+  avatarInput?.click();
+});
 
-  inputFile.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+avatarInput?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      avatarBlock.style.backgroundImage = `url(${event.target.result})`;
-      avatarBlock.textContent = "";
-    };
-    reader.readAsDataURL(file);
+  // basic guardrails
+  if (!file.type.startsWith("image/")) {
+    showStatus("Please choose an image file.", "error");
+    clearStatusSoon(2500);
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showStatus("Image is too large (max 5MB).", "error");
+    clearStatusSoon(2500);
+    return;
+  }
 
-    avatarFile = file;
-  });
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    avatarBlock.style.backgroundImage = `url(${event.target.result})`;
+    avatarBlock.textContent = "";
+  };
+  reader.readAsDataURL(file);
 
-  inputFile.click();
+  avatarFile = file;
+  showStatus("Avatar selected. Click Save Changes to upload.");
+  clearStatusSoon(3500);
 });
 
 /* ----------------------------------------
    COPY PROFILE LINK
 ---------------------------------------- */
-document.getElementById("copyProfileLinkBtn").addEventListener("click", async () => {
-  await navigator.clipboard.writeText(location.href);
-  alert("Profile link copied!");
+copyLinkBtn?.addEventListener("click", async () => {
+  const text = location.href;
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus("Profile link copied.");
+    clearStatusSoon(2000);
+  } catch {
+    // Fallback for some browsers / insecure contexts
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showStatus("Profile link copied.");
+      clearStatusSoon(2000);
+    } catch {
+      showStatus("Could not copy link. Please copy from the address bar.", "error");
+      clearStatusSoon(3000);
+    }
+  }
 });
 
 /* ----------------------------------------
@@ -211,6 +265,13 @@ passwordModal.addEventListener("click", (e) => {
   if (e.target === passwordModal) passwordModal.classList.add("hidden");
 });
 
+// Close password modal on ESC
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && passwordModal && !passwordModal.classList.contains("hidden")) {
+    passwordModal.classList.add("hidden");
+  }
+});
+
 passwordForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -219,17 +280,20 @@ passwordForm.addEventListener("submit", async (e) => {
   const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
   if (newPassword !== confirmPassword) {
-    alert("New passwords do not match.");
+    showStatus("New passwords do not match.", "error");
+    clearStatusSoon(3000);
     return;
   }
 
   try {
     await api.auth.changePassword(currentPassword, newPassword);
-    alert("Password updated successfully!");
+    showStatus("Password updated.");
+    clearStatusSoon(2500);
     passwordModal.classList.add("hidden");
     passwordForm.reset();
   } catch (err) {
-    alert("Password update failed: " + err.message);
+    showStatus("Password update failed: " + (err?.message || "Unknown error"), "error");
+    clearStatusSoon(3500);
   }
 });
 
@@ -240,9 +304,11 @@ document.getElementById("toggle2FA").addEventListener("click", async () => {
   try {
     const result = await api.auth.toggle2FA();
     stats.twoFA.innerText = "Not available";
-    alert(result.message);
+    showStatus(result.message, "error");
+    clearStatusSoon(3500);
   } catch (err) {
-    alert("Could not update Two-Factor Authentication.");
+    showStatus("Could not update Two-Factor Authentication.", "error");
+    clearStatusSoon(3500);
   }
 });
 
@@ -253,9 +319,11 @@ document.getElementById("signOutAllBtn").addEventListener("click", async () => {
   if (!confirm("Sign out all devices?")) return;
   try {
     const result = await api.auth.signOutAll();
-    alert(result.message);
+    showStatus(result.message, "error");
+    clearStatusSoon(3500);
   } catch (err) {
-    alert("Failed to sign out all sessions.");
+    showStatus("Failed to sign out all sessions.", "error");
+    clearStatusSoon(3500);
   }
 });
 
@@ -265,4 +333,11 @@ document.getElementById("signOutAllBtn").addEventListener("click", async () => {
 document.addEventListener("DOMContentLoaded", loadUserProfile);
 form.addEventListener("submit", saveProfile);
 editBtn.addEventListener("click", showForm);
-cancelBtn.addEventListener("click", hideForm);
+cancelBtn.addEventListener("click", () => {
+  hideForm();
+  if (statusEl) {
+    statusEl.style.display = "none";
+    statusEl.textContent = "";
+    statusEl.classList.remove("is-ok", "is-error");
+  }
+});

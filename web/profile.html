@@ -56,13 +56,13 @@
         <!-- EDIT FORM -->
         <form id="editForm" class="edit-form" hidden>
           <div class="form-grid">
-            <label><span class="label">Full Name</span><input id="input_fullName" type="text"></label>
-            <label><span class="label">Username</span><input id="input_username" type="text"></label>
-            <label><span class="label">Email</span><input id="input_email" type="email"></label>
-            <label><span class="label">Phone Number</span><input id="input_phoneNumber" type="tel"></label>
-            <label><span class="label">Location</span><input id="input_location" type="text"></label>
-            <label><span class="label">Role</span><input id="input_role" type="text"></label>
-            <label class="span-2"><span class="label">Bio</span><textarea id="input_bio" rows="4"></textarea></label>
+            <label><span class="label">Full Name</span><input id="input_fullName" name="fullName" type="text" autocomplete="name" required></label>
+            <label><span class="label">Username</span><input id="input_username" name="username" type="text" autocomplete="username" required></label>
+            <label><span class="label">Email</span><input id="input_email" name="email" type="email" autocomplete="email" required></label>
+            <label><span class="label">Phone Number</span><input id="input_phoneNumber" name="phoneNumber" type="tel" autocomplete="tel"></label>
+            <label><span class="label">Location</span><input id="input_location" name="location" type="text" autocomplete="address-level2"></label>
+            <label><span class="label">Role</span><input id="input_role" name="role" type="text" autocomplete="organization-title"></label>
+            <label class="span-2"><span class="label">Bio</span><textarea id="input_bio" name="bio" rows="4" autocomplete="off"></textarea></label>
           </div>
 
           <div class="form-actions">
@@ -71,8 +71,11 @@
           </div>
         </form>
 
+        <p id="profileStatus" class="subtle" aria-live="polite" style="display:none;"></p>
+
         <div class="actions">
           <button class="btn" id="changeAvatarBtn" type="button">Change Avatar</button>
+          <input id="avatarInput" type="file" accept="image/*" hidden />
           <button class="btn btn--link" id="copyProfileLinkBtn" type="button">Copy Profile Link</button>
         </div>
       </section>
@@ -90,7 +93,7 @@
             </div>
             <div class="sr-right align-right">
               <span id="stat_2FA">—</span>
-              <button class="btn btn--primary" id="toggle2FA">Configure</button>
+              <button class="btn btn--primary" id="toggle2FA" type="button">Configure</button>
             </div>
           </div>
 
@@ -100,7 +103,7 @@
               <p class="subtle">Use a strong unique password.</p>
             </div>
             <div class="sr-right align-right">
-              <button class="btn btn--primary" id="changePasswordBtn">Change</button>
+              <button class="btn btn--primary" id="changePasswordBtn" type="button">Change</button>
             </div>
           </div>
 
@@ -112,17 +115,17 @@
               <form id="passwordForm" class="form-grid">
                 <label class="span-2">
                   <span class="label">Current Password</span>
-                  <input id="currentPassword" type="password" required />
+                  <input id="currentPassword" type="password" autocomplete="current-password" required />
                 </label>
 
                 <label class="span-2">
                   <span class="label">New Password</span>
-                  <input id="newPassword" type="password" required minlength="6" />
+                  <input id="newPassword" type="password" autocomplete="new-password" required minlength="8" />
                 </label>
 
                 <label class="span-2">
                   <span class="label">Confirm New Password</span>
-                  <input id="confirmPassword" type="password" required minlength="6" />
+                  <input id="confirmPassword" type="password" autocomplete="new-password" required minlength="8" />
                 </label>
 
                 <div class="form-actions span-2">
@@ -139,7 +142,7 @@
               <p class="subtle">Manage signed-in devices.</p>
             </div>
             <div class="sr-right align-right">
-              <button class="btn btn--primary" id="signOutAllBtn">Sign Out All</button>
+              <button class="btn btn--primary" id="signOutAllBtn" type="button">Sign Out All</button>
             </div>
           </div>
 
