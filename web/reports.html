@@ -26,26 +26,41 @@
     <!-- ========== SUMMARY ========== -->
     <section class="summary">
       <h2>Transaction Overview</h2>
+      <div class="reports-controls">
+        <label class="control">
+          <span class="label">Date Range</span>
+          <select id="reportsRange" name="reportsRange">
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
+            <option value="all" selected>All time</option>
+          </select>
+        </label>
+
+        <button class="btn btn--primary" id="btnRefreshReports" type="button">Refresh</button>
+
+        <p id="reportsStatus" class="subtle" aria-live="polite" style="display:none;"></p>
+      </div>
 
       <div class="cards">
         <div class="card">
           <h3>Total Expenses</h3>
-          <p id="total-expenses">Loading...</p>
+          <p id="total-expenses" aria-live="polite">Loading...</p>
         </div>
 
         <div class="card">
           <h3>Total Income</h3>
-          <p id="total-income">Loading...</p>
+          <p id="total-income" aria-live="polite">Loading...</p>
         </div>
 
         <div class="card">
           <h3>Monthly Average</h3>
-          <p id="monthly-average">Loading...</p>
+          <p id="monthly-average" aria-live="polite">Loading...</p>
         </div>
 
         <div class="card">
           <h3>Top Category</h3>
-          <p id="top-category">Loading...</p>
+          <p id="top-category" aria-live="polite">Loading...</p>
         </div>
       </div>
     </section>
@@ -73,8 +88,8 @@
         <h2>Income & Expenses Over Time</h2>
 
         <div class="toggles">
-          <label><input type="checkbox" id="toggle-expenses" checked /> Expenses</label>
-          <label><input type="checkbox" id="toggle-income" checked /> Income</label>
+          <label class="toggle"><input type="checkbox" id="toggle-expenses" checked /> <span>Expenses</span></label>
+          <label class="toggle"><input type="checkbox" id="toggle-income" checked /> <span>Income</span></label>
         </div>
       </div>
 

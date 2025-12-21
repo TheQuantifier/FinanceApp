@@ -1,236 +1,367 @@
 // scripts/reports.js
 import { api } from "./api.js";
 
-let expensePieChart = null;
-let incomePieChart = null;
-let monthlyChartInstance = null;
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
 
-document.addEventListener("DOMContentLoaded", loadReports);
+  const els = {
+    range: $("#reportsRange"),
+    refresh: $("#btnRefreshReports"),
+    status: $("#reportsStatus"),
 
-// ======================================================
-// MAIN LOADER
-// ======================================================
-async function loadReports() {
-  try {
-    const all = await api.records.getAll();
+    totalExpenses: $("#total-expenses"),
+    totalIncome: $("#total-income"),
+    monthlyAverage: $("#monthly-average"),
+    topCategory: $("#top-category"),
 
-    const expenses = all.filter(r => r.type === "expense");
-    const income = all.filter(r => r.type === "income");
+    pieExp: $("#pieChartExpenses"),
+    pieInc: $("#pieChartIncome"),
+    monthly: $("#monthlyChart"),
 
-    const summary = computeSummary(expenses, income);
-
-    updateSummary(summary);
-
-    renderPieChart("pieChartExpenses", summary.expenseCategories, "Expenses");
-    renderPieChart("pieChartIncome", summary.incomeCategories, "Income");
-
-    renderIncomeExpenseOverTime(expenses, income);
-
-  } catch (err) {
-    console.error("Error loading reports:", err);
-  }
-}
-
-// ======================================================
-// SUMMARY PROCESSING
-// ======================================================
-function computeSummary(expenses, income) {
-  const expenseCategories = {};
-  const incomeCategories = {};
-
-  let totalExpenses = 0;
-  let totalIncome = 0;
-
-  for (const e of expenses) {
-    const amt = Number(e.amount) || 0;
-    totalExpenses += amt;
-    const cat = e.category || "Uncategorized";
-    expenseCategories[cat] = (expenseCategories[cat] || 0) + amt;
-  }
-
-  for (const inc of income) {
-    const amt = Number(inc.amount) || 0;
-    totalIncome += amt;
-    const cat = inc.category || "Uncategorized";
-    incomeCategories[cat] = (incomeCategories[cat] || 0) + amt;
-  }
-
-  const distinctMonths = new Set(expenses.map(e => e.date?.slice(0, 7)));
-  const monthCount = Math.max(1, distinctMonths.size);
-
-  return {
-    currency: "USD",
-    total_spending: totalExpenses,
-    total_income: totalIncome,
-    monthly_average: totalExpenses / monthCount,
-    expenseCategories,
-    incomeCategories,
-    topCategory:
-      Object.entries(expenseCategories).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-      "N/A",
+    toggleExp: $("#toggle-expenses"),
+    toggleInc: $("#toggle-income"),
   };
-}
 
-// ======================================================
-// UPDATE SUMMARY CARD VALUES
-// ======================================================
-function updateSummary(s) {
-  const fmt = n => `$${(Number(n) || 0).toFixed(2)} ${s.currency}`;
+  let cache = [];
+  let charts = { expPie: null, incPie: null, monthly: null };
 
-  document.getElementById("total-expenses").textContent = fmt(s.total_spending);
-  document.getElementById("total-income").textContent = fmt(s.total_income);
-  document.getElementById("monthly-average").textContent = fmt(s.monthly_average);
-  document.getElementById("top-category").textContent = s.topCategory;
-}
+  const debounce = (fn, delay = 200) => {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  };
 
-// ======================================================
-// PIE CHART (SHARED COMPONENT) — FIXED SIZING
-// ======================================================
-function renderPieChart(canvasId, categories, label) {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx) return;
+  const showStatus = (msg, kind = "ok") => {
+    if (!els.status) return;
+    els.status.textContent = msg;
+    els.status.style.display = "block";
+    els.status.classList.toggle("is-ok", kind === "ok");
+    els.status.classList.toggle("is-error", kind === "error");
+  };
 
-  // Destroy existing chart instance
-  if (canvasId === "pieChartExpenses" && expensePieChart)
-    expensePieChart.destroy();
-  if (canvasId === "pieChartIncome" && incomePieChart)
-    incomePieChart.destroy();
+  const clearStatusSoon = (ms = 2000) => {
+    if (!els.status) return;
+    window.setTimeout(() => {
+      els.status.style.display = "none";
+      els.status.textContent = "";
+      els.status.classList.remove("is-ok", "is-error");
+    }, ms);
+  };
 
-  const labels = Object.keys(categories);
-  const values = Object.values(categories);
-  const total = values.reduce((a, b) => a + b, 0);
+  // Display currency
+  const getDisplayCurrency = () =>
+    localStorage.getItem("settings_currency") ||
+    localStorage.getItem("auto_currency") ||
+    "USD";
 
-  // Stable color palette
-  const colors = [
-    "#007BFF",
-    "#28A745",
-    "#FFC107",
-    "#DC3545",
-    "#17A2B8",
-    "#6f42c1",
-    "#6c757d"
-  ];
+  // Minimal FX rates (same approach as records.js). Replace with live FX in production.
+  const FX_RATES = {
+    USD: { USD: 1, EUR: 0.92, GBP: 0.79, INR: 83.1, CAD: 1.37, AUD: 1.55, JPY: 148 },
+    EUR: { USD: 1.09, EUR: 1, GBP: 0.86, INR: 90.4, CAD: 1.49, AUD: 1.69, JPY: 161 },
+    GBP: { USD: 1.26, EUR: 1.16, GBP: 1, INR: 105.5, CAD: 1.73, AUD: 1.96, JPY: 187 },
+  };
 
-  const pieChart = new Chart(ctx, {
-    type: "doughnut",
-    data: {
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (!fromCurrency || !toCurrency || fromCurrency === toCurrency) return amount;
+    if (FX_RATES[fromCurrency] && FX_RATES[fromCurrency][toCurrency]) {
+      return amount * FX_RATES[fromCurrency][toCurrency];
+    }
+    return amount;
+  };
+
+  const fmtMoney = (value, originalCurrency = "USD") => {
+    const currency = getDisplayCurrency();
+    const converted = convertCurrency(Number(value) || 0, originalCurrency, currency);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(converted);
+  };
+
+  const theme = () => document.documentElement.getAttribute("data-theme") || "light";
+
+  const palette = () =>
+    theme() === "dark"
+      ? ["#60a5fa", "#38bdf8", "#818cf8", "#22d3ee", "#93c5fd", "#67e8f9", "#a5b4fc", "#fca5a5"]
+      : ["#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6", "#ef4444"];
+
+  const chartText = () => (theme() === "dark" ? "#e5e7eb" : "#111827");
+  const chartGrid = () => (theme() === "dark" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.10)");
+
+  const destroyCharts = () => {
+    Object.values(charts).forEach((c) => {
+      try {
+        c?.destroy?.();
+      } catch {}
+    });
+    charts = { expPie: null, incPie: null, monthly: null };
+  };
+
+  const withinRange = (iso, rangeVal) => {
+    if (!iso) return false;
+    if (rangeVal === "all") return true;
+    const days = Number(rangeVal);
+    if (!Number.isFinite(days) || days <= 0) return true;
+    const d = new Date(iso);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return d >= cutoff;
+  };
+
+  const normalize = (records) =>
+    (records || [])
+      .filter((r) => r && (r.type === "expense" || r.type === "income"))
+      .map((r) => ({
+        ...r,
+        amount: Number(r.amount) || 0,
+        currency: r.currency || "USD",
+        category: r.category || "Uncategorized",
+      }));
+
+  const groupByCategory = (records) => {
+    const m = new Map();
+    const displayCur = getDisplayCurrency();
+    records.forEach((r) => {
+      const k = r.category || "Uncategorized";
+      const prev = m.get(k) || 0;
+      const amt = convertCurrency(r.amount, r.currency, displayCur);
+      m.set(k, prev + amt);
+    });
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+
+  const monthKey = (iso) => {
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  };
+
+  const buildMonthlySeries = (records) => {
+    const displayCur = getDisplayCurrency();
+    const m = new Map();
+    records.forEach((r) => {
+      if (!r.date) return;
+      const key = monthKey(r.date);
+      const prev = m.get(key) || { income: 0, expense: 0 };
+      const amt = convertCurrency(r.amount, r.currency, displayCur);
+      if (r.type === "income") prev.income += amt;
+      else prev.expense += amt;
+      m.set(key, prev);
+    });
+
+    const keys = [...m.keys()].sort();
+    const labels = keys.map((k) => {
+      const [y, mm] = k.split("-");
+      const d = new Date(Number(y), Number(mm) - 1, 1);
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "short" });
+    });
+
+    return {
       labels,
-      datasets: [
-        {
-          label,
-          data: values,
-          backgroundColor: colors.slice(0, labels.length)
-        }
-      ]
-    },
-    options: {
-      maintainAspectRatio: true,   // ⬅ Prevents chart growing vertically
-      responsive: true,
+      income: keys.map((k) => m.get(k).income),
+      expense: keys.map((k) => m.get(k).expense),
+    };
+  };
 
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: { color: getChartColors().text }
+  const setText = (el, text) => {
+    if (!el) return;
+    el.textContent = text;
+  };
+
+  const computeAndRender = () => {
+    const rangeVal = els.range?.value || "all";
+    const records = normalize(cache).filter((r) => withinRange(r.date, rangeVal));
+
+    const expenses = records.filter((r) => r.type === "expense");
+    const income = records.filter((r) => r.type === "income");
+
+    const displayCur = getDisplayCurrency();
+    const totalExp = expenses.reduce(
+      (s, r) => s + convertCurrency(r.amount, r.currency, displayCur),
+      0
+    );
+    const totalInc = income.reduce(
+      (s, r) => s + convertCurrency(r.amount, r.currency, displayCur),
+      0
+    );
+
+    setText(els.totalExpenses, fmtMoney(totalExp, displayCur));
+    setText(els.totalIncome, fmtMoney(totalInc, displayCur));
+
+    const monthly = buildMonthlySeries(records);
+    const monthsCount = Math.max(1, monthly.labels.length);
+    const avgMonthlyExp = monthly.expense.reduce((a, b) => a + b, 0) / monthsCount;
+    setText(els.monthlyAverage, fmtMoney(avgMonthlyExp, displayCur));
+
+    const expCats = groupByCategory(expenses);
+    setText(els.topCategory, expCats[0]?.[0] || "—");
+
+    destroyCharts();
+
+    // Pie: Expenses
+    if (els.pieExp && window.Chart) {
+      const ctx = els.pieExp.getContext("2d");
+      const labels = expCats.map(([k]) => k);
+      const data = expCats.map(([, v]) => v);
+      const colors = labels.map((_, i) => palette()[i % palette().length]);
+
+      charts.expPie = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{ data, backgroundColor: colors, borderWidth: 1 }],
         },
-        datalabels: {
-          color: "#fff",
-          font: { weight: "bold", size: 13 },
-          formatter: value => {
-            if (!total) return "0%";
-            return ((value / total) * 100).toFixed(1) + "%";
-          }
-        }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
-
-  // Store chart instance
-  if (canvasId === "pieChartExpenses") expensePieChart = pieChart;
-  else incomePieChart = pieChart;
-}
-
-// ======================================================
-// LINE CHART (Income vs Expenses)
-// ======================================================
-function renderIncomeExpenseOverTime(expenses, income) {
-  const ctx = document.getElementById("monthlyChart");
-  if (!ctx) return;
-
-  if (monthlyChartInstance) monthlyChartInstance.destroy();
-
-  const expenseByDate = sumByDate(expenses);
-  const incomeByDate = sumByDate(income);
-
-  const labels = Array.from(
-    new Set([...Object.keys(expenseByDate), ...Object.keys(incomeByDate)])
-  ).sort();
-
-  const colors = getChartColors();
-
-  monthlyChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Expenses",
-          data: labels.map(d => expenseByDate[d] || 0),
-          borderColor: "#DC3545",
-          backgroundColor: "rgba(220,53,69,0.25)",
-          fill: true,
-          tension: 0.3
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { color: chartText() } },
+            datalabels: {
+              color: "#fff",
+              font: { weight: "bold" },
+              formatter: (value, ctx) => {
+                const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (!sum) return "0%";
+                return `${((value / sum) * 100).toFixed(1)}%`;
+              },
+            },
+          },
         },
-        {
-          label: "Income",
-          data: labels.map(d => incomeByDate[d] || 0),
-          borderColor: "#28A745",
-          backgroundColor: "rgba(40,167,69,0.25)",
-          fill: true,
-          tension: 0.3
-        }
-      ]
-    },
-    options: {
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { labels: { color: colors.text } }
-      },
-      scales: {
-        x: { ticks: { color: colors.text } },
-        y: { ticks: { color: colors.text }, beginAtZero: true }
-      }
+        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+      });
+    }
+
+    // Pie: Income
+    if (els.pieInc && window.Chart) {
+      const ctx = els.pieInc.getContext("2d");
+      const incCats = groupByCategory(income);
+      const labels = incCats.map(([k]) => k);
+      const data = incCats.map(([, v]) => v);
+      const colors = labels.map((_, i) => palette()[i % palette().length]);
+
+      charts.incPie = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{ data, backgroundColor: colors, borderWidth: 1 }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { color: chartText() } },
+            datalabels: {
+              color: "#fff",
+              font: { weight: "bold" },
+              formatter: (value, ctx) => {
+                const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (!sum) return "0%";
+                return `${((value / sum) * 100).toFixed(1)}%`;
+              },
+            },
+          },
+        },
+        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+      });
+    }
+
+    // Monthly trend
+    if (els.monthly && window.Chart) {
+      const ctx = els.monthly.getContext("2d");
+      const showExp = els.toggleExp?.checked ?? true;
+      const showInc = els.toggleInc?.checked ?? true;
+
+      charts.monthly = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: monthly.labels,
+          datasets: [
+            {
+              label: "Expenses",
+              data: monthly.expense,
+              hidden: !showExp,
+              borderWidth: 2,
+              tension: 0.25,
+            },
+            {
+              label: "Income",
+              data: monthly.income,
+              hidden: !showInc,
+              borderWidth: 2,
+              tension: 0.25,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: chartText() } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y, displayCur)}`,
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { color: chartText() }, grid: { color: chartGrid() } },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: chartText(),
+                callback: (v) => {
+                  try {
+                    return new Intl.NumberFormat(undefined, { notation: "compact" }).format(v);
+                  } catch {
+                    return v;
+                  }
+                },
+              },
+              grid: { color: chartGrid() },
+            },
+          },
+        },
+      });
+    }
+
+    const rangeLabel = rangeVal === "all" ? "all time" : `last ${rangeVal} days`;
+    showStatus(`Updated for ${rangeLabel}.`);
+    clearStatusSoon(2000);
+  };
+
+  const debouncedCompute = debounce(computeAndRender, 150);
+
+  const load = async () => {
+    try {
+      showStatus("Loading reports…");
+      cache = await api.records.getAll();
+      computeAndRender();
+    } catch (err) {
+      console.error("Error loading reports:", err);
+      showStatus("Could not load reports.", "error");
+    }
+  };
+
+  // Wire UI once (avoid duplicate listeners)
+  els.range?.addEventListener("change", () => debouncedCompute());
+  els.refresh?.addEventListener("click", () => load());
+  els.toggleExp?.addEventListener("change", () => debouncedCompute());
+  els.toggleInc?.addEventListener("change", () => debouncedCompute());
+
+  // Resize redraw
+  window.addEventListener("resize", debounce(() => computeAndRender(), 200));
+
+  // React to theme/currency updates
+  window.addEventListener("storage", (e) => {
+    if (e.key === "theme" || e.key === "settings_currency" || e.key === "auto_currency") {
+      debouncedCompute();
     }
   });
 
-  // Toggle visibility
-  document.getElementById("toggle-expenses")?.addEventListener("change", e => {
-    monthlyChartInstance.data.datasets[0].hidden = !e.target.checked;
-    monthlyChartInstance.update();
-  });
+  // Same-tab theme changes: observe data-theme attr
+  const obs = new MutationObserver(() => debouncedCompute());
+  obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-  document.getElementById("toggle-income")?.addEventListener("change", e => {
-    monthlyChartInstance.data.datasets[1].hidden = !e.target.checked;
-    monthlyChartInstance.update();
-  });
-}
-
-// ======================================================
-// HELPERS
-// ======================================================
-function getChartColors() {
-  const theme = document.documentElement.getAttribute("data-theme") || "light";
-
-  return theme === "dark"
-    ? { text: "#f8f9fa" }
-    : { text: "#212529" };
-}
-
-function sumByDate(rows) {
-  const out = {};
-  for (const r of rows) {
-    const key = r.date?.slice(0, 10);
-    if (key) out[key] = (out[key] || 0) + Number(r.amount || 0);
-  }
-  return out;
-}
+  // Initial
+  document.addEventListener("DOMContentLoaded", load);
+})();
