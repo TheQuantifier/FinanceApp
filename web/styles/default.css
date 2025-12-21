@@ -353,6 +353,11 @@ footer {
 .btn:hover { background: var(--grey-1); }
 .btn:active { transform: translateY(1px); }
 
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .btn--primary {
   background: var(--primary);
   border-color: var(--primary);
@@ -370,6 +375,12 @@ footer {
   background: var(--bad);
   border-color: var(--bad);
   color: white;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* =========================================================
@@ -398,19 +409,12 @@ footer {
 .txn-table th,
 .txn-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--grey-1);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
-.txn-table thead th {
-  text-align: left;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.92rem;
-}
-
 .txn-table tbody tr:hover {
-  background: #fafafa;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
 }
 
 .num { text-align: right; }
@@ -425,8 +429,8 @@ input, select, textarea {
   padding: 0.55rem 0.7rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: var(--grey-0);
-  color: var(--gray-3);
+  background: var(--card-bg);
+  color: var(--text);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -436,6 +440,13 @@ textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(0,163,224,0.15);
   outline: none;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* =========================================================
@@ -557,16 +568,6 @@ textarea:focus {
   color: var(--text);
 }
 
-:root[data-theme="dark"] .txn-table tbody tr:hover {
-  background: rgba(255,255,255,0.04);
-}
-
-:root[data-theme="dark"] input,
-:root[data-theme="dark"] select,
-:root[data-theme="dark"] textarea {
-  background: #202327;
-}
-
 :root[data-theme="dark"] .btn {
   background: #2f3338;
   color: #ffffff;
@@ -593,4 +594,3 @@ textarea:focus {
   border-color: var(--border);
   color: var(--muted);
 }
-
