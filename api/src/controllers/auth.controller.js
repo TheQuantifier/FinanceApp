@@ -1,258 +1,250 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Record = require('../models/Record');
-const Receipt = require('../models/Receipt');
-const asyncHandler = require('../middleware/async');
-const { deleteFromGridFS } = require('../lib/gridfs');
-const { jwtSecret, jwtExpiresIn } = require('../config/env');
+// src/controllers/auth.controller.js
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+
+import env from "../config/env.js";
+import asyncHandler from "../middleware/async.js";
+import { query } from "../config/db.js";
+
+import {
+  createUser,
+  findUserById,
+  findUserAuthById,
+  findUserAuthByIdentifier,
+  updateUserById,
+  updateUserPasswordHash,
+} from "../models/user.model.js";
+
+// If you have an R2 service, we’ll use it to delete objects on account deletion.
+// If your service file name differs, adjust the import path accordingly.
+import { deleteObject } from "../services/r2.service.js";
 
 function createToken(id) {
-  return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
+  return jwt.sign({ id }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
 }
 
 function setTokenCookie(res, token) {
-  res.cookie('token', token, {
+  const isProd = env.nodeEnv === "production";
+
+  res.cookie("token", token, {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    secure: isProd, // secure cookies require HTTPS in production
+    sameSite: isProd ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
 
+function clearTokenCookie(res) {
+  const isProd = env.nodeEnv === "production";
 
+  res.cookie("token", "", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    expires: new Date(0),
+  });
+}
 
 /* =====================================================
-   REGISTER  — now uses fullName consistently
+   REGISTER — uses fullName consistently
 ===================================================== */
-exports.register = asyncHandler(async (req, res) => {
+export const register = asyncHandler(async (req, res) => {
   const { email, password, fullName } = req.body;
 
   if (!email || !password || !fullName) {
-    return res.status(400).json({ message: 'Missing required fields' });
+    return res.status(400).json({ message: "Missing required fields" });
   }
 
-  const normalizedEmail = email.toLowerCase().trim();
-
-  const exists = await User.findOne({ email: normalizedEmail });
-  if (exists) {
-    return res.status(400).json({ message: 'Email already in use' });
+  if (typeof password !== "string" || password.length < 8) {
+    return res.status(400).json({ message: "Password must be at least 8 characters long" });
   }
 
-  // Username = part before @, lowercased
-  const usernameBase = normalizedEmail.split('@')[0].toLowerCase().trim();
+  const normalizedEmail = String(email).toLowerCase().trim();
+  const usernameBase = normalizedEmail.split("@")[0].toLowerCase().trim();
 
-  const user = await User.create({
+  // Check if email already in use
+  const existing = await findUserAuthByIdentifier(normalizedEmail);
+  if (existing && String(existing.email).toLowerCase() === normalizedEmail) {
+    return res.status(400).json({ message: "Email already in use" });
+  }
+
+  const salt = await bcrypt.genSalt(12);
+  const passwordHash = await bcrypt.hash(password, salt);
+
+  // Create user
+  // (If username collisions happen, you can later add a suffix strategy.)
+  const user = await createUser({
     email: normalizedEmail,
-    password,
     username: usernameBase,
-    fullName: fullName.trim(),
+    passwordHash,
+    fullName: String(fullName).trim(),
     location: "",
     role: "user",
     phoneNumber: "",
     bio: "",
   });
 
-  const token = createToken(user._id);
+  const token = createToken(user.id);
   setTokenCookie(res, token);
 
   res.status(201).json({ user });
 });
 
-
-
 /* =====================================================
    LOGIN (email OR username)
 ===================================================== */
-exports.login = asyncHandler(async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
   const { identifier, password } = req.body;
 
   if (!identifier || !password) {
-    return res.status(400).json({ message: 'Missing identifier or password' });
+    return res.status(400).json({ message: "Missing identifier or password" });
   }
 
-  const lookup = identifier.toLowerCase().trim();
+  const user = await findUserAuthByIdentifier(identifier);
 
-  const user = await User.findOne({
-    $or: [{ email: lookup }, { username: lookup }],
-  });
-
-  if (!user || !(await user.comparePassword(password))) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+  if (!user) {
+    return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  const token = createToken(user._id);
+  const ok = await bcrypt.compare(String(password), user.password_hash);
+  if (!ok) {
+    return res.status(401).json({ message: "Invalid credentials" });
+  }
+
+  const token = createToken(user.id);
   setTokenCookie(res, token);
 
-  res.json({ user });
+  // Return safe user shape (no password_hash)
+  const safeUser = await findUserById(user.id);
+  res.json({ user: safeUser });
 });
-
-
 
 /* =====================================================
    LOGOUT
 ===================================================== */
-exports.logout = asyncHandler(async (_req, res) => {
-  res.cookie('token', '', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    expires: new Date(0),
-  });
-
-  res.json({ message: 'Logged out' });
+export const logout = asyncHandler(async (_req, res) => {
+  clearTokenCookie(res);
+  res.json({ message: "Logged out" });
 });
-
-
 
 /* =====================================================
    CURRENT USER
 ===================================================== */
-exports.me = asyncHandler(async (req, res) => {
+export const me = asyncHandler(async (req, res) => {
   res.json({ user: req.user });
 });
-
-
 
 /* =====================================================
    UPDATE PROFILE (fullName, email, username, etc.)
 ===================================================== */
-exports.updateMe = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
+export const updateMe = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
   const updates = {};
 
-  const allowedFields = [
-    "username",
-    "email",
-    "fullName",
-    "location",
-    "role",
-    "phoneNumber",
-    "bio",
-  ];
+  const allowedFields = ["username", "email", "fullName", "location", "role", "phoneNumber", "bio"];
 
   for (const key of allowedFields) {
     if (req.body[key] !== undefined) {
-      updates[key] =
-        typeof req.body[key] === "string"
-          ? req.body[key].trim()
-          : req.body[key];
+      updates[key] = typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
     }
   }
 
-  // Validate unique email
+  // Unique email check
   if (updates.email !== undefined) {
-    const normalizedEmail = updates.email.toLowerCase().trim();
-    updates.email = normalizedEmail;
+    updates.email = String(updates.email).toLowerCase().trim();
 
-    const exists = await User.findOne({ email: normalizedEmail });
-    if (exists && exists._id.toString() !== userId.toString()) {
-      return res.status(400).json({ message: 'Email already in use' });
+    const { rows } = await query(
+      `SELECT id FROM users WHERE lower(email) = $1 LIMIT 1`,
+      [updates.email]
+    );
+    if (rows[0] && rows[0].id !== userId) {
+      return res.status(400).json({ message: "Email already in use" });
     }
   }
 
-  // Validate unique username
+  // Unique username check
   if (updates.username !== undefined) {
-    updates.username = updates.username.toLowerCase().trim();
+    updates.username = String(updates.username).toLowerCase().trim();
 
-    const exists = await User.findOne({ username: updates.username });
-    if (exists && exists._id.toString() !== userId.toString()) {
-      return res.status(400).json({ message: 'Username already in use' });
+    const { rows } = await query(
+      `SELECT id FROM users WHERE lower(username) = $1 LIMIT 1`,
+      [updates.username]
+    );
+    if (rows[0] && rows[0].id !== userId) {
+      return res.status(400).json({ message: "Username already in use" });
     }
   }
 
-  const updated = await User.findByIdAndUpdate(userId, updates, {
-    new: true,
-    runValidators: true,
-  });
-
+  const updated = await updateUserById(userId, updates);
   res.json({ user: updated });
 });
-
-
 
 /* =====================================================
    CHANGE PASSWORD
 ===================================================== */
-exports.changePassword = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
+export const changePassword = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({
-      message: 'Current and new password are required',
-    });
+    return res.status(400).json({ message: "Current and new password are required" });
   }
 
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
-    return res.status(400).json({
-      message: 'New password must be at least 8 characters long',
-    });
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    return res.status(400).json({ message: "New password must be at least 8 characters long" });
   }
 
-  const user = await User.findById(userId);
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  const user = await findUserAuthById(userId);
+  if (!user) return res.status(404).json({ message: "User not found" });
 
-  const isMatch = await user.comparePassword(currentPassword);
+  const isMatch = await bcrypt.compare(String(currentPassword), user.password_hash);
   if (!isMatch) {
-    return res.status(401).json({ message: 'Current password is incorrect' });
+    return res.status(401).json({ message: "Current password is incorrect" });
   }
 
-  user.password = newPassword;
-  await user.save();
+  const salt = await bcrypt.genSalt(12);
+  const newHash = await bcrypt.hash(String(newPassword), salt);
 
-  const token = createToken(user._id);
+  await updateUserPasswordHash(userId, newHash);
+
+  const token = createToken(userId);
   setTokenCookie(res, token);
 
+  const safeUser = await findUserById(userId);
+
   res.json({
-    message: 'Password updated successfully',
-    user,
+    message: "Password updated successfully",
+    user: safeUser,
   });
 });
-
-
 
 /* =====================================================
    DELETE ACCOUNT — cascade delete
 ===================================================== */
-exports.deleteMe = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
+export const deleteMe = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
 
-  // 1) Fetch receipts so we can delete underlying GridFS files
-  const receipts = await Receipt.find({ user: userId });
+  // 1) Fetch receipt object keys so we can delete R2 files (continue on error)
+  const { rows: receiptRows } = await query(
+    `SELECT id, object_key FROM receipts WHERE user_id = $1`,
+    [userId]
+  );
 
-  // 2) Delete files from GridFS (continue on error)
-  for (const receipt of receipts) {
+  for (const r of receiptRows) {
     try {
-      if (receipt.storedFileId) {
-        await deleteFromGridFS(receipt.storedFileId);
+      if (r.object_key) {
+        await deleteObject({ key: r.object_key });
       }
     } catch (err) {
-      console.error(
-        'Error deleting GridFS file for receipt',
-        receipt._id.toString(),
-        err
-      );
+      console.error("Error deleting R2 object for receipt", r.id, err);
     }
   }
 
-  // 3) Delete receipts
-  await Receipt.deleteMany({ user: userId });
+  // 2) Delete the user. records/receipts cascade via FK ON DELETE CASCADE
+  await query(`DELETE FROM users WHERE id = $1`, [userId]);
 
-  // 4) Delete records
-  await Record.deleteMany({ user: userId });
+  // 3) Clear auth cookie
+  clearTokenCookie(res);
 
-  // 5) Delete user
-  await User.findByIdAndDelete(userId);
-
-  // 6) Clear auth cookie
-  res.cookie('token', '', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    expires: new Date(0),
-  });
-
-  res.json({
-    message: 'Account and all associated data have been deleted',
-  });
+  res.json({ message: "Account and all associated data have been deleted" });
 });
