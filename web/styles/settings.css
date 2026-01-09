@@ -79,12 +79,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: white;
 
   margin-top: var(--space-2);
   padding: 0.6rem 1.1rem;
-
-  /*background-color: var(--primary);*/
-  color: inherit;
 
   border-radius: var(--radius-sm);
   border: 1px solid var(--primary);
