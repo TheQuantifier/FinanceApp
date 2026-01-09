@@ -1,8 +1,9 @@
 // src/services/aiParser.service.js
-const { GoogleGenAI } = require("@google/genai");
+import env from "../config/env.js";
+import { GoogleGenAI } from "@google/genai";
 
-const MAX_CHARS = parseInt(process.env.AI_MAX_CHARS || "5000");
-const USE_GEMINI = process.env.AI_PROVIDER === "gemini";
+const MAX_CHARS = Number(env.aiMaxChars || 5000);
+const USE_GEMINI = (env.aiProvider || "gemini").toLowerCase() === "gemini";
 
 // ---------------------------------------------------------
 // Prompt for Receipt Parsing
@@ -41,17 +42,15 @@ No explanations. No markdown. Only JSON.
 // ---------------------------------------------------------
 async function extractTextFromResponse(response) {
   // Case 1 — Gemini models have .text()
-  if (typeof response.text === "function") {
+  if (typeof response?.text === "function") {
     return await response.text();
   }
 
   // Case 2 — Gemma models deliver inside candidates[].content.parts[]
   try {
-    const parts =
-      response?.candidates?.[0]?.content?.parts;
-
+    const parts = response?.candidates?.[0]?.content?.parts;
     if (Array.isArray(parts)) {
-      const textPart = parts.find((p) => p.text);
+      const textPart = parts.find((p) => p?.text);
       if (textPart?.text) return textPart.text;
     }
   } catch (err) {
@@ -75,7 +74,7 @@ function extractJson(raw) {
 
   try {
     return JSON.parse(raw.slice(start, end + 1).trim());
-  } catch (e) {
+  } catch {
     console.warn("⚠️ Failed to parse JSON.");
     return null;
   }
@@ -115,7 +114,7 @@ async function runGeminiWithRetry(ai, modelName, contents, retries = 2) {
 // ---------------------------------------------------------
 // Main entry: Parse receipt text
 // ---------------------------------------------------------
-exports.parseReceiptText = async function (ocrText) {
+export async function parseReceiptText(ocrText) {
   if (!ocrText || ocrText.trim().length < 5) return null;
 
   // Limit size
@@ -128,32 +127,25 @@ exports.parseReceiptText = async function (ocrText) {
   if (!USE_GEMINI) return null;
 
   try {
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    });
+    const ai = new GoogleGenAI({ apiKey: env.aiApiKey });
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const modelName = env.aiModel || "gemini-2.5-flash";
     console.log("🤖 Using AI model:", modelName);
 
     const contents = [
       { role: "system", text: PARSE_PROMPT },
-      { role: "user", text }
+      { role: "user", text },
     ];
 
-    // Call API with retry
     const response = await runGeminiWithRetry(ai, modelName, contents);
-
-    // Works for BOTH Gemini & Gemma
     const raw = await extractTextFromResponse(response);
 
     const parsed = extractJson(raw);
     if (!parsed) return null;
 
     return normalize(parsed);
-  }
-
-  catch (err) {
+  } catch (err) {
     console.error("❌ Gemini Parsing Error:", err);
     return null;
   }
-};
+}

@@ -1,23 +1,23 @@
 // src/services/ocr.service.js
-const { spawn } = require('child_process');
-const path = require('path');
-const { ocrWorkerScript } = require('../config/env');
+import { spawn } from "child_process";
+import path from "path";
 
-exports.runOcrBuffer = function runOcrBuffer(buffer) {
+import env from "../config/env.js";
+
+export function runOcrBuffer(buffer) {
   return new Promise((resolve, reject) => {
-    const scriptPath = path.resolve(process.cwd(), ocrWorkerScript);
+    const scriptPath = path.resolve(process.cwd(), env.ocrWorkerScript);
 
-    // Allow override via PYTHON_BIN if needed
-    const pythonBin = process.env.PYTHON_BIN || 'python3';
+    // Allow override via env.js (falls back to python3 if unset)
+    const pythonBin = env.pythonBin || "python3";
 
     const py = spawn(pythonBin, [scriptPath], {
-      stdio: ['pipe', 'pipe', 'pipe'], // allow stdin/out/err
+      stdio: ["pipe", "pipe", "pipe"], // stdin/out/err
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
-    // Ensure buffer is written safely
     try {
       py.stdin.write(buffer);
       py.stdin.end();
@@ -25,19 +25,19 @@ exports.runOcrBuffer = function runOcrBuffer(buffer) {
       return reject(new Error(`Failed to write to OCR process: ${err.message}`));
     }
 
-    py.stdout.on('data', (data) => {
+    py.stdout.on("data", (data) => {
       stdout += data.toString();
     });
 
-    py.stderr.on('data', (data) => {
+    py.stderr.on("data", (data) => {
       stderr += data.toString();
     });
 
-    py.on('error', (err) => {
+    py.on("error", (err) => {
       reject(new Error(`Failed to start OCR process: ${err.message}`));
     });
 
-    py.on('close', (code) => {
+    py.on("close", (code) => {
       if (code !== 0) {
         return reject(new Error(`OCR failed (code ${code}): ${stderr || stdout}`));
       }
@@ -45,9 +45,9 @@ exports.runOcrBuffer = function runOcrBuffer(buffer) {
       try {
         const parsed = JSON.parse(stdout);
         return resolve(parsed);
-      } catch (e) {
+      } catch {
         return reject(new Error(`Failed to parse OCR output: ${stdout}`));
       }
     });
   });
-};
+}

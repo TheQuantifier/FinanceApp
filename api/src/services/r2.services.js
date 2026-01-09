@@ -1,67 +1,89 @@
 // src/services/r2.service.js
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-function required(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`${name} is missing`);
-  return v;
-}
+import env from "../config/env.js";
 
-const R2_BUCKET = required("R2_BUCKET");
-const R2_ENDPOINT = required("R2_ENDPOINT"); // e.g. https://<accountid>.r2.cloudflarestorage.com
-const R2_ACCESS_KEY_ID = required("R2_ACCESS_KEY_ID");
-const R2_SECRET_ACCESS_KEY = required("R2_SECRET_ACCESS_KEY");
-
+// ---------------------------------------------------------
+// R2 / S3-compatible client (Cloudflare R2)
+// ---------------------------------------------------------
 export const r2 = new S3Client({
-  region: "auto",
-  endpoint: R2_ENDPOINT,
+  region: env.objectStore.region || "auto",
+  endpoint: env.objectStore.endpoint,
   credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
+    accessKeyId: env.objectStore.accessKeyId,
+    secretAccessKey: env.objectStore.secretAccessKey,
   },
-  forcePathStyle: true, // important for R2 compatibility
+  forcePathStyle: env.objectStore.forcePathStyle,
 });
 
+// ---------------------------------------------------------
+// Generate a stable, safe object key
+// users/<userId>/receipts/<receiptId>/<random>.<ext>
+// ---------------------------------------------------------
 export function makeObjectKey({ userId, fileId, filename }) {
-  const safeName = filename.replace(/[^\w.\-]+/g, "_");
+  const safeName = String(filename || "file")
+    .replace(/[^\w.\-]+/g, "_")
+    .toLowerCase();
+
   const ext = safeName.includes(".") ? safeName.split(".").pop() : "bin";
   const rand = crypto.randomBytes(8).toString("hex");
+
   return `users/${userId}/receipts/${fileId}/${rand}.${ext}`;
 }
 
+// ---------------------------------------------------------
+// Presigned PUT (direct upload from client)
+// ---------------------------------------------------------
 export async function presignPut({ key, contentType, expiresIn = 60 }) {
   const cmd = new PutObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: env.objectStore.bucket,
     Key: key,
     ContentType: contentType,
   });
-  const url = await getSignedUrl(r2, cmd, { expiresIn });
-  return url;
+
+  return getSignedUrl(r2, cmd, { expiresIn });
 }
 
+// ---------------------------------------------------------
+// Presigned GET (temporary download access)
+// ---------------------------------------------------------
 export async function presignGet({ key, expiresIn = 60 }) {
   const cmd = new GetObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: env.objectStore.bucket,
     Key: key,
   });
-  const url = await getSignedUrl(r2, cmd, { expiresIn });
-  return url;
+
+  return getSignedUrl(r2, cmd, { expiresIn });
 }
 
+// ---------------------------------------------------------
+// HEAD object (existence / metadata check)
+// ---------------------------------------------------------
 export async function headObject({ key }) {
   const cmd = new HeadObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: env.objectStore.bucket,
     Key: key,
   });
+
   return r2.send(cmd);
 }
 
+// ---------------------------------------------------------
+// DELETE object
+// ---------------------------------------------------------
 export async function deleteObject({ key }) {
   const cmd = new DeleteObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: env.objectStore.bucket,
     Key: key,
   });
+
   return r2.send(cmd);
 }
