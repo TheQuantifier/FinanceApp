@@ -1,17 +1,17 @@
 // src/middleware/error.js
-const { nodeEnv } = require('../config/env');
+import env from "../config/env.js";
 
-function errorHandler(err, req, res, next) {
-  console.error('❌ Error:', err);
+export function errorHandler(err, req, res, next) {
+  console.error("❌ Error:", err);
 
   const status = err.status || 500;
 
   const response = {
-    message: err.message || 'Internal server error',
+    message: err.message || "Internal server error",
   };
 
-  // Include stack only in non-production
-  if (nodeEnv !== 'production') {
+  // Include stack trace only outside production
+  if (env.nodeEnv !== "production") {
     response.stack = err.stack;
   }
 
@@ -22,5 +22,3 @@ function errorHandler(err, req, res, next) {
 
   return res.status(status).json(response);
 }
-
-module.exports = { errorHandler };

@@ -1,9 +1,10 @@
 // src/middleware/auth.js
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { jwtSecret } = require('../config/env');
+import jwt from "jsonwebtoken";
 
-module.exports = async function auth(req, res, next) {
+import env from "../config/env.js";
+import { findUserById } from "../models/user.model.js";
+
+export default async function auth(req, res, next) {
   try {
     let token = null;
 
@@ -18,9 +19,9 @@ module.exports = async function auth(req, res, next) {
        2. Fallback: Authorization Bearer header
     ---------------------------------------------- */
     if (!token && req.headers.authorization) {
-      const [scheme, value] = req.headers.authorization.split(' ');
+      const [scheme, value] = req.headers.authorization.split(" ");
 
-      if (scheme === 'Bearer' && value && value !== 'null' && value !== 'undefined') {
+      if (scheme === "Bearer" && value && value !== "null" && value !== "undefined") {
         token = value.trim();
       }
     }
@@ -29,7 +30,7 @@ module.exports = async function auth(req, res, next) {
        3. Missing token → reject
     ---------------------------------------------- */
     if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return res.status(401).json({ message: "Authentication required" });
     }
 
     /* ----------------------------------------------
@@ -37,19 +38,18 @@ module.exports = async function auth(req, res, next) {
     ---------------------------------------------- */
     let payload;
     try {
-      payload = jwt.verify(token, jwtSecret);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid or expired token' });
+      payload = jwt.verify(token, env.jwtSecret);
+    } catch {
+      return res.status(401).json({ message: "Invalid or expired token" });
     }
 
     /* ----------------------------------------------
-       5. Fetch user
-       toJSON() automatically strips password
+       5. Fetch user from Postgres (safe fields only)
     ---------------------------------------------- */
-    const user = await User.findById(payload.id);
+    const user = await findUserById(payload.id);
 
     if (!user) {
-      return res.status(401).json({ message: 'User no longer exists' });
+      return res.status(401).json({ message: "User no longer exists" });
     }
 
     /* ----------------------------------------------
@@ -58,9 +58,8 @@ module.exports = async function auth(req, res, next) {
     req.user = user;
 
     return next();
-
   } catch (err) {
     console.error("AUTH ERROR:", err);
-    return res.status(500).json({ message: 'Authentication server error' });
+    return res.status(500).json({ message: "Authentication server error" });
   }
-};
+}
