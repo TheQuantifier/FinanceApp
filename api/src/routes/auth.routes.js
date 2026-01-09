@@ -1,34 +1,36 @@
-const express = require('express');
-const router = express.Router();
+// src/routes/auth.routes.js
+import express from "express";
 
-const controller = require('../controllers/auth.controller');
-const auth = require('../middleware/auth');
+import * as controller from "../controllers/auth.controller.js";
+import auth from "../middleware/auth.js";
+
+const router = express.Router();
 
 // --------------------------------------------------
 // PUBLIC ROUTES
 // --------------------------------------------------
-router.post('/register', controller.register);
+router.post("/register", controller.register);
 
-// Login now expects: { identifier, password }
+// Login expects: { identifier, password }
 // Controller supports username OR email
-router.post('/login', controller.login);
+router.post("/login", controller.login);
 
 // --------------------------------------------------
 // PROTECTED LOGOUT (requires auth)
 // --------------------------------------------------
-router.post('/logout', auth, controller.logout);
+router.post("/logout", auth, controller.logout);
 
 // --------------------------------------------------
 // AUTHENTICATED USER ROUTES
 // --------------------------------------------------
-router.get('/me', auth, controller.me);
-router.put('/me', auth, controller.updateMe);
+router.get("/me", auth, controller.me);
+router.put("/me", auth, controller.updateMe);
 
-// NEW: Change password for current user
+// Change password for current user
 // Body: { currentPassword, newPassword }
-router.post('/change-password', auth, controller.changePassword);
+router.post("/change-password", auth, controller.changePassword);
 
-// NEW: Delete current user account and all related data
-router.delete('/me', auth, controller.deleteMe);
+// Delete current user account and all related data
+router.delete("/me", auth, controller.deleteMe);
 
-module.exports = router;
+export default router;

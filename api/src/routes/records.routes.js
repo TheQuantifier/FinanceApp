@@ -1,18 +1,21 @@
 // src/routes/records.routes.js
-const express = require("express");
-const router = express.Router();
+import express from "express";
 
-const controller = require("../controllers/records.controller");
-const auth = require("../middleware/auth");
+import * as controller from "../controllers/records.controller.js";
+import auth from "../middleware/auth.js";
+
+const router = express.Router();
 
 /*
 |--------------------------------------------------------------------------
-| Validate :id parameter (prevents CastError crashes)
+| Validate :id parameter (UUID)
 |--------------------------------------------------------------------------
 */
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 router.param("id", (req, res, next, id) => {
-  const isValid = /^[0-9a-fA-F]{24}$/.test(id);
-  if (!isValid) {
+  if (!UUID_REGEX.test(id)) {
     return res.status(400).json({ message: "Invalid record ID format." });
   }
   next();
@@ -20,9 +23,8 @@ router.param("id", (req, res, next, id) => {
 
 /*
 |--------------------------------------------------------------------------
-| GET All records
+| GET all records
 |--------------------------------------------------------------------------
-| Must come before "/:id" route to avoid shadowing.
 */
 router.get("/", auth, controller.getAll);
 
@@ -54,4 +56,4 @@ router.put("/:id", auth, controller.update);
 */
 router.delete("/:id", auth, controller.remove);
 
-module.exports = router;
+export default router;

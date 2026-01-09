@@ -1,47 +1,38 @@
 // src/routes/receipts.routes.js
-const express = require("express");
+import express from "express";
+
+import * as controller from "../controllers/receipts.controller.js";
+import auth from "../middleware/auth.js";
+
 const router = express.Router();
 
-const controller = require("../controllers/receipts.controller");
-const auth = require("../middleware/auth");
-const upload = require("../lib/multer");
-
 /*
 |--------------------------------------------------------------------------
-| Receipt Upload (GridFS → OCR → AI Parsing)
+| Presigned Upload Flow (R2)
 |--------------------------------------------------------------------------
-| Upload a single file under form field name "file"
-| This matches: formData.append("file", file)
+| 1) Client requests upload URL
+| 2) Client PUTs file to R2 directly
+| 3) Client confirms upload (server verifies + saves metadata)
 */
-router.post("/upload", auth, upload.single("file"), controller.upload);
+
+// Get a presigned PUT URL + create pending metadata row
+router.post("/presign", auth, controller.presignUpload);
+
+// Confirm upload completed (optionally HEAD object) and finalize metadata
+router.post("/:id/confirm", auth, controller.confirmUpload);
 
 /*
 |--------------------------------------------------------------------------
-| GET All Receipts for Authenticated User
+| Receipt CRUD
 |--------------------------------------------------------------------------
 */
 router.get("/", auth, controller.getAll);
 
-/*
-|--------------------------------------------------------------------------
-| IMPORTANT: Download Route BEFORE :id Route
-|--------------------------------------------------------------------------
-| Otherwise "/:id" would catch "/:id/download" and treat "download" as the ID.
-*/
+// IMPORTANT: Download route before :id
 router.get("/:id/download", auth, controller.download);
 
-/*
-|--------------------------------------------------------------------------
-| GET Single Receipt by ID
-|--------------------------------------------------------------------------
-*/
 router.get("/:id", auth, controller.getOne);
 
-/*
-|--------------------------------------------------------------------------
-| DELETE Receipt + GridFS File
-|--------------------------------------------------------------------------
-*/
 router.delete("/:id", auth, controller.remove);
 
-module.exports = router;
+export default router;

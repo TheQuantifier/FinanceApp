@@ -1,9 +1,14 @@
 // src/routes/index.js
-const express = require('express');
+import express from "express";
+
+import authRoutes from "./auth.routes.js";
+import recordsRoutes from "./records.routes.js";
+import receiptsRoutes from "./receipts.routes.js";
+
 const router = express.Router();
 
-router.use('/auth', require('./auth.routes'));
-router.use('/records', require('./records.routes'));
-router.use('/receipts', require('./receipts.routes'));
+router.use("/auth", authRoutes);
+router.use("/records", recordsRoutes);
+router.use("/receipts", receiptsRoutes);
 
-module.exports = router;
+export default router;
