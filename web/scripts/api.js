@@ -10,7 +10,7 @@
 const API_BASE =
   window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1")
     ? "http://localhost:4000/api"
-    : "https://financeapp-5u9g.onrender.com/api";
+    : "https://financeapp-postgres.onrender.com/api";
 
 // --------------------------------------
 // INTERNAL REQUEST WRAPPER
