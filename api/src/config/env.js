@@ -1,38 +1,68 @@
 // src/config/env.js
-const path = require('path');
-const dotenv = require('dotenv');
+import path from "path";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({
-  path: path.join(__dirname, '..', '..', '.env'),
+  path: path.join(__dirname, "..", "..", ".env"),
 });
 
 const required = (name) => {
   const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
 };
 
-module.exports = {
-  nodeEnv: process.env.NODE_ENV || 'development',
-  port: process.env.PORT || 5000,
+const boolFromEnv = (value, defaultValue = false) => {
+  if (value === undefined || value === null || value === "") return defaultValue;
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+};
 
-  mongoUri: required('MONGODB_URI'),
-  mongoDbName: process.env.MONGODB_DB || 'finance_app',
+const env = {
+  nodeEnv: process.env.NODE_ENV || "development",
+  port: Number(process.env.PORT || 4000),
 
-  jwtSecret: required('JWT_SECRET'),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  // Database (switchable)
+  dbProvider: (process.env.DB_PROVIDER || "postgres").toLowerCase(),
+  dbUrl: required("DB_URL"),
+  dbSsl: boolFromEnv(process.env.DB_SSL, true),
 
-  // comma-separated list of allowed origins
-  clientOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5500')
-    .split(',')
-    .map((o) => o.trim()),
+  // Authentication
+  jwtSecret: required("JWT_SECRET"),
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 
-  uploadTmpDir: process.env.UPLOAD_DIR || './tmp_uploads',
+  // CORS
+  clientOrigins: (process.env.CORS_ORIGIN || "http://localhost:5500")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
 
-  // resolves relative to project root even in Render
+  // OCR
+  ocrEnabled: boolFromEnv(process.env.OCR_ENABLED, true),
   ocrWorkerScript: process.env.OCR_WORKER_SCRIPT
     ? path.resolve(process.env.OCR_WORKER_SCRIPT)
-    : path.resolve(__dirname, '..', '..', 'worker', 'ocr_demo.py'),
+    : path.resolve(__dirname, "..", "..", "worker", "ocr_demo.py"),
+  pythonBin: process.env.PYTHON_BIN || null,
+
+  // AI Parser
+  aiProvider: (process.env.AI_PROVIDER || "gemini").toLowerCase(),
+  aiApiKey: required("AI_API_KEY"),
+  aiModel: process.env.AI_MODEL || "models/gemma-3-4b-it",
+  aiMaxChars: Number(process.env.AI_MAX_CHARS || 5000),
+
+  // Object Storage
+  objectStore: {
+    provider: (process.env.OBJECT_STORE_PROVIDER || "r2").toLowerCase(),
+    bucket: required("OBJECT_STORE_BUCKET"),
+    endpoint: required("OBJECT_STORE_ENDPOINT"),
+    accessKeyId: required("OBJECT_STORE_ACCESS_KEY_ID"),
+    secretAccessKey: required("OBJECT_STORE_SECRET_ACCESS_KEY"),
+    region: process.env.OBJECT_STORE_REGION || "auto",
+    forcePathStyle: boolFromEnv(process.env.OBJECT_STORE_FORCE_PATH_STYLE, true),
+  },
 };
+
+export default env;
