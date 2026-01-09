@@ -5,7 +5,7 @@
 
 BASE URL (auto-switched):
   Production: https://financeapp-5u9g.onrender.com/api
-  Local:      http://localhost:5000/api
+  Local:      http://localhost:4000/api
 
 All functions return Promises:
   const user = await api.auth.login(...)
@@ -105,7 +105,7 @@ DESCRIPTION:
     - user account
     - all records
     - all receipts
-    - all GridFS files
+    - all stored receipt files (Cloudflare R2)
 
 EXAMPLE:
   await api.auth.deleteAccount();
@@ -121,7 +121,6 @@ EXAMPLE:
 ------------------------------------------------------------
 DESCRIPTION:
   Returns all financial records belonging to the user.
-  Future-proofed: supports query params (filters, pagination).
 
 ARGUMENTS:
   params (object) — optional
@@ -137,10 +136,10 @@ DESCRIPTION:
   Fetch a single record.
 
 ARGUMENTS:
-  recordId (string)
+  recordId (string | uuid)
 
 EXAMPLE:
-  const record = await api.records.getOne("675ab92f19c9fd7fd050cb92");
+  const record = await api.records.getOne("7f3a1c1e-9d8e-4f1a-a1a2-acde01234567");
 
 
 ------------------------------------------------------------
@@ -154,7 +153,7 @@ ARGUMENTS:
   amount    (number)
   category  (string)
   date      ("YYYY-MM-DD" optional)
-  note      (string)
+  note      (string optional)
 
 EXAMPLE:
   await api.records.create({
@@ -174,14 +173,14 @@ DESCRIPTION:
   automatically by receipt uploads.
 
 ARGUMENTS:
-  recordId (string)
+  recordId (string | uuid)
   updates  (object)
 
 RETURNS:
   { message, record }
 
 EXAMPLE:
-  await api.records.update("675ab92f19c9fd7fd050cb92", {
+  await api.records.update(id, {
     amount: 40,
     category: "Dining",
     note: "Updated entry"
@@ -195,33 +194,31 @@ DESCRIPTION:
   Deletes a record AND optionally deletes its linked receipt.
 
 deleteReceipt values:
-  true  → Deletes the linked receipt AND its GridFS file.
-  false → Unlinks from receipt but keeps the receipt.
-  undefined → Deletes only the record (default).
+  true       → Deletes the linked receipt (metadata + file)
+  false      → Unlinks from receipt but keeps receipt
+  undefined  → Deletes only the record (default)
 
 EXAMPLES:
-  // Delete the record only
   await api.records.remove(id);
-
-  // Delete record AND its linked receipt
   await api.records.remove(id, true);
-
-  // Delete record but keep receipt, just unlink
   await api.records.remove(id, false);
 
 
 
 ============================================================
- 3. RECEIPTS MODULE
+ 3. RECEIPTS MODULE (R2 PRESIGNED FLOW)
 ============================================================
 
 ------------------------------------------------------------
  receipts.upload(file)
 ------------------------------------------------------------
 DESCRIPTION:
-  Uploads a file to GridFS → runs OCR → runs Gemini parsing →
-  stores extracted fields → auto-creates a financial record if
-  the total amount is detected.
+  Three-step upload flow using Cloudflare R2:
+
+  1) Request a presigned upload URL
+  2) Upload file directly from browser to R2
+  3) Confirm upload → OCR → AI parsing → metadata save
+     → auto-create financial record (if amount detected)
 
 ARGUMENTS:
   file (File object)
@@ -253,21 +250,22 @@ EXAMPLE:
 DESCRIPTION:
   Fetch one receipt, including:
     - OCR text
-    - parsedData
-    - linkedRecordId (if any)
+    - parsed data
+    - linked record (if any)
 
-EXAMPLE:
-  const receipt = await api.receipts.getOne("677cb9123abc0123abc9ff01");
+ARGUMENTS:
+  receiptId (string | uuid)
 
 
 ------------------------------------------------------------
  receipts.download(receiptId)
 ------------------------------------------------------------
 DESCRIPTION:
-  Downloads the original uploaded file into a Blob.
+  Downloads the original uploaded file via a presigned URL
+  and returns it as a Blob.
 
 EXAMPLE:
-  const blob = await api.receipts.download("675ca881ab9c45f123abc911");
+  const blob = await api.receipts.download(id);
 
 
 ------------------------------------------------------------
@@ -277,7 +275,7 @@ DESCRIPTION:
   Downloads the file and triggers a save to disk.
 
 EXAMPLE:
-  await api.receipts.downloadToFile("675ca881ab9c45f123abc911", "receipt.pdf");
+  await api.receipts.downloadToFile(id, "receipt.pdf");
 
 
 ------------------------------------------------------------
@@ -287,18 +285,13 @@ DESCRIPTION:
   Deletes a receipt AND optionally its linked record.
 
 deleteRecord values:
-  true  → delete both receipt + auto-created record  
-  false → keep record but unlink  
-  undefined → delete only the receipt
+  true       → delete receipt + linked record
+  false      → keep record but unlink
+  undefined  → delete only the receipt
 
 EXAMPLES:
-  // Delete only the receipt
   await api.receipts.remove(id);
-
-  // Delete receipt AND the linked record
   await api.receipts.remove(id, true);
-
-  // Delete receipt but keep the financial record
   await api.receipts.remove(id, false);
 
 
@@ -314,19 +307,25 @@ RETURNS:
   "Receipt" if generated from a receipt,
   "Manual"  if user-created.
 
+
 ------------------------------------------------------------
  api.getPayMethodLabel(method)
 ------------------------------------------------------------
-Maps internal payMethod values to readable labels.
+DESCRIPTION:
+  Maps internal payment method values to readable labels.
+
 
 ------------------------------------------------------------
  api.getReceiptSummary(receipt)
 ------------------------------------------------------------
-Returns a consistent summary of:
-  - parsed date
-  - store source
-  - subAmount / amount / tax
-  - parsed items list
+DESCRIPTION:
+  Returns a normalized summary object containing:
+    - parsed purchase date
+    - date added
+    - store / source
+    - subAmount / amount / tax
+    - payment method
+    - parsed items list
 
 
 

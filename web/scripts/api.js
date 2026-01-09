@@ -1,14 +1,15 @@
+// web/api.js
 // ======================================================================
-// FinanceApp Frontend API Wrapper
-// Fully aligned with backend routes, behaviors, and linked receipt logic
+// FinanceApp Frontend API Wrapper (ESM)
+// Updated for: Postgres metadata + Cloudflare R2 presigned uploads/downloads
 // ======================================================================
 
 // --------------------------------------
 // CONFIG (auto-switch for localhost vs Render)
 // --------------------------------------
 const API_BASE =
-  window.location.hostname.includes("localhost")
-    ? "http://localhost:5000/api"
+  window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1")
+    ? "http://localhost:4000/api"
     : "https://financeapp-5u9g.onrender.com/api";
 
 // --------------------------------------
@@ -27,8 +28,8 @@ async function request(path, options = {}) {
   let data = null;
   try {
     data = await res.json();
-  } catch (err) {
-    console.warn("API returned non-JSON response for:", path);
+  } catch {
+    // Some endpoints may intentionally return empty bodies
   }
 
   if (!res.ok) {
@@ -112,44 +113,62 @@ export const records = {
   },
 
   /**
-   * deleteReceipt === true  → delete linked receipt also
+   * deleteReceipt === true  → delete linked receipt also (metadata row)
    * deleteReceipt === false → unlink but keep receipt
    * deleteReceipt === undefined → omit parameter
    */
   remove(id, deleteReceipt) {
     const query =
       deleteReceipt === undefined ? "" : `?deleteReceipt=${deleteReceipt}`;
-
     return request(`/records/${id}${query}`, { method: "DELETE" });
   },
 };
 
 // ======================================================================
-// RECEIPTS MODULE
+// RECEIPTS MODULE (R2 presigned flow)
 // ======================================================================
 export const receipts = {
+  /**
+   * Upload flow:
+   * 1) POST /receipts/presign  -> { id, objectKey, uploadUrl }
+   * 2) PUT uploadUrl (raw file bytes)
+   * 3) POST /receipts/:id/confirm -> { receipt, autoRecord }
+   */
   async upload(file) {
-    const formData = new FormData();
-    formData.append("file", file);
+    if (!file) throw new Error("No file provided");
 
-    const res = await fetch(`${API_BASE}/receipts/upload`, {
+    // 1) Get presigned PUT URL
+    const presign = await request("/receipts/presign", {
       method: "POST",
-      credentials: "include",
-      body: formData,
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type || "application/octet-stream",
+        sizeBytes: file.size || 0,
+      }),
     });
 
-    let data;
-    try {
-      data = await res.json();
-    } catch {
-      throw new Error("Invalid JSON returned from receipt upload");
+    if (!presign?.uploadUrl || !presign?.id) {
+      throw new Error("Presign failed: missing uploadUrl or id");
     }
 
-    if (!res.ok) {
-      throw new Error(data?.message || "Receipt upload failed");
+    // 2) Upload directly to R2 via PUT
+    const putRes = await fetch(presign.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
+    });
+
+    if (!putRes.ok) {
+      throw new Error(`Upload to object storage failed (${putRes.status})`);
     }
 
-    return data;
+    // 3) Confirm so server can OCR + AI parse + save metadata + auto-record
+    return request(`/receipts/${presign.id}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
   },
 
   getAll() {
@@ -160,13 +179,18 @@ export const receipts = {
     return request(`/receipts/${id}`);
   },
 
+  /**
+   * Backend returns { downloadUrl } (presigned GET).
+   * We fetch the blob client-side to preserve your existing UI behavior.
+   */
   async download(id) {
-    const res = await fetch(`${API_BASE}/receipts/${id}/download`, {
-      method: "GET",
-      credentials: "include",
-    });
+    const data = await request(`/receipts/${id}/download`);
+    const url = data?.downloadUrl;
+    if (!url) throw new Error("Missing downloadUrl");
 
+    const res = await fetch(url, { method: "GET" });
     if (!res.ok) throw new Error("Download failed");
+
     return await res.blob();
   },
 
@@ -194,7 +218,8 @@ export const receipts = {
 
 /** Returns "Receipt" if the record is linked, otherwise "Manual". */
 export function getUploadType(record) {
-  return record?.linkedReceiptId ? "Receipt" : "Manual";
+  // Postgres returns snake_case; keep compatibility with older camelCase
+  return record?.linked_receipt_id || record?.linkedReceiptId ? "Receipt" : "Manual";
 }
 
 export function getPayMethodLabel(method) {
@@ -211,17 +236,18 @@ export function getPayMethodLabel(method) {
 }
 
 export function getReceiptSummary(receipt) {
-  const p = receipt?.parsedData || {};
+  // Postgres returns snake_case by default
+  const parsed = receipt?.parsed_data || receipt?.parsedData || {};
 
   return {
-    date: p.date || "",
-    dateAdded: receipt.createdAt || "",
-    source: p.source || receipt.originalFilename,
-    subAmount: Number(p.subAmount || 0),
-    amount: Number(p.amount || 0),
-    taxAmount: Number(p.taxAmount || 0),
-    payMethod: getPayMethodLabel(p.payMethod),
-    items: Array.isArray(p.items) ? p.items : [],
+    date: parsed.date || "",
+    dateAdded: receipt?.created_at || receipt?.createdAt || "",
+    source: parsed.source || receipt?.original_filename || receipt?.originalFilename || "",
+    subAmount: Number(parsed.subAmount || parsed.sub_amount || 0),
+    amount: Number(parsed.amount || 0),
+    taxAmount: Number(parsed.taxAmount || parsed.tax_amount || 0),
+    payMethod: getPayMethodLabel(parsed.payMethod || parsed.pay_method),
+    items: Array.isArray(parsed.items) ? parsed.items : [],
   };
 }
 
