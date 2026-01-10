@@ -222,8 +222,8 @@ import { api } from "./api.js";
   // -----------------------------
   // Recent table rendering
   // -----------------------------
-  const trashIcon = `<img src="images/trash.png" alt="Delete" class="icon-trash" />`;
-  const downloadIcon = `<img src="images/download.png" alt="Download" class="icon-trash" />`;
+  const trashIcon = `<img src="/images/trash.png" alt="Delete" class="icon-trash" />`;
+  const downloadIcon = `<img src="/images/download.png" alt="Download" class="icon-trash" />`;
 
   const renderRecentRows = (rows) => {
     if (!recentTableBody) return;
@@ -236,25 +236,35 @@ import { api } from "./api.js";
     }
 
     for (const r of rows) {
-      const id = r._id || r.id;
-      const filename = r.originalFilename || r.originalName || r.filename || "receipt.pdf";
-      const created = r.createdAt ? new Date(r.createdAt).toLocaleString() : r.uploadedAt ? new Date(r.uploadedAt).toLocaleString() : "—";
+      const id = r?.id || r?._id;
+      const filename =
+        r?.originalFilename ||
+        r?.original_filename ||
+        r?.originalName ||
+        r?.original_name ||
+        r?.filename ||
+        "receipt.pdf";
+
+      const createdRaw = r?.createdAt || r?.created_at || r?.uploadedAt || r?.uploaded_at;
+      const created = createdRaw ? new Date(createdRaw).toLocaleString() : "—";
 
       let status = "Raw";
-      const hasOCR = r.ocrText && String(r.ocrText).trim().length > 0;
-      const hasParsed = r.parsedData && Object.keys(r.parsedData).length > 0;
+      const ocrText = r?.ocrText ?? r?.ocr_text;
+      const parsedData = r?.parsedData ?? r?.parsed_data;
+      const hasOCR = ocrText && String(ocrText).trim().length > 0;
+      const hasParsed = parsedData && typeof parsedData === "object" && Object.keys(parsedData).length > 0;
       if (hasParsed) status = "Parsed";
       else if (hasOCR) status = "Read";
-      if (r.error || r.ocrFailed) status = "Error";
+      if (r?.error || r?.ocrFailed || r?.ocr_failed) status = "Error";
 
       const tr = document.createElement("tr");
       tr.dataset.id = id;
-      tr.dataset.linkedRecordId = r.linkedRecordId || r.linkedRecord || "";
+      tr.dataset.linkedRecordId = r?.linkedRecordId || r?.linkedRecord || r?.linked_record_id || "";
 
       tr.innerHTML = `
         <td>${filename}</td>
-        <td>${r.fileType || r.mimetype || "—"}</td>
-        <td class="num">${bytesToSize(r.fileSize || r.size || 0)}</td>
+        <td>${r?.fileType || r?.file_type || r?.mimetype || r?.mime_type || "—"}</td>
+        <td class="num">${bytesToSize(r?.fileSize || r?.file_size || r?.size || 0)}</td>
         <td>${created}</td>
         <td>${status}</td>
 
@@ -280,7 +290,8 @@ import { api } from "./api.js";
     if (!recentTableBody) return;
 
     try {
-      const receipts = await api.receipts.getAll();
+      const res = await api.receipts.getAll();
+      const receipts = Array.isArray(res) ? res : (res?.receipts || res?.data || []);
       renderRecentRows(receipts || []);
     } catch (err) {
       console.error("Failed to refresh uploads:", err);

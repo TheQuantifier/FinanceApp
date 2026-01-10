@@ -94,6 +94,8 @@ import { api } from "./api.js";
     canvas.height = 300 * dpr;
 
     const ctx = canvas.getContext("2d");
+    // Reset transforms so repeated draws (resize/theme redraw) never accumulate scaling.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
 
     const entries = Object.entries(dataObj || {});
@@ -101,7 +103,8 @@ import { api } from "./api.js";
     const values = entries.map((e) => +e[1] || 0);
     const max = Math.max(1, ...values);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear in CSS pixels (since we've scaled the context).
+    ctx.clearRect(0, 0, parentWidth, 300);
 
     const P = { t: 20, r: 20, b: 50, l: 40 };
     const innerW = canvas.width / dpr - P.l - P.r;
@@ -345,7 +348,7 @@ import { api } from "./api.js";
     const openModal = () => modal?.classList.remove("hidden");
 
     $("#btnUpload")?.addEventListener("click", () => {
-      window.location.href = "upload.html";
+      window.location.href = "/upload.html";
     });
 
     $("#btnExport")?.addEventListener("click", async () => {

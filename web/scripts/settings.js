@@ -133,14 +133,20 @@ import { api } from "./api.js";
           if (parsed?.dashboardView) localStorage.setItem("settings_dashboard_view", parsed.dashboardView);
           if (typeof parsed?.notifEmail === "boolean") localStorage.setItem("settings_notif_email", String(parsed.notifEmail));
           if (typeof parsed?.notifSMS === "boolean") localStorage.setItem("settings_notif_sms", String(parsed.notifSMS));
+          if (!parsed?.numberFormat && !localStorage.getItem("settings_number_format")) {
+            localStorage.setItem("settings_number_format", "US");
+          }
+          if (!parsed?.timezone && !localStorage.getItem("settings_timezone")) {
+            localStorage.setItem("settings_timezone", "America/New_York");
+          }
         } catch {
           // ignore
         }
       } else {
         // First run defaults
         localStorage.setItem("settings_currency", detectDeviceCurrency());
-        localStorage.setItem("settings_number_format", detectNumberFormat());
-        localStorage.setItem("settings_timezone", detectDeviceTimezone());
+        localStorage.setItem("settings_number_format", "US");
+        localStorage.setItem("settings_timezone", "America/New_York");
         localStorage.setItem("settings_language", "English");
         localStorage.setItem("settings_dashboard_view", "Monthly");
         localStorage.setItem("settings_notif_email", "false");
@@ -270,13 +276,15 @@ import { api } from "./api.js";
 
       showStatus(els.deleteStatus, "Account deleted. Redirecting…", "ok");
 
-      // Clear local tokens (best effort)
+      // Clear any legacy client-side auth artifacts (new system uses cookies)
       localStorage.removeItem("token");
       localStorage.removeItem("auth_token");
       localStorage.removeItem("jwt");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
 
       window.setTimeout(() => {
-        window.location.href = "login.html";
+        window.location.href = "/login.html";
       }, 900);
     } catch (err) {
       console.error(err);

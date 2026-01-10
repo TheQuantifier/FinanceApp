@@ -115,9 +115,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }).format(converted);
   };
 
+  // Support both Mongo-style `_id` and SQL-style `id`
+  const getRecordId = (r) => r?.id ?? r?._id ?? "";
+
+  // Support both camelCase and snake_case for linked receipt id
+  const getLinkedReceiptId = (r) => r?.linkedReceiptId ?? r?.linked_receipt_id ?? "";
+
   const typeBadgeEl = (record) => {
     const span = document.createElement("span");
-    if (record.linkedReceiptId) {
+    if (getLinkedReceiptId(record)) {
       span.className = "badge badge-receipt";
       span.textContent = "Receipt";
     } else {
@@ -129,8 +135,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const createRow = (record) => {
     const tr = document.createElement("tr");
-    tr.dataset.recordId = record._id;
-    tr.dataset.linkedReceiptId = record.linkedReceiptId || "";
+    const recordId = getRecordId(record);
+    const linkedReceiptId = getLinkedReceiptId(record);
+
+    tr.dataset.recordId = recordId;
+    tr.dataset.linkedReceiptId = linkedReceiptId;
 
     const tdDate = document.createElement("td");
     tdDate.textContent = fmtDate(record.date);
@@ -172,12 +181,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const editBtn = document.createElement("button");
     editBtn.type = "button";
-    editBtn.dataset.edit = record._id;
+    editBtn.dataset.edit = recordId;
     editBtn.textContent = "Edit Record";
 
     const delBtn = document.createElement("button");
     delBtn.type = "button";
-    delBtn.dataset.delete = record._id;
+    delBtn.dataset.delete = recordId;
     delBtn.style.color = "#b91c1c";
     delBtn.textContent = "Delete Record";
 
@@ -203,13 +212,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   function openDeleteModal(recordId, linkedReceiptId) {
     pendingDelete = { recordId, linkedReceiptId };
-    btnDeleteRecordAndReceipt.style.display = linkedReceiptId ? "block" : "none";
+    if (btnDeleteRecordAndReceipt) {
+      btnDeleteRecordAndReceipt.style.display = linkedReceiptId ? "block" : "none";
+    }
     showModal(deleteRecordModal);
   }
 
   async function performDelete(deleteReceiptToo) {
     try {
-      await api.records.remove(pendingDelete.recordId, deleteReceiptToo && pendingDelete.linkedReceiptId);
+      await api.records.remove(pendingDelete.recordId, deleteReceiptToo && !!pendingDelete.linkedReceiptId);
       hideModal(deleteRecordModal);
       await loadRecords();
     } catch (err) {
@@ -278,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById(`${prefix}Category`).value = record.category;
       document.getElementById(`${prefix}Notes`).value = record.note;
 
-      modal.dataset.editId = record._id;
+      modal.dataset.editId = getRecordId(record);
       showModal(modal);
       return;
     }

@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await api.auth.login(identifier, password);
 
       // Success → redirect to dashboard
-      window.location.href = "home.html";
+      window.location.href = "/home.html";
 
     } catch (err) {
       console.error("Login error:", err);

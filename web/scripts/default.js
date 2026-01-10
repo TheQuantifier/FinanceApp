@@ -28,15 +28,16 @@ const PUBLIC_PAGES = ["index.html", "login.html", "register.html", ""];
 async function runAuthGuard() {
   if (!AUTH_GUARD_ENABLED) return;
 
-  const currentPage = window.location.pathname.split("/").pop();
+  const rawPage = (window.location.pathname.split("/").pop() || "").toLowerCase();
+  const currentPage = rawPage === "" ? "index.html" : rawPage;
 
   if (PUBLIC_PAGES.includes(currentPage)) return;
 
   try {
     await api.auth.me(); // succeeds if logged in
   } catch {
-    console.warn("User not authenticated. Redirecting to index.html");
-    window.location.href = "index.html";
+    console.warn("User not authenticated. Redirecting to /index.html");
+    window.location.href = "/index.html";
   }
 }
 
@@ -74,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 */
 function loadHeaderAndFooter() {
   // --- Load Header ---
-  fetch("components/header.html")
+  fetch("/components/header.html")
     .then((res) => {
       if (!res.ok) throw new Error("Header not found");
       return res.text();
@@ -91,13 +92,14 @@ function loadHeaderAndFooter() {
     .catch((err) => console.error("Header load failed:", err));
 
   // --- Load Footer ---
-  fetch("components/footer.html")
+  fetch("/components/footer.html")
     .then((res) => {
       if (!res.ok) throw new Error("Footer not found");
       return res.text();
     })
     .then((html) => {
-      document.getElementById("footer").innerHTML = html;
+      const footerEl = document.getElementById("footer");
+      if (footerEl) footerEl.innerHTML = html;
     })
     .catch((err) => console.error("Footer load failed:", err));
 }
@@ -108,11 +110,15 @@ function loadHeaderAndFooter() {
   =============================================== */
 
 function setActiveNavLink() {
-  const currentPage = window.location.pathname.split("/").pop();
+  const rawPage = (window.location.pathname.split("/").pop() || "").toLowerCase();
+  const currentPage = rawPage === "" ? "index.html" : rawPage;
   const navLinks = document.querySelectorAll("#header nav a");
 
   navLinks.forEach((link) => {
-    const linkPage = link.getAttribute("href");
+    const href = (link.getAttribute("href") || "").toLowerCase();
+    // Support both relative ("records.html") and root-relative ("/records.html") hrefs
+    const linkPage = href.startsWith("/") ? href.slice(1) : href;
+
     if (linkPage === currentPage) link.classList.add("active");
     else link.classList.remove("active");
   });
@@ -214,7 +220,7 @@ function wireLogoutButton() {
 
     try {
       await api.auth.logout();
-      window.location.href = "login.html";
+      window.location.href = "/login.html";
     } catch (err) {
       console.error("Logout failed:", err);
       alert("Could not log out.");

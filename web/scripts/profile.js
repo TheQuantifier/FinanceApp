@@ -20,52 +20,58 @@ if (!api.auth.signOutAll) {
 /* ----------------------------------------
    DOM ELEMENTS
 ---------------------------------------- */
-const editBtn = document.getElementById("editProfileBtn");
-const form = document.getElementById("editForm");
-const cancelBtn = document.getElementById("cancelEditBtn");
-const statusEl = document.getElementById("profileStatus");
-const copyLinkBtn = document.getElementById("copyProfileLinkBtn");
+// Small helpers to avoid null dereferences
+const $ = (id) => document.getElementById(id);
+const setText = (el, text) => {
+  if (el) el.innerText = text;
+};
+
+const editBtn = $("editProfileBtn");
+const form = $("editForm");
+const cancelBtn = $("cancelEditBtn");
+const statusEl = $("profileStatus");
+const copyLinkBtn = $("copyProfileLinkBtn");
 
 // SUMMARY ELEMENTS
 const f = {
-  fullName: document.getElementById("fullName"),
-  username: document.getElementById("username"),
-  email: document.getElementById("email"),
-  phoneNumber: document.getElementById("phoneNumber"),
-  location: document.getElementById("location"),
-  role: document.getElementById("role"),
-  createdAt: document.getElementById("createdAt"),
-  bio: document.getElementById("bio"),
+  fullName: $("fullName"),
+  username: $("username"),
+  email: $("email"),
+  phoneNumber: $("phoneNumber"),
+  location: $("location"),
+  role: $("role"),
+  createdAt: $("createdAt"),
+  bio: $("bio"),
 };
 
 // FORM INPUTS
 const input = {
-  fullName: document.getElementById("input_fullName"),
-  username: document.getElementById("input_username"),
-  email: document.getElementById("input_email"),
-  phoneNumber: document.getElementById("input_phoneNumber"),
-  location: document.getElementById("input_location"),
-  role: document.getElementById("input_role"),
-  bio: document.getElementById("input_bio"),
+  fullName: $("input_fullName"),
+  username: $("input_username"),
+  email: $("input_email"),
+  phoneNumber: $("input_phoneNumber"),
+  location: $("input_location"),
+  role: $("input_role"),
+  bio: $("input_bio"),
 };
 
 // SECURITY STATS
 const stats = {
-  lastLogin: document.getElementById("stat_lastLogin"),
-  twoFA: document.getElementById("stat_2FA"),
-  uploads: document.getElementById("stat_uploads"),
+  lastLogin: $("stat_lastLogin"),
+  twoFA: $("stat_2FA"),
+  uploads: $("stat_uploads"),
 };
 
 // AVATAR ELEMENTS
-const changeAvatarBtn = document.getElementById("changeAvatarBtn");
-const avatarInput = document.getElementById("avatarInput");
+const changeAvatarBtn = $("changeAvatarBtn");
+const avatarInput = $("avatarInput");
 const avatarBlock = document.querySelector(".avatar-block .avatar");
 let avatarFile = null;
 
 /* ----------------------------------------
    DARK MODE SUPPORT
 ---------------------------------------- */
-const themeToggleBtn = document.getElementById("toggleDarkMode");
+const themeToggleBtn = $("toggleDarkMode");
 
 const setTheme = (theme) => {
   document.documentElement.setAttribute("data-theme", theme);
@@ -87,13 +93,13 @@ if (themeToggleBtn) {
    EDIT PROFILE FORM
 ---------------------------------------- */
 const showForm = () => {
-  form.hidden = false;
-  editBtn.disabled = true;
+  if (form) form.hidden = false;
+  if (editBtn) editBtn.disabled = true;
 };
 
 const hideForm = () => {
-  form.hidden = true;
-  editBtn.disabled = false;
+  if (form) form.hidden = true;
+  if (editBtn) editBtn.disabled = false;
 };
 
 const showStatus = (msg, kind = "ok") => {
@@ -120,36 +126,37 @@ async function loadUserProfile() {
   try {
     const { user } = await api.auth.me();
 
-    f.fullName.innerText = user.fullName || user.username || "—";
-    f.username.innerText = "@" + (user.username || "—");
-    f.email.innerText = user.email || "—";
-    f.phoneNumber.innerText = user.phoneNumber || "—";
-    f.location.innerText = user.location || "—";
-    f.role.innerText = user.role || "—";
-    f.createdAt.innerText = user.createdAt
-      ? new Date(user.createdAt).toLocaleDateString()
-      : "—";
-    f.bio.innerText = user.bio || "—";
+    const createdAt = user?.createdAt || user?.created_at;
+    const avatarUrl = user?.avatarUrl || user?.avatar_url;
 
-    stats.lastLogin.innerText = "Not available";
-    stats.twoFA.innerText = "Not available";
-    stats.uploads.innerText = "Not available";
+    setText(f.fullName, user?.fullName || user?.full_name || user?.username || "—");
+    setText(f.username, "@" + (user?.username || "—"));
+    setText(f.email, user?.email || "—");
+    setText(f.phoneNumber, user?.phoneNumber || user?.phone_number || "—");
+    setText(f.location, user?.location || "—");
+    setText(f.role, user?.role || "—");
+    setText(f.createdAt, createdAt ? new Date(createdAt).toLocaleDateString() : "—");
+    setText(f.bio, user?.bio || "—");
+
+    setText(stats.lastLogin, "Not available");
+    setText(stats.twoFA, "Not available");
+    setText(stats.uploads, "Not available");
 
     Object.keys(input).forEach((k) => {
-      input[k].value = user[k] || "";
+      if (input[k]) input[k].value = user[k] || "";
     });
 
     // Load avatar if exists
-    if (user.avatarUrl) {
-      avatarBlock.style.backgroundImage = `url(${user.avatarUrl})`;
+    if (avatarUrl && avatarBlock) {
+      avatarBlock.style.backgroundImage = `url(${avatarUrl})`;
       avatarBlock.textContent = "";
-    } else {
+    } else if (avatarBlock) {
       avatarBlock.style.backgroundImage = "";
       avatarBlock.textContent = "";
     }
   } catch (err) {
     showStatus("Please log in to view your profile.", "error");
-    window.location.href = "login.html";
+    window.location.href = "/login.html";
   }
 }
 
@@ -161,7 +168,7 @@ async function saveProfile(e) {
   showStatus("Saving…");
   const updates = {};
   for (const key in input) {
-    updates[key] = input[key].value.trim();
+    if(input[key]) updates[key] = input[key].value.trim();
   }
 
   try {
@@ -206,8 +213,10 @@ avatarInput?.addEventListener("change", (e) => {
 
   const reader = new FileReader();
   reader.onload = (event) => {
-    avatarBlock.style.backgroundImage = `url(${event.target.result})`;
-    avatarBlock.textContent = "";
+    if(avatarBlock) {
+      avatarBlock.style.backgroundImage = `url(${event.target.result})`;
+      avatarBlock.textContent = "";
+    }
   };
   reader.readAsDataURL(file);
 
@@ -249,19 +258,20 @@ copyLinkBtn?.addEventListener("click", async () => {
 /* ----------------------------------------
    CHANGE PASSWORD
 ---------------------------------------- */
-const passwordModal = document.getElementById("passwordModal");
-const passwordForm = document.getElementById("passwordForm");
-const closePasswordModal = document.getElementById("closePasswordModal");
+const passwordModal = $("passwordModal");
+const passwordForm = $("passwordForm");
+const closePasswordModal = $("closePasswordModal");
+const changePasswordBtn = $("changePasswordBtn");
 
-document.getElementById("changePasswordBtn").addEventListener("click", () => {
-  passwordModal.classList.remove("hidden");
+changePasswordBtn?.addEventListener("click", () => {
+  passwordModal?.classList.remove("hidden");
 });
 
-closePasswordModal.addEventListener("click", () => {
-  passwordModal.classList.add("hidden");
+closePasswordModal?.addEventListener("click", () => {
+  passwordModal?.classList.add("hidden");
 });
 
-passwordModal.addEventListener("click", (e) => {
+passwordModal?.addEventListener("click", (e) => {
   if (e.target === passwordModal) passwordModal.classList.add("hidden");
 });
 
@@ -272,12 +282,12 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-passwordForm.addEventListener("submit", async (e) => {
+passwordForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const currentPassword = document.getElementById("currentPassword").value.trim();
-  const newPassword = document.getElementById("newPassword").value.trim();
-  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+  const currentPassword = $("currentPassword")?.value?.trim() || "";
+  const newPassword = $("newPassword")?.value?.trim() || "";
+  const confirmPassword = $("confirmPassword")?.value?.trim() || "";
 
   if (newPassword !== confirmPassword) {
     showStatus("New passwords do not match.", "error");
@@ -289,7 +299,7 @@ passwordForm.addEventListener("submit", async (e) => {
     await api.auth.changePassword(currentPassword, newPassword);
     showStatus("Password updated.");
     clearStatusSoon(2500);
-    passwordModal.classList.add("hidden");
+    passwordModal?.classList.add("hidden");
     passwordForm.reset();
   } catch (err) {
     showStatus("Password update failed: " + (err?.message || "Unknown error"), "error");
@@ -300,10 +310,10 @@ passwordForm.addEventListener("submit", async (e) => {
 /* ----------------------------------------
    TWO-FACTOR AUTH (STUB)
 ---------------------------------------- */
-document.getElementById("toggle2FA").addEventListener("click", async () => {
+$("toggle2FA")?.addEventListener("click", async () => {
   try {
     const result = await api.auth.toggle2FA();
-    stats.twoFA.innerText = "Not available";
+    if(stats.twoFA) stats.twoFA.innerText = "Not available";
     showStatus(result.message, "error");
     clearStatusSoon(3500);
   } catch (err) {
@@ -315,7 +325,7 @@ document.getElementById("toggle2FA").addEventListener("click", async () => {
 /* ----------------------------------------
    SIGN OUT ALL SESSIONS (STUB)
 ---------------------------------------- */
-document.getElementById("signOutAllBtn").addEventListener("click", async () => {
+$("signOutAllBtn")?.addEventListener("click", async () => {
   if (!confirm("Sign out all devices?")) return;
   try {
     const result = await api.auth.signOutAll();
@@ -331,9 +341,9 @@ document.getElementById("signOutAllBtn").addEventListener("click", async () => {
    INIT
 ---------------------------------------- */
 document.addEventListener("DOMContentLoaded", loadUserProfile);
-form.addEventListener("submit", saveProfile);
-editBtn.addEventListener("click", showForm);
-cancelBtn.addEventListener("click", () => {
+form?.addEventListener("submit", saveProfile);
+editBtn?.addEventListener("click", showForm);
+cancelBtn?.addEventListener("click", () => {
   hideForm();
   if (statusEl) {
     statusEl.style.display = "none";

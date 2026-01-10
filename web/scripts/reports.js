@@ -33,6 +33,15 @@ import { api } from "./api.js";
     };
   };
 
+  // Parse ISO-ish dates safely. If we get a date-only string (YYYY-MM-DD),
+  // interpret it as local midnight to avoid timezone shifting.
+  const parseISODate = (iso) => {
+    if (!iso) return null;
+    if (typeof iso !== "string") return new Date(iso);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return new Date(`${iso}T00:00:00`);
+    return new Date(iso);
+  };
+
   const showStatus = (msg, kind = "ok") => {
     if (!els.status) return;
     els.status.textContent = msg;
@@ -101,7 +110,7 @@ import { api } from "./api.js";
     if (rangeVal === "all") return true;
     const days = Number(rangeVal);
     if (!Number.isFinite(days) || days <= 0) return true;
-    const d = new Date(iso);
+    const d = parseISODate(iso);
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     return d >= cutoff;
@@ -130,7 +139,8 @@ import { api } from "./api.js";
   };
 
   const monthKey = (iso) => {
-    const d = new Date(iso);
+    const d = parseISODate(iso);
+    if (!d || Number.isNaN(d.getTime())) return "";
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
     return `${y}-${m}`;
@@ -142,6 +152,7 @@ import { api } from "./api.js";
     records.forEach((r) => {
       if (!r.date) return;
       const key = monthKey(r.date);
+      if (!key) return;
       const prev = m.get(key) || { income: 0, expense: 0 };
       const amt = convertCurrency(r.amount, r.currency, displayCur);
       if (r.type === "income") prev.income += amt;
@@ -227,7 +238,7 @@ import { api } from "./api.js";
             },
           },
         },
-        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+        plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
       });
     }
 
@@ -261,7 +272,7 @@ import { api } from "./api.js";
             },
           },
         },
-        plugins: window.ChartDataLabels ? [ChartDataLabels] : [],
+        plugins: window.ChartDataLabels ? [window.ChartDataLabels] : [],
       });
     }
 
@@ -334,7 +345,8 @@ import { api } from "./api.js";
   const load = async () => {
     try {
       showStatus("Loading reports…");
-      cache = await api.records.getAll();
+      const res = await api.records.getAll();
+      cache = Array.isArray(res) ? res : (res?.records || res?.data || []);
       computeAndRender();
     } catch (err) {
       console.error("Error loading reports:", err);
