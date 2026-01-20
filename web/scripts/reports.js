@@ -84,6 +84,23 @@ import { api } from "./api.js";
       ? ["#60a5fa", "#38bdf8", "#818cf8", "#22d3ee", "#93c5fd", "#67e8f9", "#a5b4fc", "#fca5a5"]
       : ["#0057b8", "#00a3e0", "#1e3a8a", "#0ea5e9", "#2563eb", "#0891b2", "#3b82f6", "#ef4444"];
 
+  // Pie charts use an alternate palette that does NOT change with the app theme.
+  // (Canvas slice colors must be set in JS; CSS can't theme them.)
+  const piePalette = () => [
+    "#FF6B6B", // coral
+    "#4D96FF", // blue
+    "#6BCB77", // green
+    "#FFD93D", // yellow
+    "#845EC2", // purple
+    "#00C9A7", // teal
+    "#FF9671", // peach
+    "#F9A826", // orange
+    "#3D5A80", // slate blue
+    "#B5838D", // mauve
+    "#2A9D8F", // deep teal
+    "#E76F51", // warm orange
+  ];
+
   const chartText = () => (theme() === "dark" ? "#e5e7eb" : "#111827");
   const chartGrid = () => (theme() === "dark" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.10)");
 
@@ -203,13 +220,13 @@ import { api } from "./api.js";
       const ctx = els.pieExp.getContext("2d");
       const labels = expCats.map(([k]) => k);
       const data = expCats.map(([, v]) => v);
-      const colors = labels.map((_, i) => palette()[i % palette().length]);
+      const colors = labels.map((_, i) => piePalette()[i % piePalette().length]);
 
       charts.expPie = new Chart(ctx, {
         type: "doughnut",
         data: {
           labels,
-          datasets: [{ data, backgroundColor: colors, borderWidth: 1 }],
+          datasets: [{ data, backgroundColor: colors, borderWidth: 2 }],
         },
         options: {
           responsive: true,
@@ -237,13 +254,13 @@ import { api } from "./api.js";
       const incCats = groupByCategory(income);
       const labels = incCats.map(([k]) => k);
       const data = incCats.map(([, v]) => v);
-      const colors = labels.map((_, i) => palette()[i % palette().length]);
+      const colors = labels.map((_, i) => piePalette()[i % piePalette().length]);
 
       charts.incPie = new Chart(ctx, {
         type: "doughnut",
         data: {
           labels,
-          datasets: [{ data, backgroundColor: colors, borderWidth: 1 }],
+          datasets: [{ data, backgroundColor: colors, borderWidth: 2 }],
         },
         options: {
           responsive: true,
