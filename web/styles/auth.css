@@ -404,6 +404,10 @@ input:-webkit-autofill {
   color: #fff;
 }
 
+:root[data-theme="dark"] .terms-links{
+  color: var(--blue-4);
+}
+
 /* =========================================================
    ⭐ DARK MODE — MAKE HERO BLACK ONLY
    ========================================================= */

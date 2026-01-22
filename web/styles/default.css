@@ -19,7 +19,7 @@
 
   /* Core variables */
   --primary: var(--blue-1);
-  --accent: var(--blue-2);
+  --accent: var(--blue-4);
   --bg: #f8f9fa;
   --text: #222222;
   --muted: var(--grey-3);
@@ -529,7 +529,6 @@ textarea:focus-visible {
 
 :root[data-theme="dark"] {
   --primary: var(--blue-4);
-  --accent: #66c7ff;
 
   --bg: #1c1f23;
   --text: #e6e6e6;
